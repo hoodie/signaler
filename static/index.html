@@ -1,39 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="utf-8">
-  </head>
-    <body>
-        <h1>hello signalizer</h1>
+</head>
+
+<body>
+    <h1>hello signalizer</h1>
+
+    <fieldset>
+        <input type="text" name="channelName" id="channelName">
+        <hr />
         <input type="button" value="connect" onclick="API.connect()">
         <input type="button" value="join" onclick="API.join()">
         <input type="button" value="list" onclick="API.list()">
+        <input type="button" value="disconnect" onclick="API.disconnect()">
         <input type="button" value="shutdown" onclick="API.shutdown()">
+    </fieldset>
 
-        <script>
-            // @ts-check
-            function connect() {
-                const protocol = window.location.protocol=='https:'&&'wss://'||'ws://';
+    <script>
+        // @ts-check
+        {
+            let connection;
+
+            const connect = () => {
+                const protocol = window.location.protocol == 'https:' && 'wss://' || 'ws://';
                 const wsUri = protocol + window.location.host + '/ws/';
-                const connection = new WebSocket(wsUri);
-                connection.onmessage = ({data, timeStamp, origin}) => {
-                    console.table({timeStamp, origin});
-                    console.log(JSON.parse(data));
+                const socket = new WebSocket(wsUri);
+                socket.onmessage = ({ data, timeStamp, origin }) => {
+                    console.table({ timeStamp, origin });
+                    try {
+                        const payload = JSON.parse(data);
+                        console.log(payload);
+                    } catch (error) {
+                        console.error("can't parse payload", { payload: data , error});
+                    }
                 };
-                connection.onerror = (error) => console.error(error);
-                connection.onclose = (error) => console.warn("closed", error);
-                console.info({protocol, wsUri, connection})
-                window.API.connection = connection
+                socket.onerror = (error) => console.error(error);
+                socket.onclose = (error) => console.warn("closed", error);
+                connection = socket
+
+                console.info({ protocol, wsUri, connection })
             };
 
-            const join = () => window.API.connection.send(JSON.stringify({kind: "join"}));
-            const list = () => window.API.connection.send(JSON.stringify({kind: "list"}));
-            const shutdown = () => window.API.connection.send(JSON.stringify({kind: "shutDown"}));
-
-            window.API = {
-                connect, join, list, shutdown
+            const disconnect = () => {
+                connection.close();
             };
-        </script>
-    </body>
+
+            const changeChannel = (name) => {
+                console.debug({ name });
+            };
+
+            const join = () => connection.send(JSON.stringify({ kind: { "join": { channel: API.channelName } } }));
+            const list = () => connection.send(JSON.stringify({ kind: "listRooms" }));
+            const shutdown = () => connection.send(JSON.stringify({ kind: "shutDown" }));
+
+            const API = {
+                channelName: 'default',
+                connect, disconnect,
+                join, list, shutdown
+            };
+
+            window.API = API;
+            document.querySelector('input#channelName').placeholder = API.channelName;
+            document.querySelector('input#channelName').onkeyup = ({ target: { value } }) => API.channelName = value;
+        }
+
+    </script>
+</body>
 
 </html>
