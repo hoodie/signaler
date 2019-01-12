@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+  </head>
+    <body>
+        <h1>hello signalizer</h1>
+        <input type="button" value="connect" onclick="API.connect()">
+        <input type="button" value="join" onclick="API.join()">
+        <input type="button" value="list" onclick="API.list()">
+        <input type="button" value="shutdown" onclick="API.shutdown()">
+
+        <script>
+            // @ts-check
+            function connect() {
+                const protocol = window.location.protocol=='https:'&&'wss://'||'ws://';
+                const wsUri = protocol + window.location.host + '/ws/';
+                const connection = new WebSocket(wsUri);
+                connection.onmessage = ({data, timeStamp, origin}) => {
+                    console.table({timeStamp, origin});
+                    console.log(JSON.parse(data));
+                };
+                connection.onerror = (error) => console.error(error);
+                connection.onclose = (error) => console.warn("closed", error);
+                console.info({protocol, wsUri, connection})
+                window.API.connection = connection
+            };
+
+            const join = () => window.API.connection.send(JSON.stringify({kind: "join"}));
+            const list = () => window.API.connection.send(JSON.stringify({kind: "list"}));
+            const shutdown = () => window.API.connection.send(JSON.stringify({kind: "shutDown"}));
+
+            window.API = {
+                connect, join, list, shutdown
+            };
+        </script>
+    </body>
+
+</html>
