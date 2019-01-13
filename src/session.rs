@@ -6,16 +6,17 @@
 
 use ::actix::prelude::*;
 use actix_web::ws::{self, WebsocketContext};
-
 use log::{debug, info, trace, warn};
+use uuid::Uuid;
+use serde_derive::Serialize;
 
 use crate::protocol::internal;
 use crate::protocol::public::*;
 use crate::server::SignalingServer;
 
-#[derive(Default)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
-    // server_addr: Addr<self::server::SignalingServer>
+    uuid: Uuid,
 }
 
 impl ClientSession {
@@ -23,66 +24,94 @@ impl ClientSession {
     /// parses raw string and passes it to `dispatch_incoming_message` or replies with error
     fn handle_incoming_message(&self, raw_msg: &str, ctx: &mut WebsocketContext<Self>) {
         // trace!("handle message: {:?}", raw_msg);
-        let parsed: Result<SignalMessage, _> = serde_json::from_str(raw_msg);
+        let parsed: Result<SessionCommand, _> = serde_json::from_str(raw_msg);
         if let Ok(msg) = parsed {
             debug!("parsed ok\n{:#?}", msg);
             self.dispatch_incoming_message(msg, ctx)
 
         } else {
-            let default_message = SignalMessage::err(format!("CantParse!\n{}", Self::allowed_messages()));
             warn!("cannot parse: {:#?}", raw_msg);
             trace!("allowed: {}", Self::allowed_messages());
-            ctx.text(default_message.to_json());
         }
     }
 
-    fn dispatch_incoming_message(&self, msg: SignalMessage, ctx: &mut WebsocketContext<Self>) {
+    fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut WebsocketContext<Self>) {
         match msg.kind {
-            SignalKind::ShutDown => {
+            SessionCommandKind::Join{room} => {
+                debug!("requesting to join {}", room);
+                self.join(&room, ctx);
+            },
+            SessionCommandKind::ShutDown => {
                 debug!("received shut down signal");
                 System::current().stop();
-            }
-            SignalKind::ListRooms => {
+            },
+            SessionCommandKind::ListRooms => {
                 debug!("received list signal");
-                self.talk_to_server(ctx)
-            }
+            },
             _ => {}
         }
-        ctx.text(SignalMessage::ok().to_json());
+        Self::send_message(SessionMessageKind::Ok, ctx);
     }
 
-    fn talk_to_server(&self, ctx: &mut WebsocketContext<Self>) {
+    fn join(&self, room: &str, ctx: &mut WebsocketContext<Self>) {
+        let msg = internal::JoinRoom {
+            room: room.into(),
+            uuid: self.uuid,
+            addr: ctx.address().recipient()
+        };
+
         SignalingServer::from_registry()
-            .send(internal::ListRooms)
+            .send(msg)
             .into_actor(self)
-            .then(|list, _, ctx| {
-                debug!("list request answered: {:?}", list);
-                match list {
-                    Ok(list) => ctx.text(&SignalMessage::any(list).to_json()),
-                    Err(error) => ctx.text(&SignalMessage::err(format!("{:#?}", error)).to_json())
+            .then(|joined, _, ctx| {
+                debug!("join request answered: {:?}", joined);
+                match joined {
+                    Ok(list) => ctx.text(&SessionMessage::any(list).to_json()),
+                    Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
                 }
                 fut::ok(())
             })
             .spawn(ctx);
     }
 
+    fn send_message(kind: SessionMessageKind, ctx: &mut WebsocketContext<Self>) {
+        ctx.text(SessionMessage::from(kind).to_json())
+    }
+
     fn allowed_messages() -> String {
         format!("{}\n{}",
-                serde_json::to_string_pretty(&SignalMessage::join()).unwrap(),
-                serde_json::to_string_pretty(&SignalMessage::list()).unwrap()
+                serde_json::to_string_pretty(&SessionCommand::join()).unwrap(),
+                serde_json::to_string_pretty(&SessionCommand::list()).unwrap()
                 )
     }
 
 }
 
+impl Default for ClientSession {
+    fn default() -> Self {
+        Self {
+            uuid: Uuid::new_v4()
+        }
+    }
+}
+
 impl Actor for ClientSession {
     type Context = WebsocketContext<Self>;
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        debug!("session started")
+    fn started(&mut self, ctx: &mut Self::Context) {
+        info!("ClientSession started {:?}", self);
+        ClientSession::send_message(SessionMessageKind::Welcome{ session: self.clone() }, ctx); 
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        debug!("session stopped")
+        debug!("ClientSsession stopped")
+    }
+}
+
+impl Handler<internal::ServerToSession> for ClientSession {
+    type Result = ();
+
+    fn handle(&mut self, _: internal::ServerToSession, _ctx: &mut Self::Context) -> Self::Result {
+        info!("received message from server");
     }
 }
 

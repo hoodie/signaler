@@ -15,3 +15,6 @@ serde_derive = "1.0"
 serde = "1.0"
 rand = "0.6"
 listenfd = "0.3.3"
+
+uuid = { version = "0.7.1", features = ["serde"] }
+enum-iterator = "0.2.3"

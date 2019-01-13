@@ -28,10 +28,10 @@
                 const wsUri = protocol + window.location.host + '/ws/';
                 const socket = new WebSocket(wsUri);
                 socket.onmessage = ({ data, timeStamp, origin }) => {
-                    console.table({ timeStamp, origin });
+                    // console.table({ timeStamp, origin });
                     try {
                         const payload = JSON.parse(data);
-                        console.log(payload);
+                        console.debug(payload);
                     } catch (error) {
                         console.error("can't parse payload", { payload: data , error});
                     }
@@ -51,9 +51,17 @@
                 console.debug({ name });
             };
 
-            const join = () => connection.send(JSON.stringify({ kind: { "join": { channel: API.channelName } } }));
-            const list = () => connection.send(JSON.stringify({ kind: "listRooms" }));
-            const shutdown = () => connection.send(JSON.stringify({ kind: "shutDown" }));
+            const join = () => connection.send(JSON.stringify({
+                kind: { join: { room: API.channelName } }
+            }));
+
+            const list = () => connection.send(JSON.stringify({
+                kind: "listRooms"
+            }));
+
+            const shutdown = () => connection.send(JSON.stringify({
+                kind: "shutDown"
+            }));
 
             const API = {
                 channelName: 'default',
@@ -61,9 +69,13 @@
                 join, list, shutdown
             };
 
-            window.API = API;
             document.querySelector('input#channelName').placeholder = API.channelName;
             document.querySelector('input#channelName').onkeyup = ({ target: { value } }) => API.channelName = value;
+            if (!!document.querySelector('input#channelName').value) {
+                API.channelName = document.querySelector('input#channelName').value
+                console.debug(`reusing channelName ${API.channelName}`);
+            } 
+            window.API = API;
         }
 
     </script>

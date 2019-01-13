@@ -6,7 +6,7 @@
 
 use actix::prelude::*;
 use log::{debug, info, trace, warn};
-use rand::{self, rngs::ThreadRng, Rng};
+use uuid::Uuid;
 
 use std::collections::{HashMap, HashSet};
 use std::io;
@@ -14,11 +14,9 @@ use std::io;
 use crate::protocol::public::*;
 use crate::protocol::internal;
 
-
 pub struct SignalingServer {
-    // sessions: HashMap<usize, Recipient<SignalMessage>>,
-    // rooms: HashMap<String, HashSet<usize>>,
-    // rng: ThreadRng,
+    sessions: HashMap<Uuid, Recipient<internal::ServerToSession>>,
+    rooms: HashMap<String, HashSet<Uuid>>,
 }
 
 impl SystemService for SignalingServer {}
@@ -37,15 +35,19 @@ impl Actor for SignalingServer {
 
 impl Default for SignalingServer {
     fn default() -> SignalingServer {
-        // default room
-        // let mut rooms = HashMap::new();
-        // rooms.insert("Main".to_owned(), HashSet::new());
 
         SignalingServer {
-            // sessions: HashMap::new(),
-            // rooms: rooms,
-            // rng: rand::thread_rng(),
+            sessions: HashMap::new(),
+            rooms: HashMap::new(),
         }
+    }
+}
+
+impl Handler<internal::Ping> for SignalingServer {
+    type Result = ();
+
+    fn handle(&mut self, _: internal::Ping, _ctx: &mut Self::Context) -> Self::Result {
+        info!("received ping");
     }
 }
 
@@ -54,12 +56,25 @@ impl Handler<internal::ListRooms> for SignalingServer {
 
     fn handle(&mut self, _: internal::ListRooms, _ctx: &mut Self::Context) -> Self::Result {
         // MessageResult(self.rooms.keys().cloned().collect())
-        debug!("received listrequest from ...");
+        info!("received listrequest from ...");
         MessageResult(
-            vec![
-                String::from("foo"),
-                String::from("bar"),
-            ]
+            self.rooms.keys().cloned().collect()
         )
     }
 }
+
+
+impl Handler<internal::JoinRoom> for SignalingServer {
+    type Result = ();
+
+    fn handle(&mut self, join: internal::JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
+        self.sessions.insert(join.uuid, join.addr);
+        let participants = self.rooms
+            .entry(join.room.clone())
+            .or_insert(Default::default())
+            .insert(join.uuid);
+
+        debug!("rooms: {:?}, paricipants of {:?}: {:#?}", self.rooms, join.room, participants);
+    }
+}
+
