@@ -2,6 +2,7 @@
 // extern crate actix;
 use env_logger::{self, Env};
 use log::{debug, info, trace, warn};
+use listenfd::ListenFd;
 
 use actix_web::server::HttpServer;
 use actix_web::{fs, ws, App, Error, HttpRequest, HttpResponse};
@@ -14,7 +15,8 @@ pub mod server;
 
 use crate::session::*;
 
-const LOG_VAR: &str = "SIGNALIZER_LOG";
+const LOG_VAR: &str = "SIGNALER_LOG";
+const BIND_VAR: &str = "SIGNALER_BIND";
 const BIND_TO: &str = "127.0.0.1:8080";
 
 fn ws_route(req: &HttpRequest<()>) -> Result<HttpResponse, Error> {
@@ -26,12 +28,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if env::var(LOG_VAR).is_err() {
         env::set_var(LOG_VAR, "signalizer=trace,actix_web=info");
     }
-
     env_logger::init_from_env(Env::new().filter(LOG_VAR));
+    let bind_to = env::var(BIND_VAR)
+                .unwrap_or_else(|_| BIND_TO.into());
+
+    let mut listenfd = ListenFd::from_env();
 
     let sys = actix::System::new("signalizer");
 
-    HttpServer::new(move || {
+    let server = || HttpServer::new(move || {
         App::new()
             .resource("/ws/", |r| r.route().f(ws_route))
             .handler(
@@ -40,11 +45,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap()
                     .index_file("index.html"),
             )
-    })
-    .bind(BIND_TO)?
+    });
+
+    if let Some(listener) = listenfd.take_tcp_listener(0).unwrap() {
+        info!("listening on {:?}", listener);
+        server().listen(listener)
+    } else {
+        info!("listening on http://{}", bind_to);
+        server()
+            .bind(bind_to)?
+    }
     .start();
 
-    info!("listening on http://{}", BIND_TO);
     sys.run();
     info!("shutting down I guess");
 
