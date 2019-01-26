@@ -1,8 +1,6 @@
 #![allow(unused_imports)]
-// extern crate actix;
 use env_logger::{self, Env};
 use log::{debug, info, trace, warn};
-use listenfd::ListenFd;
 
 use actix_web::server::HttpServer;
 use actix_web::{fs, ws, App, Error, HttpRequest, HttpResponse};
@@ -32,8 +30,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bind_to = env::var(BIND_VAR)
                 .unwrap_or_else(|_| BIND_TO.into());
 
-    let mut listenfd = ListenFd::from_env();
-
     let sys = actix::System::new("signalizer");
 
     let server = || HttpServer::new(move || {
@@ -47,15 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
     });
 
-    if let Some(listener) = listenfd.take_tcp_listener(0).unwrap() {
-        info!("listening on {:?}", listener);
-        server().listen(listener)
-    } else {
-        info!("listening on http://{}", bind_to);
-        server()
-            .bind(bind_to)?
-    }
-    .start();
+    info!("listening on http://{}", bind_to);
+    server().bind(bind_to)?.start();
 
     sys.run();
     info!("shutting down I guess");
