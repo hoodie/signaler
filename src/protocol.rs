@@ -1,9 +1,12 @@
+//! Public API
+//!
+//! these are messages the http client can send via a [ClientSession](../session/struct.ClientSession.html)
 
 use serde_derive::{Deserialize, Serialize};
 use crate::session::ClientSession;
 use crate::server::RoomId;
 
-/// Command to the server
+/// Command sent to the server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionCommand {
@@ -16,19 +19,23 @@ pub struct SessionCommand {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
-    content: String
+    pub content: String
 }
 
 /// Message Format
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum SessionCommandKind {
+    /// Join a particular room
     Join { room: RoomId },
+    /// Send a message to all participants of that room
     Message { message: ChatMessage, room: RoomId},
+    /// List all rooms
     ListRooms,
+    /// List rooms I'm member of
     ListMyRooms,
+    /// shutdown server 😈
     ShutDown,
-    Err(String),
 }
 
 impl SessionCommand {
@@ -43,16 +50,12 @@ impl SessionCommand {
         SessionCommandKind::ListRooms.into()
     }
 
-    pub fn err(msg: impl Into<String>) -> Self {
-        SessionCommandKind::Err(msg.into()).into()
-    }
-
     pub fn to_json(self) -> String {
         serde_json::to_string(&self).unwrap()
     }
 }
 
-/// Message from the server
+/// Message received from the server
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionMessage {

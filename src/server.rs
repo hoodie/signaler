@@ -153,6 +153,7 @@ pub mod command {
         }
     }
 
+    /// TODO: check if sender is actually participantof that room
     #[derive(Debug, Message)]
     #[rtype(result = "()")]
     pub struct Forward {
