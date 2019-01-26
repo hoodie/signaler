@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8">
+    <title>signaler</title>
 </head>
 
 <body>
@@ -13,9 +14,15 @@
         <hr />
         <input type="button" value="connect" onclick="API.connect()">
         <input type="button" value="join" onclick="API.join()">
-        <input type="button" value="list" onclick="API.list()">
+        <input type="button" value="listAllRooms" onclick="API.listAllRooms()">
+        <input type="button" value="listMyRooms" onclick="API.listMyRooms()">
         <input type="button" value="disconnect" onclick="API.disconnect()">
         <input type="button" value="shutdown" onclick="API.shutdown()">
+    </fieldset>
+    <fieldset>
+        <textarea id="contentText"> </textarea>
+        <hr/>
+        <input type="button" value="send" onclick="API.sendMessage()">
     </fieldset>
 
     <script>
@@ -24,6 +31,11 @@
             let connection;
 
             const connect = () => {
+                if (connection) {
+                    connection.close();
+                    connection = undefined;
+                }
+
                 const protocol = window.location.protocol == 'https:' && 'wss://' || 'ws://';
                 const wsUri = protocol + window.location.host + '/ws/';
                 const socket = new WebSocket(wsUri);
@@ -31,7 +43,7 @@
                     // console.table({ timeStamp, origin });
                     try {
                         const payload = JSON.parse(data);
-                        console.debug(payload);
+                        console.table(payload.kind);
                     } catch (error) {
                         console.error("can't parse payload", { payload: data , error});
                     }
@@ -51,22 +63,26 @@
                 console.debug({ name });
             };
 
-            const join = () => connection.send(JSON.stringify({
-                kind: { join: { room: API.channelName } }
-            }));
+            const sendJson = (anything) => connection.send(JSON.stringify(anything));
+            const makeCommand = (kind) => () => sendJson({kind})
 
-            const list = () => connection.send(JSON.stringify({
-                kind: "listRooms"
-            }));
+            const join = () => connection.send(JSON.stringify(({ kind: { join: { room: API.channelName } } })));
 
-            const shutdown = () => connection.send(JSON.stringify({
-                kind: "shutDown"
-            }));
+            const listAllRooms = makeCommand("listRooms");
+            const listMyRooms = makeCommand("listMyRooms");
+            const shutdown = makeCommand("shutDown");
+
+            const sendMessage = () => {
+                const content = document.querySelector("textarea#contentText").value;
+                sendJson({ kind: {message: { message: {content}, room: API.channelName } } } );
+            }
 
             const API = {
                 channelName: 'default',
                 connect, disconnect,
-                join, list, shutdown
+                join, listAllRooms, listMyRooms,
+                sendMessage,
+                shutdown
             };
 
             document.querySelector('input#channelName').placeholder = API.channelName;
