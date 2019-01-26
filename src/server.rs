@@ -5,17 +5,13 @@
 
 
 use actix::prelude::*;
-use log::{debug, info, trace, warn, error};
+use log::*;
 use uuid::Uuid;
 
 use std::collections::{HashMap, HashSet};
-use std::io;
-
-use crate::protocol::public::*;
-use crate::protocol::internal::{self, RoomId};
 
 pub struct SignalingServer {
-    sessions: HashMap<Uuid, Recipient<internal::ServerToSession>>,
+    sessions: HashMap<Uuid, Recipient<message::ServerToSession>>,
     rooms: HashMap<RoomId, HashSet<Uuid>>,
 }
 
@@ -50,92 +46,167 @@ impl Default for SignalingServer {
     }
 }
 
-//// message Handlers 
+//// messages 
 
-impl Handler<internal::Ping> for SignalingServer {
-    type Result = ();
+use crate::protocol::ChatMessage;
 
-    fn handle(&mut self, _: internal::Ping, _ctx: &mut Self::Context) -> Self::Result {
-        info!("received ping");
+pub type RoomId = String;
+
+pub mod message {
+    //! Backchannel for clients
+    //! 
+    //! Clients must be able to receive
+
+    use actix::prelude::*;
+    use super::{RoomId, ChatMessage};
+
+    #[derive(Message, Debug)]
+    #[rtype(result = "()")]
+    pub enum ServerToSession {
+        ChatMessage {
+            room: RoomId,
+            message: ChatMessage,
+        }
     }
 }
 
-impl Handler<internal::ServerToSession> for SignalingServer {
-    type Result = ();
+pub mod command {
+    //! Messages the server can receive
+    use actix::prelude::*;
+    use log::*;
+    use uuid::Uuid;
+    use super::{RoomId, ChatMessage, SignalingServer};
 
-    fn handle(&mut self, fwd_msg: internal::ServerToSession, ctx: &mut Self::Context) -> Self::Result {
-        use internal::ServerToSession::*;
+    #[derive(Message)]
+    #[rtype(result = "()")]
+    pub struct Ping;
 
-        info!("server received ServerToSession::{:?}", fwd_msg);
-        match fwd_msg {
-            Forward(chat_msg, roomid) => {
-                if let Some(participants) = self.rooms.get(&roomid) {
-                    for participant in participants {
-                    // if let Some(participant) = participants.iter().nth(0) {
-                        let session = self.sessions.get(&participant).unwrap();
+    impl Handler<Ping> for SignalingServer {
+        type Result = ();
 
-                        trace!("forwarding message to {:#?}", participant);
+        fn handle(&mut self, _: Ping, _ctx: &mut Self::Context) -> Self::Result {
+            info!("received ping");
+        }
+    }
 
-                        session
-                            .send(ChatMessage(chat_msg.clone()))
-                            .into_actor(self)
-                            .then(|_,_,_|{
-                                trace!("chatmessages passed on");
-                                fut::ok(())
-                            })
-                            .spawn(ctx);
-                    }
+    #[derive(Message)]
+    #[rtype(result = "Result<(), String>")]
+    pub struct JoinRoom {
+        pub room: String,
+        pub uuid: Uuid,
+        pub addr: Recipient<super::message::ServerToSession>,
+    }
+
+    impl Handler<JoinRoom> for SignalingServer {
+        type Result = MessageResult<JoinRoom>;
+
+        fn handle(&mut self, join: JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
+            self.sessions.insert(join.uuid, join.addr);
+            if join.room.len() == 0 {
+                error!("listname must'n be empty");
+                return MessageResult(Err("listname must'n be empty".into()));
+            }
+
+            let participants = self.rooms
+                .entry(join.room.clone())
+                .or_insert(Default::default())
+                .insert(join.uuid);
+
+            debug!("rooms: {:#?}, paricipants of {:?}: {:#?}", self.rooms, join.room, participants);
+            self.debug_rooms();
+            MessageResult(Ok(()))
+        }
+    }
+    #[derive(Message)]
+    #[rtype(result = "Vec<String>")]
+    pub struct ListRooms;
+
+    impl Handler<ListRooms> for SignalingServer {
+        type Result = MessageResult<ListRooms>;
+        fn handle(&mut self, _: ListRooms, _ctx: &mut Self::Context) -> Self::Result {
+            info!("received listrequest from ...");
+            MessageResult(
+                self.rooms.keys().cloned().collect()
+            )
+        }
+    }
+
+    #[derive(Message)]
+    #[rtype(result = "Vec<String>")]
+    pub struct ListMyRooms {
+        pub uuid: Uuid,
+    }
+
+    impl Handler<ListMyRooms> for SignalingServer {
+        type Result = MessageResult<ListMyRooms>;
+
+        fn handle(&mut self, me: ListMyRooms, _ctx: &mut Self::Context) -> Self::Result {
+            info!("received listrequest from ...");
+            MessageResult(
+                self.rooms
+                    .iter()
+                    .filter(|(_room, participants)| participants.iter().any(|&uuid| uuid == me.uuid))
+                    .map(|(room, _)| room)
+                    .cloned()
+                    .collect()
+            )
+        }
+    }
+
+    #[derive(Debug, Message)]
+    #[rtype(result = "()")]
+    pub struct Forward {
+        pub room: RoomId,
+        pub message: ChatMessage,
+    }
+
+    impl Handler<Forward> for SignalingServer {
+        type Result = ();
+
+        fn handle(&mut self, fwd: Forward, ctx: &mut Self::Context) -> Self::Result {
+            use super::message::ServerToSession;
+
+            info!("server received ServerToSession::{:?}", fwd);
+            if let Some(participants) = self.rooms.get(&fwd.room) {
+                for participant in participants {
+                    let session = self.sessions.get(&participant).unwrap();
+
+                    trace!("forwarding message to {:#?}", participant);
+
+                    session
+                        .send(ServerToSession::ChatMessage {
+                            message: fwd.message.clone(),
+                            room: fwd.room.clone(),
+                        })
+                        .into_actor(self)
+                        .then(|_,_,_|{
+                            trace!("chatmessages passed on");
+                            fut::ok(())
+                        })
+                        .spawn(ctx);
                 }
-            },
-            ChatMessage(msg) => error!("the server should not receive chat messages, use Forward\n{:?}", msg),
+            } else {
+                warn!("no such room {:?}", fwd.room);
+            }
         }
     }
-}
+  
 
-impl Handler<internal::ListRooms> for SignalingServer {
-    type Result = MessageResult<internal::ListRooms>;
-    fn handle(&mut self, _: internal::ListRooms, _ctx: &mut Self::Context) -> Self::Result {
-        info!("received listrequest from ...");
-        MessageResult(
-            self.rooms.keys().cloned().collect()
-        )
+
+    #[derive(Message)]
+    #[rtype(result = "()")]
+    pub struct LeaveRoom {
+        pub room: String,
+        pub uuid: Uuid,
+        pub addr: Recipient<super::message::ServerToSession>,
     }
-}
 
-impl Handler<internal::ListMyRooms> for SignalingServer {
-    type Result = MessageResult<internal::ListMyRooms>;
-
-    fn handle(&mut self, me: internal::ListMyRooms, _ctx: &mut Self::Context) -> Self::Result {
-        info!("received listrequest from ...");
-        MessageResult(
-            self.rooms
-                .iter()
-                .filter(|(_room, participants)| participants.iter().any(|&uuid| uuid == me.uuid))
-                .map(|(room, _)| room)
-                .cloned()
-                .collect()
-        )
+    #[derive(Message)]
+    #[rtype(result = "()")]
+    pub struct LeaveAllRooms {
+        pub room: String,
+        pub uuid: Uuid,
+        pub addr: Recipient<super::message::ServerToSession>,
     }
+
 }
-
-impl Handler<internal::JoinRoom> for SignalingServer {
-    type Result = MessageResult<internal::JoinRoom>;
-
-    fn handle(&mut self, join: internal::JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
-        self.sessions.insert(join.uuid, join.addr);
-        if join.room.len() == 0 {
-            error!("listname must'n be empty");
-            return MessageResult(Err("listname must'n be empty".into()));
-        }
-
-        let participants = self.rooms
-            .entry(join.room.clone())
-            .or_insert(Default::default())
-            .insert(join.uuid);
-
-        debug!("rooms: {:#?}, paricipants of {:?}: {:#?}", self.rooms, join.room, participants);
-        self.debug_rooms();
-        MessageResult(Ok(()))
-    }
-}
-
