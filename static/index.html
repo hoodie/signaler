@@ -30,6 +30,10 @@
         {
             let connection;
 
+            const handleMessage = (message) => {
+                console.log(message)
+            };
+
             const connect = () => {
                 if (connection) {
                     connection.close();
@@ -43,7 +47,7 @@
                     // console.table({ timeStamp, origin });
                     try {
                         const payload = JSON.parse(data);
-                        console.table(payload.kind);
+                        handleMessage(payload);
                     } catch (error) {
                         console.error("can't parse payload", { payload: data , error});
                     }
@@ -64,9 +68,9 @@
             };
 
             const sendJson = (anything) => connection.send(JSON.stringify(anything));
-            const makeCommand = (kind) => () => sendJson({kind})
+            const makeCommand = (type) => () => sendJson({type})
 
-            const join = () => connection.send(JSON.stringify(({ kind: { join: { room: API.channelName } } })));
+            const join = () => connection.send(JSON.stringify(({ type: "join" , room: API.channelName })));
 
             const listAllRooms = makeCommand("listRooms");
             const listMyRooms = makeCommand("listMyRooms");
@@ -74,7 +78,7 @@
 
             const sendMessage = () => {
                 const content = document.querySelector("textarea#contentText").value;
-                sendJson({ kind: {message: { message: {content}, room: API.channelName } } } );
+                sendJson({ type: "message", message: {content}, room: API.channelName } );
             }
 
             const API = {
@@ -82,6 +86,7 @@
                 connect, disconnect,
                 join, listAllRooms, listMyRooms,
                 sendMessage,
+                sendJson,
                 shutdown
             };
 

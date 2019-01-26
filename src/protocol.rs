@@ -6,111 +6,75 @@ use serde_derive::{Deserialize, Serialize};
 use crate::session::ClientSession;
 use crate::server::RoomId;
 
-/// Command sent to the server
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionCommand {
-    pub kind: SessionCommandKind,
-}
-
 /// Actual chat Message
 /// 
-/// is send via `SessionCommandKind::Message` and received via `SessionMessageKind::Message`
+/// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
     pub content: String
 }
 
-/// Message Format
+/// Command sent to the server
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum SessionCommandKind {
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum SessionCommand {
     /// Join a particular room
     Join { room: RoomId },
+
     /// Send a message to all participants of that room
     Message { message: ChatMessage, room: RoomId},
+
     /// List all rooms
     ListRooms,
+
     /// List rooms I'm member of
     ListMyRooms,
+
     /// shutdown server 😈
     ShutDown,
 }
 
 impl SessionCommand {
-
-    pub fn join() -> Self {
-        Self::from(SessionCommandKind::Join{
-            room: String::from("default"),
-        })
-    }
-
-    pub fn list() -> Self {
-        SessionCommandKind::ListRooms.into()
-    }
-
-    pub fn to_json(self) -> String {
-        serde_json::to_string(&self).unwrap()
+    pub fn suggestions() -> String {
+        use SessionCommand::*;
+        let room = "roomName";
+        serde_json::to_string_pretty(&[
+            Join { room: room.into() },
+            Message { message: ChatMessage{ content: "hello world".into() }, room: room.into() },
+            ListRooms,
+            ListMyRooms,
+            ShutDown,
+        ]).unwrap()
     }
 }
 
 /// Message received from the server
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionMessage {
-    pub kind: SessionMessageKind,
-}
-
-/// Message Format
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum SessionMessageKind {
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum SessionMessage {
     Welcome { session: ClientSession },
-    RoomList(Vec<String>),
+    RoomList{ rooms: Vec<String> },
     Message { message: ChatMessage, room: RoomId},
-    Any ( serde_json::Value ),
+    Any{ payload: serde_json::Value },
     Ok, // 200
     Err(String),
 }
 
 impl SessionMessage {
-    pub fn ok() -> Self {
-        Self::from(SessionMessageKind::Ok)
-    }
-
-    /// dev convenience only!
-    pub fn any<T: serde::Serialize>(anything: T) -> Self {
-        Self::from(SessionMessageKind::any(&anything))
-    }
-
     pub fn err(msg: impl Into<String>) -> Self {
-        SessionMessageKind::Err(msg.into()).into()
+        SessionMessage::Err(msg.into()).into()
     }
 
     pub fn to_json(self) -> String {
         serde_json::to_string(&self).unwrap()
     }
-}
 
-impl SessionMessageKind {
     /// dev convenience only!
     pub fn any<T: serde::Serialize>(anything: T) -> Self {
-        SessionMessageKind::Any(serde_json::to_value(&anything).unwrap())
+        SessionMessage::Any {
+            payload: serde_json::to_value(&anything).unwrap()
+        }
     }
 
 }
-
-
-impl From<SessionMessageKind> for SessionMessage {
-    fn from(kind: SessionMessageKind) -> Self {
-        SessionMessage { kind }
-    }
-}
-
-impl From<SessionCommandKind> for SessionCommand {
-    fn from(kind: SessionCommandKind) -> Self {
-        SessionCommand { kind }
-    }
-}
-

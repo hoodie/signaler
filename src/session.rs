@@ -30,38 +30,39 @@ impl ClientSession {
 
         } else {
             warn!("cannot parse: {}", raw_msg);
+            debug!("suggestions:\n{}", SessionCommand::suggestions())
         }
     }
 
     /// react to client messages
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut WebsocketContext<Self>) {
-        match msg.kind {
-            SessionCommandKind::ListRooms => {
+        match msg {
+            SessionCommand::ListRooms => {
                 debug!("received ListRooms signal");
                 self.list_rooms(ctx);
             },
-            SessionCommandKind::Join{ room } => {
+            SessionCommand::Join{ room } => {
                 debug!("requesting to Join {}", room);
                 self.join(&room, ctx);
             },
-            SessionCommandKind::ListMyRooms => {
+            SessionCommand::ListMyRooms => {
                 debug!("received ListMyRooms signal");
                 self.list_my_rooms(ctx);
             },
-            SessionCommandKind::Message{ message, room } => {
+            SessionCommand::Message{ message, room } => {
                 debug!("received message to forward");
                 self.forward_message(message, &room, ctx);
             },
-            SessionCommandKind::ShutDown => {
+            SessionCommand::ShutDown => {
                 debug!("received shut down signal");
                 System::current().stop();
             },
         }
-        Self::send_message(SessionMessageKind::Ok, ctx);
+        Self::send_message(SessionMessage::Ok, ctx);
     }
 
     /// send message to client
-    fn send_message(kind: SessionMessageKind, ctx: &mut WebsocketContext<Self>) {
+    fn send_message(kind: SessionMessage, ctx: &mut WebsocketContext<Self>) {
         ctx.text(SessionMessage::from(kind).to_json())
     }
 
@@ -74,7 +75,7 @@ impl ClientSession {
             .then(|rooms, _, ctx| {
                 debug!("list request answered: {:?}", rooms);
                 match rooms {
-                    Ok(rooms) => Self::send_message(SessionMessageKind::RoomList(rooms), ctx),
+                    Ok(rooms) => Self::send_message(SessionMessage::RoomList{rooms}, ctx),
                     Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
                 }
                 fut::ok(())
@@ -93,7 +94,7 @@ impl ClientSession {
             .then(|rooms, _, ctx| {
                 debug!("my list request answered: {:?}", rooms);
                 match rooms {
-                    Ok(rooms) => Self::send_message(SessionMessageKind::RoomList(rooms), ctx),
+                    Ok(rooms) => Self::send_message(SessionMessage::RoomList{rooms}, ctx),
                     Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
                 }
                 fut::ok(())
@@ -152,7 +153,7 @@ impl Actor for ClientSession {
     type Context = WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("ClientSession started {:?}", self);
-        ClientSession::send_message(SessionMessageKind::Welcome{ session: self.clone() }, ctx); 
+        ClientSession::send_message(SessionMessage::Welcome{ session: self.clone() }, ctx); 
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -167,7 +168,7 @@ impl Handler<server::message::ServerToSession> for ClientSession {
         info!("received message from server {:?}", s2s_msg);
         match s2s_msg {
             server::message::ServerToSession::ChatMessage{ message, room } => {
-                Self::send_message(SessionMessageKind::Message{message, room}, ctx)
+                Self::send_message(SessionMessage::Message{message, room}, ctx)
             },
         }
     }
