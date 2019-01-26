@@ -56,7 +56,6 @@ impl ClientSession {
                 debug!("received shut down signal");
                 System::current().stop();
             },
-            _ => {}
         }
         Self::send_message(SessionMessageKind::Ok, ctx);
     }
