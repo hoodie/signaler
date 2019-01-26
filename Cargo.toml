@@ -1,0 +1,22 @@
+[package]
+name = "signalizer"
+version = "0.1.0"
+authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "0.7"
+log = "0.4"
+env_logger = "0.6"
+build_timestamp = "0.1"
+serde_json = "1.0"
+serde_derive = "1.0"
+serde = "1.0"
+rand = "0.6"
+
+uuid = { version = "0.7.1", features = ["serde"] }
+enum-iterator = "0.2.3"
+
+[dependencies.actix]
+version = "0.7"
+##features = ["signal"]
