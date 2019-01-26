@@ -6,13 +6,12 @@
 
 use ::actix::prelude::*;
 use actix_web::ws::{self, WebsocketContext};
-use log::{debug, info, trace, warn};
+use log::*;
 use uuid::Uuid;
 use serde_derive::Serialize;
 
-use crate::protocol::internal;
-use crate::protocol::public::*;
-use crate::server::SignalingServer;
+use crate::protocol::*;
+use crate::server::{self, SignalingServer};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
@@ -68,7 +67,7 @@ impl ClientSession {
     }
 
     fn list_rooms(&self, ctx: &mut WebsocketContext<Self>) {
-        let msg = internal::ListRooms;
+        let msg = server::command::ListRooms;
 
         SignalingServer::from_registry()
             .send(msg)
@@ -85,7 +84,7 @@ impl ClientSession {
     }
 
     fn list_my_rooms(&self, ctx: &mut WebsocketContext<Self>) {
-        let msg = internal::ListMyRooms {
+        let msg = server::command::ListMyRooms {
             uuid: self.uuid
         };
 
@@ -104,7 +103,7 @@ impl ClientSession {
     }
 
     fn join(&self, room: &str, ctx: &mut WebsocketContext<Self>) {
-        let msg = internal::JoinRoom {
+        let msg = server::command::JoinRoom {
             room: room.into(),
             uuid: self.uuid,
             addr: ctx.address().recipient()
@@ -127,8 +126,8 @@ impl ClientSession {
             .spawn(ctx);
     }
 
-    fn forward_message(&self, chtmsg: ChatMessage, room: &internal::RoomId, ctx: &mut WebsocketContext<Self>) {
-        let msg = internal::ServerToSession::Forward(chtmsg, room.clone());
+    fn forward_message(&self, message: ChatMessage, room: &server::RoomId, ctx: &mut WebsocketContext<Self>) {
+        let msg = server::command::Forward{message, room: room.clone()};
         SignalingServer::from_registry()
             .send(msg)
             .into_actor(self)
@@ -162,21 +161,15 @@ impl Actor for ClientSession {
     }
 }
 
-impl Handler<internal::ServerToSession> for ClientSession {
+impl Handler<server::message::ServerToSession> for ClientSession {
     type Result = ();
 
-    fn handle(&mut self, s2s_msg: internal::ServerToSession, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, s2s_msg: server::message::ServerToSession, ctx: &mut Self::Context) -> Self::Result {
         info!("received message from server {:?}", s2s_msg);
-        use SessionMessageKind::*;
-        use crate::protocol::public::SessionMessage;
-
         match s2s_msg {
-            internal::ServerToSession::ChatMessage(msg) => {
-                Self::send_message(SessionMessageKind::any(msg), ctx)
+            server::message::ServerToSession::ChatMessage{ message, room } => {
+                Self::send_message(SessionMessageKind::Message{message, room}, ctx)
             },
-            _ => {
-                warn!("unhandled {:?}", s2s_msg);
-            }
         }
     }
 }

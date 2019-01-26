@@ -1,11 +1,10 @@
-#![allow(unused_imports)]
 use env_logger::{self, Env};
-use log::{debug, info, trace, warn};
+use log::*;
 
 use actix_web::server::HttpServer;
 use actix_web::{fs, ws, App, Error, HttpRequest, HttpResponse};
 
-use std::{env, error};
+use std::env;
 
 pub mod protocol;
 pub mod session;
