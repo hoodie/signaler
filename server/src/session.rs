@@ -126,6 +126,18 @@ impl ClientSession {
             .spawn(ctx);
     }
 
+    fn leave_all_rooms(&self, ctx: &mut WebsocketContext<Self>) {
+        let msg = server::command::LeaveAllRooms { session_id: self.uuid };
+        SignalingServer::from_registry()
+            .send(msg)
+            .into_actor(self)
+            .then(|_, _, _| {
+                debug!("leaveAllRooms sent");
+                fut::ok(())
+            })
+            .spawn(ctx);
+    }
+
     fn forward_message(&self, message: ChatMessage, room: &server::RoomId, ctx: &mut WebsocketContext<Self>) {
         let msg = server::command::Forward{message, room: room.clone()};
         SignalingServer::from_registry()
@@ -156,8 +168,15 @@ impl Actor for ClientSession {
         ClientSession::send_message(SessionMessage::Welcome{ session: self.clone() }, ctx); 
     }
 
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        debug!("ClientSsession stopped")
+    fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
+        self.leave_all_rooms(ctx);
+        trace!("all rooms left");
+
+        Running::Stop
+    }
+
+    fn stopped(&mut self, ctx: &mut Self::Context) {
+        debug!("ClientSsession stopped");
     }
 }
 

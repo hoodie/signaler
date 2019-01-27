@@ -16,9 +16,29 @@ pub struct SignalingServer {
 }
 
 impl SignalingServer {
-    pub fn debug_rooms(&self) {
+    pub fn print_state(&self) {
         let room_counts = self.rooms.iter().map(|(room, uuids)| (room, uuids.len())).collect::<HashMap<_,_>>();
-        debug!("room participants {:#?}", room_counts);
+        let sessions = self.sessions.keys().collect::<Vec<_>>();
+        debug!("room members {:#?}", room_counts);
+        debug!("sessions {:#?}", sessions);
+    }
+
+    pub fn disconnectSession(&mut self, session_id: &Uuid) {
+
+        if let Some(_) = self.sessions.remove(session_id)  {
+            let mut rooms_to_notify = Vec::new();
+            for (room, members) in &mut self.rooms {
+                if members.remove(session_id) {
+                    rooms_to_notify.push(room.to_owned())
+                }
+            }
+
+            for room in &rooms_to_notify {
+                debug!("somebody ({}) left {}", session_id, room);
+                // TODO: send out notification
+            }
+        }
+
     }
 }
 
@@ -113,7 +133,7 @@ pub mod command {
                 .insert(join.uuid);
 
             debug!("rooms: {:#?}, paricipants of {:?}: {:#?}", self.rooms, join.room, participants);
-            self.debug_rooms();
+            self.print_state();
             MessageResult(Ok(()))
         }
     }
@@ -205,9 +225,21 @@ pub mod command {
     #[derive(Message)]
     #[rtype(result = "()")]
     pub struct LeaveAllRooms {
-        pub room: String,
-        pub uuid: Uuid,
-        pub addr: Recipient<super::message::ServerToSession>,
+        pub session_id: Uuid,
+    }
+
+    impl Handler<LeaveAllRooms> for SignalingServer {
+        type Result = ();
+
+        fn handle(&mut self, leave: LeaveAllRooms, _ctx: &mut Self::Context) -> Self::Result {
+            debug!("SESSION LEAVING: {}", leave.session_id);
+            self.print_state();
+            self.disconnectSession(&leave.session_id);
+
+            trace!("SESSION LEFT: {}", leave.session_id);
+            self.print_state();
+        }
+
     }
 
 }
