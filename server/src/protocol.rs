@@ -55,6 +55,7 @@ impl SessionCommand {
 pub enum SessionMessage {
     Welcome { session: ClientSession },
     RoomList{ rooms: Vec<String> },
+    MyRoomList{ rooms: Vec<String> },
     Message { message: ChatMessage, room: RoomId},
     Any{ payload: serde_json::Value },
     Ok, // 200

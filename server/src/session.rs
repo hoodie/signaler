@@ -94,7 +94,7 @@ impl ClientSession {
             .then(|rooms, _, ctx| {
                 debug!("my list request answered: {:?}", rooms);
                 match rooms {
-                    Ok(rooms) => Self::send_message(SessionMessage::RoomList{rooms}, ctx),
+                    Ok(rooms) => Self::send_message(SessionMessage::MyRoomList{rooms}, ctx),
                     Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
                 }
                 fut::ok(())
