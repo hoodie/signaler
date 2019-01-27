@@ -23,7 +23,7 @@ impl SignalingServer {
         debug!("sessions {:#?}", sessions);
     }
 
-    pub fn disconnectSession(&mut self, session_id: &Uuid) {
+    pub fn disconnect_session(&mut self, session_id: &Uuid) {
 
         if let Some(_) = self.sessions.remove(session_id)  {
             let mut rooms_to_notify = Vec::new();
@@ -32,6 +32,8 @@ impl SignalingServer {
                     rooms_to_notify.push(room.to_owned())
                 }
             }
+
+            self.rooms = self.rooms.drain().filter(|(_, members)| members.len() > 0).collect();
 
             for room in &rooms_to_notify {
                 debug!("somebody ({}) left {}", session_id, room);
@@ -234,7 +236,7 @@ pub mod command {
         fn handle(&mut self, leave: LeaveAllRooms, _ctx: &mut Self::Context) -> Self::Result {
             debug!("SESSION LEAVING: {}", leave.session_id);
             self.print_state();
-            self.disconnectSession(&leave.session_id);
+            self.disconnect_session(&leave.session_id);
 
             trace!("SESSION LEFT: {}", leave.session_id);
             self.print_state();

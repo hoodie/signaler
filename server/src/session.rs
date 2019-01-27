@@ -175,8 +175,8 @@ impl Actor for ClientSession {
         Running::Stop
     }
 
-    fn stopped(&mut self, ctx: &mut Self::Context) {
-        debug!("ClientSsession stopped");
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        debug!("ClientSsession stopped: {}", self.uuid);
     }
 }
 
