@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .resource("/ws/", |r| r.route().f(ws_route))
             .handler(
                 "/",
-                fs::StaticFiles::new("./static/")
+                fs::StaticFiles::new("../static/")
                     .unwrap()
                     .index_file("index.html"),
             )
