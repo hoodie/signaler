@@ -11,12 +11,16 @@ export type Command =
     | CommandListMyRooms
     | CommandShutdown;
 
-export interface MessageWelcome { type: 'welcome', session: { uuid: string } }
+export interface MessageWelcome { type: 'welcome', session: SessionDescription }
 export interface MessageRoomList { type: 'roomList', rooms: string[] }
 export interface MessageMyRoomList { type: 'myRoomList', rooms: string[] }
 export interface MessageMessage { type: 'message', message: ChatMessage }
 export interface MessageAny { type: 'any', payload: any }
 export interface MessageOk { type: 'ok' }
+
+export interface SessionDescription {
+    uuid: string;
+}
 
 export interface ChatMessage {
     content: string;

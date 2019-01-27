@@ -1,14 +1,33 @@
-import { Command, Message, ChatMessage } from './protocol'
+import { Signal } from 'micro-signals';
 
-export function hiThere() {
-    console.info("hi there")
-}
+import { Command, Message, ChatMessage, MessageWelcome, SessionDescription } from './protocol'
+
+export { Command, Message, ChatMessage, MessageWelcome, SessionDescription };
 
 export class Session {
-    private connection: WebSocket;
+    private connection?: WebSocket;
 
-    constructor(url: string) {
-        this.connection = new WebSocket(url);
+    public sessionId?: string;
+
+    private _onWelcome = new Signal<SessionDescription>();
+    public readonly onWelcome = this._onWelcome.readOnly();
+
+    public readonly onReceive = new Signal<any>();
+    public readonly onRoomList = new Signal<string[]>();
+    public readonly onMyRoomList = new Signal<string[]>();
+    public readonly onMessage = new Signal<ChatMessage>();
+
+    public readonly onConnectionClose = new Signal<CloseEvent>();
+    public readonly onConnectionError = new Signal<Event>();
+
+    constructor(private url: string) {
+        this.onReceive.add(console.debug);
+    }
+
+    public connect() {
+        if (this.connection) return;
+        this.connection = new WebSocket(this.url);
+
         this.connection.onmessage = (rawMsg: MessageEvent) => {
             try {
                 this.handle(JSON.parse(rawMsg.data));
@@ -16,30 +35,32 @@ export class Session {
                 console.error("can't parse", rawMsg.data);
             }
         };
+
+        this.connection.onclose = (ev: CloseEvent) => this.onConnectionClose.dispatch(ev);
+        this.connection.onerror = (ev: Event) => this.onConnectionError.dispatch(ev);
+    }
+
+    public disconnect() {
+        if (!this.connection) return;
+
+        this.connection.close();
+        this.connection = undefined;
     }
 
     private handle(msg: Message) {
+        this.onReceive.dispatch(msg);
         switch (msg.type) {
-            case 'welcome': return console.info("welcome", msg.session);
-            case 'roomList': return this.handleRooms(msg.rooms);
-            case 'myRoomList': return this.handleMyRooms(msg.rooms);
-            case 'message': return this.handleChatMessage(msg.message);
+            case 'welcome': return this._onWelcome.dispatch(msg.session);
+            case 'roomList': return this.onRoomList.dispatch(msg.rooms);
+            case 'myRoomList': return this.onMyRoomList.dispatch(msg.rooms);
+            case 'message': return this.onMessage.dispatch(msg.message);
             case 'any': return console.debug(msg.payload);
             default: return console.warn('unhandle message', msg);
         }
     }
 
-    public handleRooms = (rooms: string[]) =>
-        console.info('all possible rooms' , rooms );
-
-    public handleMyRooms = (rooms: string[]) =>
-        console.info("I'm participating in " , rooms );
-
-    public handleChatMessage = (message: ChatMessage) =>
-        console.info('❤️ received', { message })
-
     public sendCommand(cmd: Command) {
-        this.connection.send(JSON.stringify(cmd));
+        this.connection && this.connection.send(JSON.stringify(cmd));
     }
 
     public join(room: string) {

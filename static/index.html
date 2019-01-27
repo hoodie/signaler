@@ -4,102 +4,13 @@
 <head>
     <meta charset="utf-8">
     <title>signaler</title>
+    <style>
+    body {
+        background: #000;
+        color: #ffffff;
+    }
+    </style>
 </head>
-
-<body>
-    <h1>hello signalizer</h1>
-
-    <fieldset>
-        <input type="text" name="channelName" id="channelName">
-        <hr />
-        <input type="button" value="connect" onclick="API.connect()">
-        <input type="button" value="join" onclick="API.join()">
-        <input type="button" value="listAllRooms" onclick="API.listAllRooms()">
-        <input type="button" value="listMyRooms" onclick="API.listMyRooms()">
-        <input type="button" value="disconnect" onclick="API.disconnect()">
-        <input type="button" value="shutdown" onclick="API.shutdown()">
-    </fieldset>
-    <fieldset>
-        <textarea id="contentText"> </textarea>
-        <hr/>
-        <input type="button" value="send" onclick="API.sendMessage()">
-    </fieldset>
-
-    <script>
-        // @ts-check
-        {
-            let connection;
-
-            const handleMessage = (message) => {
-                console.log(message)
-            };
-
-            const connect = () => {
-                if (connection) {
-                    connection.close();
-                    connection = undefined;
-                }
-
-                const protocol = window.location.protocol == 'https:' && 'wss://' || 'ws://';
-                const wsUri = protocol + window.location.host + '/ws/';
-                const socket = new WebSocket(wsUri);
-                socket.onmessage = ({ data, timeStamp, origin }) => {
-                    // console.table({ timeStamp, origin });
-                    try {
-                        const payload = JSON.parse(data);
-                        handleMessage(payload);
-                    } catch (error) {
-                        console.error("can't parse payload", { payload: data , error});
-                    }
-                };
-                socket.onerror = (error) => console.error(error);
-                socket.onclose = (error) => console.warn("closed", error);
-                connection = socket
-
-                console.info({ protocol, wsUri, connection })
-            };
-
-            const disconnect = () => {
-                connection.close();
-            };
-
-            const changeChannel = (name) => {
-                console.debug({ name });
-            };
-
-            const sendJson = (anything) => connection.send(JSON.stringify(anything));
-            const makeCommand = (type) => () => sendJson({type})
-
-            const join = () => connection.send(JSON.stringify(({ type: "join" , room: API.channelName })));
-
-            const listAllRooms = makeCommand("listRooms");
-            const listMyRooms = makeCommand("listMyRooms");
-            const shutdown = makeCommand("shutDown");
-
-            const sendMessage = () => {
-                const content = document.querySelector("textarea#contentText").value;
-                sendJson({ type: "message", message: {content}, room: API.channelName } );
-            }
-
-            const API = {
-                channelName: 'default',
-                connect, disconnect,
-                join, listAllRooms, listMyRooms,
-                sendMessage,
-                sendJson,
-                shutdown
-            };
-
-            document.querySelector('input#channelName').placeholder = API.channelName;
-            document.querySelector('input#channelName').onkeyup = ({ target: { value } }) => API.channelName = value;
-            if (!!document.querySelector('input#channelName').value) {
-                API.channelName = document.querySelector('input#channelName').value
-                console.debug(`reusing channelName ${API.channelName}`);
-            } 
-            window.API = API;
-        }
-
-    </script>
 
     <div id="app"></div>
     <script src="app.bundle.js"></script>
