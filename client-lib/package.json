@@ -1,0 +1,11 @@
+{
+  "name": "signaler-client",
+  "version": "0.1.0",
+  "main": "lib/index.js",
+  "author": "Hendrik Sollich",
+  "license": "MIT/Apache-2.0",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^3.2.4"
+  }
+}
