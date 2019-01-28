@@ -151,8 +151,6 @@ impl ClientSession {
     }
 }
 
-// TODO: imple drop to delete sessions | add keepalive
-
 impl Default for ClientSession {
     fn default() -> Self {
         Self {

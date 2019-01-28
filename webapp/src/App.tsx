@@ -24,6 +24,10 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
         this.session = props.session;
 
         this.session.onWelcome.add(sessionDescription => this.setState({ sessionDescription }));
+        this.session.onConnectionClose.add(event => {
+            console.error(event);
+            this.props.onDisconnect();
+        });
     }
 
     private selectChannel: React.ChangeEventHandler<HTMLInputElement> = ({ target: { value } }) => {

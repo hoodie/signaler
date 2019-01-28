@@ -15,7 +15,6 @@ serde = "1.0"
 rand = "0.6"
 
 uuid = { version = "0.7.1", features = ["serde"] }
-enum-iterator = "0.2.3"
 
 [dependencies.actix]
 version = "0.7"

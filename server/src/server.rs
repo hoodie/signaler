@@ -8,8 +8,12 @@ use actix::prelude::*;
 use log::*;
 use uuid::Uuid;
 
+use crate::protocol::ChatMessage;
+
 use std::collections::{HashMap, HashSet};
 
+
+pub type RoomId = String;
 pub type SessionId = Uuid;
 
 pub struct SignalingServer {
@@ -22,7 +26,7 @@ impl SignalingServer {
         let room_counts = self.rooms.iter().map(|(room, uuids)| (room, uuids.len())).collect::<HashMap<_,_>>();
         let sessions = self.sessions.keys().collect::<Vec<_>>();
         debug!("room members {:#?}", room_counts);
-        debug!("sessions {:#?}", sessions);
+        debug!("sessions {:?}", sessions);
     }
 
     pub fn disconnect_session(&mut self, session_id: &SessionId) {
@@ -71,10 +75,6 @@ impl Default for SignalingServer {
 }
 
 //// messages 
-
-use crate::protocol::ChatMessage;
-
-pub type RoomId = String;
 
 pub mod message {
     //! Backchannel for clients
@@ -130,12 +130,21 @@ pub mod command {
                 return MessageResult(Err("listname must'n be empty".into()));
             }
 
-            let participants = self.rooms
+            let newly_joined = self.rooms
                 .entry(join.room.clone())
                 .or_insert(Default::default())
                 .insert(join.session_id);
 
-            debug!("rooms: {:#?}, paricipants of {:?}: {:#?}", self.rooms, join.room, participants);
+            if newly_joined {
+                debug!(
+                    "rooms: {}, paricipants of {:?}",
+                    serde_json::to_string_pretty(&self.rooms).unwrap(),
+                    join.room
+                    );
+            } else {
+                debug!("{} attempts to join {:?} again", join.session_id, join.room)
+            }
+
             self.print_state();
             MessageResult(Ok(()))
         }
