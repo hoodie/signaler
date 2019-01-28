@@ -11,11 +11,11 @@ use uuid::Uuid;
 use serde_derive::Serialize;
 
 use crate::protocol::*;
-use crate::server::{self, SignalingServer};
+use crate::server::{self, SignalingServer, SessionId};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
-    uuid: Uuid,
+    session_id: SessionId,
 }
 
 impl ClientSession {
@@ -85,7 +85,7 @@ impl ClientSession {
 
     fn list_my_rooms(&self, ctx: &mut WebsocketContext<Self>) {
         let msg = server::command::ListMyRooms {
-            uuid: self.uuid
+            session_id: self.session_id
         };
 
         SignalingServer::from_registry()
@@ -105,7 +105,7 @@ impl ClientSession {
     fn join(&self, room: &str, ctx: &mut WebsocketContext<Self>) {
         let msg = server::command::JoinRoom {
             room: room.into(),
-            uuid: self.uuid,
+            session_id: self.session_id,
             addr: ctx.address().recipient()
         };
 
@@ -127,7 +127,7 @@ impl ClientSession {
     }
 
     fn leave_all_rooms(&self, ctx: &mut WebsocketContext<Self>) {
-        let msg = server::command::LeaveAllRooms { session_id: self.uuid };
+        let msg = server::command::LeaveAllRooms { session_id: self.session_id };
         SignalingServer::from_registry()
             .send(msg)
             .into_actor(self)
@@ -156,7 +156,7 @@ impl ClientSession {
 impl Default for ClientSession {
     fn default() -> Self {
         Self {
-            uuid: Uuid::new_v4()
+            session_id: Uuid::new_v4()
         }
     }
 }
@@ -176,7 +176,7 @@ impl Actor for ClientSession {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        debug!("ClientSsession stopped: {}", self.uuid);
+        debug!("ClientSsession stopped: {}", self.session_id);
     }
 }
 

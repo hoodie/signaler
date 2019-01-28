@@ -10,9 +10,11 @@ use uuid::Uuid;
 
 use std::collections::{HashMap, HashSet};
 
+pub type SessionId = Uuid;
+
 pub struct SignalingServer {
-    sessions: HashMap<Uuid, Recipient<message::ServerToSession>>,
-    rooms: HashMap<RoomId, HashSet<Uuid>>,
+    sessions: HashMap<SessionId, Recipient<message::ServerToSession>>,
+    rooms: HashMap<RoomId, HashSet<SessionId>>,
 }
 
 impl SignalingServer {
@@ -23,7 +25,7 @@ impl SignalingServer {
         debug!("sessions {:#?}", sessions);
     }
 
-    pub fn disconnect_session(&mut self, session_id: &Uuid) {
+    pub fn disconnect_session(&mut self, session_id: &SessionId) {
 
         if let Some(_) = self.sessions.remove(session_id)  {
             let mut rooms_to_notify = Vec::new();
@@ -96,8 +98,7 @@ pub mod command {
     //! Messages the server can receive
     use actix::prelude::*;
     use log::*;
-    use uuid::Uuid;
-    use super::{RoomId, ChatMessage, SignalingServer};
+    use super::{RoomId, ChatMessage, SignalingServer, SessionId};
 
     #[derive(Message)]
     #[rtype(result = "()")]
@@ -115,7 +116,7 @@ pub mod command {
     #[rtype(result = "Result<(), String>")]
     pub struct JoinRoom {
         pub room: String,
-        pub uuid: Uuid,
+        pub session_id: SessionId,
         pub addr: Recipient<super::message::ServerToSession>,
     }
 
@@ -123,7 +124,7 @@ pub mod command {
         type Result = MessageResult<JoinRoom>;
 
         fn handle(&mut self, join: JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
-            self.sessions.insert(join.uuid, join.addr);
+            self.sessions.insert(join.session_id, join.addr);
             if join.room.len() == 0 {
                 error!("listname must'n be empty");
                 return MessageResult(Err("listname must'n be empty".into()));
@@ -132,7 +133,7 @@ pub mod command {
             let participants = self.rooms
                 .entry(join.room.clone())
                 .or_insert(Default::default())
-                .insert(join.uuid);
+                .insert(join.session_id);
 
             debug!("rooms: {:#?}, paricipants of {:?}: {:#?}", self.rooms, join.room, participants);
             self.print_state();
@@ -156,7 +157,7 @@ pub mod command {
     #[derive(Message)]
     #[rtype(result = "Vec<String>")]
     pub struct ListMyRooms {
-        pub uuid: Uuid,
+        pub session_id: SessionId,
     }
 
     impl Handler<ListMyRooms> for SignalingServer {
@@ -167,7 +168,7 @@ pub mod command {
             MessageResult(
                 self.rooms
                     .iter()
-                    .filter(|(_room, participants)| participants.iter().any(|&uuid| uuid == me.uuid))
+                    .filter(|(_room, participants)| participants.iter().any(|&session_id| session_id == me.session_id))
                     .map(|(room, _)| room)
                     .cloned()
                     .collect()
@@ -220,14 +221,14 @@ pub mod command {
     #[rtype(result = "()")]
     pub struct LeaveRoom {
         pub room: String,
-        pub uuid: Uuid,
+        pub session_id: SessionId,
         pub addr: Recipient<super::message::ServerToSession>,
     }
 
     #[derive(Message)]
     #[rtype(result = "()")]
     pub struct LeaveAllRooms {
-        pub session_id: Uuid,
+        pub session_id: SessionId,
     }
 
     impl Handler<LeaveAllRooms> for SignalingServer {
