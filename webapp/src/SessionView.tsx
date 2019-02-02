@@ -17,18 +17,18 @@ const RoomSelector = ({ rooms, onSelect }: { rooms: string[], onSelect: Fn<strin
 interface SendFormProps { onSend: Fn<string> }
 
 class SendForm extends React.Component<SendFormProps, { content: string }> {
-  constructor(props: SendFormProps) {
-    super(props);
-  }
+    constructor(props: SendFormProps) {
+        super(props);
+    }
 
-  handleContent = ({target: {value: content}}: React.ChangeEvent<HTMLTextAreaElement>) => {
+    handleContent = ({ target: { value: content } }: React.ChangeEvent<HTMLInputElement>) => {
       this.setState({ content })
-  };
+    };
 
     render() {
         return (
             <fieldset>
-                <textarea name="" onChange={this.handleContent} id="" cols={30} rows={10} />
+                <input type="text" onChange={this.handleContent} id="" />
                 <button onClick={() => this.props.onSend(this.state.content)}>send</button>
             </fieldset>
         );
@@ -45,6 +45,7 @@ interface SessionViewState {
     myrooms: string[];
     roomToSendTo: string;
     roomToJoin: string;
+    receivedMessagesByRoom: { [index: string]: string[] },
 
     sessionDescription?: SessionDescription;
 }
@@ -57,6 +58,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
         this.state = {
             rooms: [],
             myrooms: [],
+            receivedMessagesByRoom: {},
             roomToJoin: "default",
             roomToSendTo: "default"
         };
@@ -81,6 +83,15 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
         this.session.onMyRoomList.add(myrooms => {
             console.debug("onMyRoomList", myrooms)
             this.setState({ myrooms })
+        });
+
+        this.session.onMessage.add(({ message, room }) => {
+            console.debug(room, message)
+            const receivedMessagesByRoom = {...this.state.receivedMessagesByRoom };
+            const oldRoomMessages = receivedMessagesByRoom[room] || [];
+            receivedMessagesByRoom[room] = [...oldRoomMessages, message.content]
+            console.debug({receivedMessagesByRoom})
+            this.setState({ receivedMessagesByRoom })
         });
 
         (window as any).session = this.session;
@@ -117,6 +128,10 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                     <div>
                         my rooms
                         <RoomSelector rooms={this.state.myrooms} onSelect={ roomToSendTo => this.setState({ roomToSendTo }) } />
+                        <ul>{
+                            (this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []).map(msg => <li key={msg}>{msg}</li>)
+
+                        }</ul>
                         <SendForm onSend={this.sendToRoom} />
                     </div>
                 </div>

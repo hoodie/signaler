@@ -14,7 +14,7 @@ export type Command =
 export interface MessageWelcome { type: 'welcome', session: SessionDescription }
 export interface MessageRoomList { type: 'roomList', rooms: string[] }
 export interface MessageMyRoomList { type: 'myRoomList', rooms: string[] }
-export interface MessageMessage { type: 'message', message: ChatMessage }
+export interface MessageMessage { type: 'message', message: ChatMessage, room: string }
 export interface MessageAny { type: 'any', payload: any }
 export interface MessageOk { type: 'ok' }
 
@@ -36,7 +36,7 @@ export type Message =
 
 export function handleMessage(msg: Message) {
     switch (msg.type)  {
-        case 'welcome': return console.log(`yay, welcome, you are ${msg.session.uuid}`); 
+        case 'welcome': return console.log(`yay, welcome, you are ${msg.session.uuid}`);
         default: return console.warn('unhandled', msg);
     }
 }

@@ -17,6 +17,10 @@ export class App extends React.Component<{}, AppState> {
         };
     }
 
+    protected componentDidMount() {
+        this.createSession();
+    }
+
     private createSession = () => {
         const session = new Session('ws://localhost:8080/ws/')
         this.setState({ session });
@@ -30,15 +34,17 @@ export class App extends React.Component<{}, AppState> {
     render() {
         let sessionView;
         if (!!this.state.session) {
-            sessionView = <SessionView session={this.state.session} onDisconnect={this.deleteSession}/>
+            sessionView = <SessionView session={this.state.session} onDisconnect={this.deleteSession} />
         } else {
-            sessionView = <div>no session yet</div>;
+            sessionView = <div>
+                no session yet
+                <button onClick={this.createSession}> create new Session</button>
+            </div>;
         }
 
         return (
             <React.Fragment>
                 <h2>Signaler</h2>
-                <button onClick={this.createSession}> create new Session</button>
                 {sessionView}
             </React.Fragment>
         )

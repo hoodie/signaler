@@ -1,6 +1,6 @@
 import { Signal } from 'micro-signals';
 
-import { Command, Message, ChatMessage, MessageWelcome, SessionDescription } from './protocol'
+import { Command, Message, ChatMessage, MessageWelcome, SessionDescription, MessageMessage } from './protocol'
 
 export { Command, Message, ChatMessage, MessageWelcome, SessionDescription };
 
@@ -15,13 +15,13 @@ export class Session {
     public readonly onReceive = new Signal<any>();
     public readonly onRoomList = new Signal<string[]>();
     public readonly onMyRoomList = new Signal<string[]>();
-    public readonly onMessage = new Signal<ChatMessage>();
+    public readonly onMessage = new Signal<MessageMessage>();
 
     public readonly onConnectionClose = new Signal<CloseEvent>();
     public readonly onConnectionError = new Signal<Event>();
 
     constructor(private url: string) {
-        this.onReceive.add(console.debug);
+        this.onReceive.add(m => console.debug('received', m));
     }
 
     public connect() {
@@ -29,10 +29,11 @@ export class Session {
         this.connection = new WebSocket(this.url);
 
         this.connection.onmessage = (rawMsg: MessageEvent) => {
+            console.debug({rawMsg})
             try {
                 this.handle(JSON.parse(rawMsg.data));
-            } catch (e) {
-                console.error("can't parse", rawMsg.data);
+            } catch (error) {
+                console.error("can't parse", rawMsg.data, error);
             }
         };
 
@@ -53,13 +54,18 @@ export class Session {
             case 'welcome': return this._onWelcome.dispatch(msg.session);
             case 'roomList': return this.onRoomList.dispatch(msg.rooms);
             case 'myRoomList': return this.onMyRoomList.dispatch(msg.rooms);
-            case 'message': return this.onMessage.dispatch(msg.message);
+            case 'message': {
+                console.info("chatmessage received", msg);
+                this.onMessage.dispatch(msg);
+                return;
+            }
             case 'any': return console.debug(msg.payload);
             default: return console.warn('unhandle message', msg);
         }
     }
 
     public sendCommand(cmd: Command) {
+        console.debug("sending", cmd)
         this.connection && this.connection.send(JSON.stringify(cmd));
     }
 
