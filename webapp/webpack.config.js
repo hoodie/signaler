@@ -9,7 +9,7 @@ module.exports = {
     },
 
     entry: {
-        app: './src/App.tsx'
+        app: './src/index.tsx'
     },
 
     module: {
