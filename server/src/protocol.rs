@@ -7,7 +7,7 @@ use crate::session::ClientSession;
 use crate::server::RoomId;
 
 /// Actual chat Message
-/// 
+///
 /// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -59,12 +59,12 @@ pub enum SessionMessage {
     Message { message: ChatMessage, room: RoomId},
     Any{ payload: serde_json::Value },
     Ok, // 200
-    Err(String),
+    Error { message: String },
 }
 
 impl SessionMessage {
     pub fn err(msg: impl Into<String>) -> Self {
-        SessionMessage::Err(msg.into()).into()
+        SessionMessage::Error{ message: msg.into()}
     }
 
     pub fn to_json(self) -> String {

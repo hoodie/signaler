@@ -74,11 +74,11 @@ impl Default for SignalingServer {
     }
 }
 
-//// messages 
+//// messages
 
 pub mod message {
     //! Backchannel for clients
-    //! 
+    //!
     //! Clients must be able to receive
 
     use actix::prelude::*;
@@ -185,22 +185,29 @@ pub mod command {
         }
     }
 
-    /// TODO: check if sender is actually participantof that room
     #[derive(Debug, Message)]
-    #[rtype(result = "()")]
+    #[rtype(result = "Result<(), String>")]
     pub struct Forward {
         pub room: RoomId,
         pub message: ChatMessage,
+        pub sender: SessionId,
     }
 
     impl Handler<Forward> for SignalingServer {
-        type Result = ();
+        type Result = MessageResult<Forward>;
 
         fn handle(&mut self, fwd: Forward, ctx: &mut Self::Context) -> Self::Result {
             use super::message::ServerToSession;
 
             info!("server received ServerToSession::{:?}", fwd);
-            if let Some(participants) = self.rooms.get(&fwd.room) {
+
+            let Forward {room, sender, message} = fwd;
+
+            if let Some(participants) = self.rooms.get(&room) {
+                if !participants.contains(&sender) {
+                    warn!("sender not in room {:?} {}", room, sender);
+                    return MessageResult(Err(format!("not member of this room {}", room)));
+                }
                 for participant in participants {
                     let session = self.sessions.get(&participant).unwrap();
 
@@ -208,8 +215,8 @@ pub mod command {
 
                     session
                         .send(ServerToSession::ChatMessage {
-                            message: fwd.message.clone(),
-                            room: fwd.room.clone(),
+                            message: message.clone(),
+                            room: room.clone(),
                         })
                         .into_actor(self)
                         .then(|_,_,_|{
@@ -219,11 +226,13 @@ pub mod command {
                         .spawn(ctx);
                 }
             } else {
-                warn!("no such room {:?}", fwd.room);
+                warn!("no such room {:?}", room);
+                return MessageResult(Err(format!("not member of this room {}", room)));
             }
+            MessageResult(Ok(()))
         }
     }
-  
+
 
 
     #[derive(Message)]

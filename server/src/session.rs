@@ -58,7 +58,6 @@ impl ClientSession {
                 System::current().stop();
             },
         }
-        Self::send_message(SessionMessage::Ok, ctx);
     }
 
     /// send message to client
@@ -139,12 +138,26 @@ impl ClientSession {
     }
 
     fn forward_message(&self, message: ChatMessage, room: &server::RoomId, ctx: &mut WebsocketContext<Self>) {
-        let msg = server::command::Forward{message, room: room.clone()};
+        let msg = server::command::Forward{
+            message,
+            room: room.clone(),
+            sender: self.session_id
+        };
         SignalingServer::from_registry()
             .send(msg)
             .into_actor(self)
-            .then(|_, _, _ctx| {
-                debug!("message forwared");
+            .then(|resp, _, ctx| {
+                debug!("message forwared -> {:?}", resp);
+                match resp {
+                    Ok(Err(message)) => {
+                        debug!("message rejected {:?}", message);
+                        Self::send_message(SessionMessage::Error{message}, ctx)
+                    },
+                    Ok(mr) => {
+                        debug!("ok after all -> {:?}", mr);
+                    }
+                    Err(error) => Self::send_message(SessionMessage::Error{ message: error.to_string()}, ctx)
+                }
                 fut::ok(())
             })
             .spawn(ctx);
@@ -163,7 +176,7 @@ impl Actor for ClientSession {
     type Context = WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("ClientSession started {:?}", self);
-        ClientSession::send_message(SessionMessage::Welcome{ session: self.clone() }, ctx); 
+        ClientSession::send_message(SessionMessage::Welcome{ session: self.clone() }, ctx);
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
