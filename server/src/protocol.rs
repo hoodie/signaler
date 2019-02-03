@@ -4,7 +4,7 @@
 
 use serde_derive::{Deserialize, Serialize};
 use crate::session::ClientSession;
-use crate::server::RoomId;
+use crate::server::{RoomId, SessionId};
 
 /// Actual chat Message
 ///
@@ -12,7 +12,17 @@ use crate::server::RoomId;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
-    pub content: String
+    pub content: String,
+    pub sender: String,
+}
+
+impl ChatMessage {
+    pub fn new(content: String, sender: SessionId) -> Self {
+        Self {
+            content,
+            sender: sender.to_string()
+        }
+    }
 }
 
 /// Command sent to the server
@@ -23,7 +33,7 @@ pub enum SessionCommand {
     Join { room: RoomId },
 
     /// Send a message to all participants of that room
-    Message { message: ChatMessage, room: RoomId},
+    Message { message: String , room: RoomId},
 
     /// List all rooms
     ListRooms,
@@ -41,7 +51,7 @@ impl SessionCommand {
         let room = "roomName";
         serde_json::to_string_pretty(&[
             Join { room: room.into() },
-            Message { message: ChatMessage{ content: "hello world".into() }, room: room.into() },
+            Message { message:  "hello world".into(), room: room.into() },
             ListRooms,
             ListMyRooms,
             ShutDown,
@@ -54,11 +64,17 @@ impl SessionCommand {
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum SessionMessage {
     Welcome { session: ClientSession },
-    RoomList{ rooms: Vec<String> },
-    MyRoomList{ rooms: Vec<String> },
+
+    RoomList { rooms: Vec<String> },
+
+    MyRoomList { rooms: Vec<String> },
+
     Message { message: ChatMessage, room: RoomId},
-    Any{ payload: serde_json::Value },
+
+    Any { payload: serde_json::Value },
+
     Ok, // 200
+
     Error { message: String },
 }
 

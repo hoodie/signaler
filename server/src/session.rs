@@ -51,7 +51,7 @@ impl ClientSession {
             },
             SessionCommand::Message{ message, room } => {
                 debug!("received message to forward");
-                self.forward_message(message, &room, ctx);
+                self.forward_message( message, &room, ctx);
             },
             SessionCommand::ShutDown => {
                 debug!("received shut down signal");
@@ -137,9 +137,12 @@ impl ClientSession {
             .spawn(ctx);
     }
 
-    fn forward_message(&self, message: ChatMessage, room: &server::RoomId, ctx: &mut WebsocketContext<Self>) {
-        let msg = server::command::Forward{
-            message,
+    fn forward_message(&self, content: String, room: &server::RoomId, ctx: &mut WebsocketContext<Self>) {
+        let msg = server::command::Forward {
+            message: ChatMessage {
+                content,
+                sender: self.session_id.to_string()
+            },
             room: room.clone(),
             sender: self.session_id
         };
