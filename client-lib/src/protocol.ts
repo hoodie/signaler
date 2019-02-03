@@ -1,8 +1,8 @@
-export interface CommandJoin { type: "join", room: string }
-export interface CommandMessage { type: "message", message: { content: string }, room: string }
-export interface CommandListRooms { type: "listRooms" }
-export interface CommandListMyRooms { type: "listMyRooms" }
-export interface CommandShutdown { type: "shutDown" };
+export interface CommandJoin { type: 'join', room: string }
+export interface CommandMessage { type: 'message', message: string , room: string }
+export interface CommandListRooms { type: 'listRooms' }
+export interface CommandListMyRooms { type: 'listMyRooms' }
+export interface CommandShutdown { type: 'shutDown' };
 
 export type Command =
     | CommandJoin

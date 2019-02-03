@@ -33,7 +33,7 @@ export class Session {
             try {
                 this.handle(JSON.parse(rawMsg.data));
             } catch (error) {
-                console.error("can't parse", rawMsg.data, error);
+                console.error('can\'t parse', rawMsg.data, error);
             }
         };
 
@@ -55,7 +55,7 @@ export class Session {
             case 'roomList': return this.onRoomList.dispatch(msg.rooms);
             case 'myRoomList': return this.onMyRoomList.dispatch(msg.rooms);
             case 'message': {
-                console.info("chatmessage received", msg);
+                console.info('chatmessage received', msg);
                 this.onMessage.dispatch(msg);
                 return;
             }
@@ -65,24 +65,24 @@ export class Session {
     }
 
     public sendCommand(cmd: Command) {
-        console.debug("sending", cmd)
+        console.debug('sending', cmd)
         this.connection && this.connection.send(JSON.stringify(cmd));
     }
 
     public join(room: string) {
-        this.sendCommand({ type: "join", room })
+        this.sendCommand({ type: 'join', room })
     }
 
     public listRooms() {
-        this.sendCommand({ type: "listRooms" })
+        this.sendCommand({ type: 'listRooms' })
     }
 
     public listMyRooms() {
-        this.sendCommand({ type: "listMyRooms" })
+        this.sendCommand({ type: 'listMyRooms' })
     }
 
-    public sendMessage(content: string, room: string) {
-        this.sendCommand({ type: "message", message: { content }, room })
+    public sendMessage(message: string, room: string) {
+        this.sendCommand({ type: 'message', message, room });
     }
 
 }
