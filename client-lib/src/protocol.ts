@@ -18,12 +18,19 @@ export interface MessageMessage { type: 'message', message: ChatMessage, room: s
 export interface MessageAny { type: 'any', payload: any }
 export interface MessageOk { type: 'ok' }
 
+export const isWelcomeMessage = (msg: any): msg is MessageWelcome => 
+    typeof msg === 'object' && msg.type === 'welcome' && isSessionDescription(msg.session);
+
 export interface SessionDescription {
     session_id: string;
 }
 
+export const isSessionDescription = (d: any) => typeof d === 'object' && typeof d.session_id === 'string';
+
 export interface ChatMessage {
     content: string;
+    sender: string;
+    received: Date;
 }
 
 export type Message =

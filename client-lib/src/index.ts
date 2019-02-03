@@ -1,6 +1,6 @@
 import { Signal } from 'micro-signals';
 
-import { Command, Message, ChatMessage, MessageWelcome, SessionDescription, MessageMessage } from './protocol'
+import { Command, Message, ChatMessage, MessageWelcome, SessionDescription, MessageMessage, CommandJoin, isWelcomeMessage } from './protocol'
 
 export { Command, Message, ChatMessage, MessageWelcome, SessionDescription };
 
@@ -24,8 +24,11 @@ export class Session {
         this.onReceive.add(m => console.debug('received', m));
     }
 
-    public connect() {
-        if (this.connection) return;
+    public connect(): Promise<SessionDescription> {
+        if (this.connection) return Promise.reject();
+
+        const connected = this.onReceive.filter(isWelcomeMessage).map(welcome => welcome.session).promisify();
+
         this.connection = new WebSocket(this.url);
 
         this.connection.onmessage = (rawMsg: MessageEvent) => {
@@ -39,6 +42,8 @@ export class Session {
 
         this.connection.onclose = (ev: CloseEvent) => this.onConnectionClose.dispatch(ev);
         this.connection.onerror = (ev: Event) => this.onConnectionError.dispatch(ev);
+
+        return connected;
     }
 
     public disconnect() {
@@ -56,7 +61,7 @@ export class Session {
             case 'myRoomList': return this.onMyRoomList.dispatch(msg.rooms);
             case 'message': {
                 console.info('chatmessage received', msg);
-                this.onMessage.dispatch(msg);
+                this.onMessage.dispatch({...msg, message: {...msg.message, received: new Date()}});
                 return;
             }
             case 'any': return console.debug(msg.payload);
@@ -70,7 +75,8 @@ export class Session {
     }
 
     public join(room: string) {
-        this.sendCommand({ type: 'join', room })
+        const command: CommandJoin = { type: 'join', room };
+        this.sendCommand(command);
     }
 
     public listRooms() {

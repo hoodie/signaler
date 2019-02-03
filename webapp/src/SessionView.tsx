@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Session, SessionDescription } from '../../client-lib/';
+import { Session, SessionDescription, ChatMessage } from '../../client-lib/';
 import { SendForm } from './SendForm';
 
 type Fn<T, R=void> = (x:T) => R;
@@ -25,10 +25,23 @@ interface SessionViewState {
     myrooms: string[];
     roomToSendTo: string;
     roomToJoin: string;
-    receivedMessagesByRoom: { [index: string]: string[] },
+    receivedMessagesByRoom: { [index: string]: ChatMessage[] },
 
     sessionDescription?: SessionDescription;
 }
+
+const MessageList = ({ messages, me }: { messages: ChatMessage[], me?: string }) => <div className="messageList">
+    {messages.map(msg => <ChatMessageView message={msg} me={me} key={msg.received.toString()} />)}
+</div>
+
+const ChatMessageView = ({ message, me }: { message: ChatMessage, me?: string }) => {
+    const senderName = me === message.sender ? "me" : message.sender;
+    return (<React.Fragment>
+        <span className="timestamp">{message.received.getHours()}:{message.received.getMinutes()}</span>
+        <span className={`sender ${senderName}`}>{senderName}</span>
+        <span className="content">{message.content}</span>
+    </React.Fragment>);
+};
 
 export class SessionView extends React.Component<SessionViewProps, SessionViewState> {
     private session: Session;
@@ -49,6 +62,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.setState({ sessionDescription })
             this.session.sendCommand({ type: 'listRooms' });
             this.session.sendCommand({ type: 'listMyRooms' });
+            this.session.join('default');
         });
 
         this.session.onConnectionClose.add(event => {
@@ -70,7 +84,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             console.debug(room, message)
             const receivedMessagesByRoom = {...this.state.receivedMessagesByRoom };
             const oldRoomMessages = receivedMessagesByRoom[room] || [];
-            receivedMessagesByRoom[room] = [...oldRoomMessages, message.content]
+            receivedMessagesByRoom[room] = [...oldRoomMessages, message]
             console.debug({receivedMessagesByRoom})
             this.setState({ receivedMessagesByRoom })
             this.lastMessage!.scrollIntoView({ behavior: "smooth" });
@@ -90,7 +104,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
     // TODO: temporary
     componentDidMount = () => {
         console.debug("mounted")
-        this.session.connect()
+        this.session.connect();
     };
 
     private connectionView = () => {
@@ -102,12 +116,13 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                         <RoomSelector rooms={this.state.myrooms} onSelect={roomToSendTo => this.setState({ roomToSendTo })} />
                     </aside>
 
-                    <section className="messageBox">
-                        <ul>{
-                            (this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []).map(msg => <li key={msg}>{msg}</li>)
-                        }
-                            <span ref={e => this.lastMessage = !e ? undefined : e} ></span>
-                        </ul>
+                    <section>
+                        <div className="messageBox">
+                            <div>
+                                <MessageList messages={this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []} me={this.state.sessionDescription.session_id}></MessageList>
+                                <span ref={e => this.lastMessage = !e ? undefined : e} ></span>
+                            </div>
+                        </div>
                         <SendForm onSend={this.sendToRoom} />
                     </section>
 

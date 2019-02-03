@@ -13,7 +13,7 @@
 
     .sessionView {
         margin: 0 auto ;
-        max-width: 400px;
+        max-width: 800px;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         grid-gap: 10px;
@@ -36,15 +36,41 @@
         grid-column: 2/4;
     }
 
-    .messageBox ul {
+    .messageBox {
         height: 150px;
         max-height: 150px;
         overflow-y: scroll;
-        font-size: 0.8em;
     }
     .messageBox fieldset{
         margin: 0;
         width: fit-content
+    }
+
+    .messageList {
+        display: grid;
+        grid-template-columns: 1fr 3fr 10fr;
+        font-size: 0.8em;
+    }
+    .messageList span {
+    }
+
+    .messageList .timestamp {
+        font-family: monospace;
+        font-weight: bold;
+    }
+
+    .messageList .content {
+
+    }
+
+    .messageList .sender {
+        font-family: monospace;
+        font-size: 0.8em;
+    }
+    .messageList .sender.me {
+        font-family: monospace;
+        font-weight: bold;
+        font-size: 1.2em;
     }
 
     </style>
