@@ -17,7 +17,7 @@ export class App extends React.Component<{}, AppState> {
         };
     }
 
-    protected componentDidMount() {
+    componentDidMount() {
         this.createSession();
     }
 

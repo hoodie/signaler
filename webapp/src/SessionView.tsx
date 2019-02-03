@@ -17,6 +17,9 @@ const RoomSelector = ({ rooms, onSelect }: { rooms: string[], onSelect: Fn<strin
 interface SendFormProps { onSend: Fn<string> }
 
 class SendForm extends React.Component<SendFormProps, { content: string }> {
+
+    private input?: HTMLInputElement ;
+
     constructor(props: SendFormProps) {
         super(props);
     }
@@ -25,12 +28,22 @@ class SendForm extends React.Component<SendFormProps, { content: string }> {
       this.setState({ content })
     };
 
+    send = () => {
+        this.props.onSend(this.state.content);
+        this.input!.value = "";
+    }
+
     render() {
         return (
-            <fieldset>
-                <input type="text" onChange={this.handleContent} id="" />
-                <button onClick={() => this.props.onSend(this.state.content)}>send</button>
-            </fieldset>
+          <React.Fragment>
+            <input
+              type="text"
+              onChange={this.handleContent}
+              onKeyPress={e => e.key === "Enter" && this.send()}
+              ref={e => (this.input = e ? e : undefined)}
+            />
+            <button onClick={this.send}>send</button>
+          </React.Fragment>
         );
     }
 }
@@ -52,6 +65,7 @@ interface SessionViewState {
 
 export class SessionView extends React.Component<SessionViewProps, SessionViewState> {
     private session: Session;
+    private lastMessage?: HTMLSpanElement;
 
     constructor(props: SessionViewProps) {
         super(props);
@@ -92,6 +106,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             receivedMessagesByRoom[room] = [...oldRoomMessages, message.content]
             console.debug({receivedMessagesByRoom})
             this.setState({ receivedMessagesByRoom })
+            this.lastMessage!.scrollIntoView({ behavior: "smooth" });
         });
 
         (window as any).session = this.session;
@@ -105,18 +120,43 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
         this.session.sendMessage(content, this.state.roomToSendTo)
     };
 
+    // TODO: temporary
+    componentDidMount = () => {
+        console.debug("mounted")
+        this.session.connect()
+    };
+
     private connectionView = () => {
         if (this.state.sessionDescription) {
             return (
-                <div>
-                    <fieldset>
+                <React.Fragment>
+                    <aside>
+                        <h4>my rooms</h4>
+                        <RoomSelector rooms={this.state.myrooms} onSelect={roomToSendTo => this.setState({ roomToSendTo })} />
+                    </aside>
 
-                        <label>
+                    <section className="messageBox">
+                        <ul>{
+                            (this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []).map(msg => <li key={msg}>{msg}</li>)
+                        }
+                            <span ref={e => this.lastMessage = !e ? undefined : e} ></span>
+                        </ul>
+                        <SendForm onSend={this.sendToRoom} />
+                    </section>
+
+                    <nav>
+                        <small>
+                            SessionId:
+                            <pre>{this.state.sessionDescription.session_id}</pre>
+                        </small>
+
+
+                        <h6>
                             join
-                            <RoomSelector rooms={this.state.rooms} onSelect={room => { this.session.join(room) }} />
-                        </label>
+                        </h6>
 
                         <label>
+                            <RoomSelector rooms={this.state.rooms} onSelect={room => { this.session.join(room) }} />
                             <input
                                 type="text" name="channelName" id="channelName"
                                 onChange={this.roomToJoin} placeholder="createNew" />
@@ -124,20 +164,12 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                         </label>
                         <hr />
                         <button onClick={this.disconnect}> disconnect </button>
-                    </fieldset>
-                    <div>
-                        my rooms
-                        <RoomSelector rooms={this.state.myrooms} onSelect={ roomToSendTo => this.setState({ roomToSendTo }) } />
-                        <ul>{
-                            (this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []).map(msg => <li key={msg}>{msg}</li>)
 
-                        }</ul>
-                        <SendForm onSend={this.sendToRoom} />
-                    </div>
-                </div>
+                    </nav>
+                </React.Fragment>
             )
         } else {
-            return <React.Fragment />
+            return <button onClick={() => this.session.connect()}> connect </button>
         }
     };
 
@@ -148,12 +180,10 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
 
     render() {
         return (
-            <div>
+            <div className="sessionView">
+            <header>
                 <h3>Session</h3>
-                <small> {this.state.sessionDescription &&
-                    this.state.sessionDescription.uuid}
-                </small>
-                <button onClick={() => this.session.connect()}> connect </button>
+            </header>
                 {this.connectionView()}
             </div>
         )

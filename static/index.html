@@ -8,7 +8,45 @@
     body {
         background: #000;
         color: #ffffff;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif
     }
+
+    .sessionView {
+        margin: 0 auto ;
+        max-width: 400px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 10px;
+        grid-auto-rows: minmax(100px, auto);
+    }
+    .sessionView aside {
+        padding: 5px 10px;
+        outline: 1px dashed pink;
+        grid-column: 1;
+    }
+    .sessionView header,
+    .sessionView nav {
+        padding: 5px 10px;
+        grid-column: 1/4;
+        outline: 1px dashed beige;
+    }
+    .sessionView section {
+        padding: 5px 10px;
+        outline: 1px dashed skyblue;
+        grid-column: 2/4;
+    }
+
+    .messageBox ul {
+        height: 150px;
+        max-height: 150px;
+        overflow-y: scroll;
+        font-size: 0.8em;
+    }
+    .messageBox fieldset{
+        margin: 0;
+        width: fit-content
+    }
+
     </style>
 </head>
 

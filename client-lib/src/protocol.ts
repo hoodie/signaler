@@ -19,7 +19,7 @@ export interface MessageAny { type: 'any', payload: any }
 export interface MessageOk { type: 'ok' }
 
 export interface SessionDescription {
-    uuid: string;
+    session_id: string;
 }
 
 export interface ChatMessage {
@@ -33,17 +33,3 @@ export type Message =
     | MessageMessage
     | MessageAny
     | MessageOk;
-
-export function handleMessage(msg: Message) {
-    switch (msg.type)  {
-        case 'welcome': return console.log(`yay, welcome, you are ${msg.session.uuid}`);
-        default: return console.warn('unhandled', msg);
-    }
-}
-
-export function sendCommand(cmd: Command): Promise<void> {
-
-    return {then(){}} as any;
-}
-
-console.debug("protocol loaded")
