@@ -12,8 +12,11 @@ use actix_web::{
 use std::env;
 
 pub mod protocol;
+
 pub mod session;
 pub mod server;
+
+pub mod user_management;
 
 use crate::session::*;
 

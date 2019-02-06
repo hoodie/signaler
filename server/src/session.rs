@@ -12,6 +12,7 @@ use serde_derive::Serialize;
 
 use crate::protocol::*;
 use crate::server::{self, SignalingServer, SessionId};
+use crate::user_management::{AuthenticationRequest, UserManagement};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
@@ -137,6 +138,22 @@ impl ClientSession {
             .spawn(ctx);
     }
 
+    fn authenticate(&self, user: &str, password: &str, ctx: &mut WebsocketContext<Self>) {
+        let msg = AuthenticationRequest{
+            user: user.into(),
+            password: password.into(),
+            session_id: self.session_id,
+        };
+        UserManagement::from_registry()
+            .send(msg)
+            .into_actor(self)
+            .then(|profile, _, _| {
+                debug!("userProfile {:?}", profile);
+                fut::ok(())
+            })
+            .spawn(ctx);
+    }
+
     fn forward_message(&self, content: String, room: &server::RoomId, ctx: &mut WebsocketContext<Self>) {
         let msg = server::command::Forward {
             message: ChatMessage {
@@ -146,6 +163,7 @@ impl ClientSession {
             room: room.clone(),
             sender: self.session_id
         };
+
         SignalingServer::from_registry()
             .send(msg)
             .into_actor(self)
