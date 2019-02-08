@@ -3,30 +3,30 @@ use super::user::UserProfile;
 
 use actix::prelude::*;
 
-impl Actor for UserManagement<UserProfile> {
+impl Actor for UserManagement<UserProfile, UsernamePassword> {
     type Context = Context<Self>;
 }
 
-impl SystemService for UserManagement<UserProfile> {}
-impl Supervised for UserManagement<UserProfile>{}
+type NaiveUserManagment = UserManagement<UserProfile, UsernamePassword>;
+impl SystemService for NaiveUserManagment {}
+impl Supervised for NaiveUserManagment {}
 
 #[derive(Message)]
 #[rtype(result = "Option<UserProfile>")]
 pub struct AuthenticationRequest {
-    pub user: UserId,
-    pub session_id: SessionId,
-    pub password: String,
+    pub credentials: UsernamePassword,
+    // pub session_id: SessionId,
 }
 
-impl Handler<AuthenticationRequest> for UserManagement<UserProfile> {
+impl Handler<AuthenticationRequest> for NaiveUserManagment {
     type Result = MessageResult<AuthenticationRequest>;
 
     fn handle(&mut self, request: AuthenticationRequest, _ctx: &mut Self::Context) -> Self::Result {
         info!("received AuthenticationRequest");
 
-        let AuthenticationRequest {user, session_id, password} = request;
-        
-        MessageResult(self.associate_user(&user, &session_id, &password))
+        let AuthenticationRequest {credentials} = request;
+
+        MessageResult(self.associate_user(&credentials))
     }
 }
 

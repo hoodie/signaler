@@ -5,6 +5,7 @@
 use serde_derive::{Deserialize, Serialize};
 use crate::session::ClientSession;
 use crate::server::{RoomId, SessionId};
+use crate::user_management::UsernamePassword;
 
 /// Actual chat Message
 ///
@@ -43,6 +44,8 @@ pub enum SessionCommand {
 
     /// shutdown server 😈
     ShutDown,
+
+    Authenticate { credentials: UsernamePassword }
 }
 
 impl SessionCommand {

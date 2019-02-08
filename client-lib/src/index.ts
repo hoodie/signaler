@@ -1,6 +1,6 @@
 import { Signal } from 'micro-signals';
 
-import { Command, Message, ChatMessage, MessageWelcome, SessionDescription, MessageMessage, CommandJoin, isWelcomeMessage } from './protocol'
+import { Command, Message, ChatMessage, MessageWelcome, SessionDescription, MessageMessage, CommandJoin, isWelcomeMessage, UsernamePassword } from './protocol'
 
 export { Command, Message, ChatMessage, MessageWelcome, SessionDescription };
 
@@ -72,6 +72,10 @@ export class Session {
     public sendCommand(cmd: Command) {
         console.debug('sending', cmd)
         this.connection && this.connection.send(JSON.stringify(cmd));
+    }
+
+    public authenticate(username: string, password: string) {
+        this.sendCommand({ type: 'authenticate', credentials: { username, password } });
     }
 
     public join(room: string) {

@@ -12,7 +12,7 @@ use serde_derive::Serialize;
 
 use crate::protocol::*;
 use crate::server::{self, SignalingServer, SessionId};
-use crate::user_management::{AuthenticationRequest, UserManagement};
+use crate::user_management::{AuthenticationRequest, UsernamePassword, UserManagement};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
@@ -38,6 +38,11 @@ impl ClientSession {
     /// react to client messages
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut WebsocketContext<Self>) {
         match msg {
+            SessionCommand::Authenticate { credentials } => {
+                debug!("received credentials {:?}", credentials);
+                dbg!(&credentials);
+                self.authenticate(credentials, ctx);
+            },
             SessionCommand::ListRooms => {
                 debug!("received ListRooms signal");
                 self.list_rooms(ctx);
@@ -138,11 +143,9 @@ impl ClientSession {
             .spawn(ctx);
     }
 
-    fn authenticate(&self, user: &str, password: &str, ctx: &mut WebsocketContext<Self>) {
-        let msg = AuthenticationRequest{
-            user: user.into(),
-            password: password.into(),
-            session_id: self.session_id,
+    fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {
+        let msg = AuthenticationRequest {
+            credentials
         };
         UserManagement::from_registry()
             .send(msg)
