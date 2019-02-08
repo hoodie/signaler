@@ -1,0 +1,10 @@
+{
+  "credentials": {
+    "hendrik": "password"
+  },
+  "profiles": {
+    "hendrik": {
+      "full_name": "Hendrik der Eroberer"
+    }
+  }
+}

@@ -8,7 +8,7 @@ use ::actix::prelude::*;
 use actix_web::ws::{self, WebsocketContext};
 use log::*;
 use uuid::Uuid;
-use serde_derive::Serialize;
+use serde::Serialize;
 
 use crate::protocol::*;
 use crate::server::{self, SignalingServer, SessionId};
@@ -150,8 +150,13 @@ impl ClientSession {
         UserManagement::from_registry()
             .send(msg)
             .into_actor(self)
-            .then(|profile, _, _| {
+            .then(|profile, _, ctx| {
                 debug!("userProfile {:?}", profile);
+                match profile {
+                    Ok(Some(profile)) => Self::send_message(SessionMessage::Authenticated{ profile }, ctx),
+                    Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
+                    Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
+                }
                 fut::ok(())
             })
             .spawn(ctx);

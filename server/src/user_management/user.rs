@@ -1,5 +1,7 @@
-#[derive(Debug, actix::Message)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, actix::Message, Serialize, Deserialize)]
 pub struct UserProfile {
-    pub user_name: String,
+    pub full_name: String,
 }
 
