@@ -1,8 +1,10 @@
 import { Signal } from 'micro-signals';
 
-import { Command, Message, ChatMessage, MessageWelcome, SessionDescription, MessageMessage, CommandJoin, isWelcomeMessage, UsernamePassword } from './protocol'
+import { Command } from './protocol';
+import { serverEvent, ServerEvent } from './protocol';
+import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol';
 
-export { Command, Message, ChatMessage, MessageWelcome, SessionDescription };
+export { ChatMessage, SessionDescription };
 
 export class Session {
     private connection?: WebSocket;
@@ -15,7 +17,7 @@ export class Session {
     public readonly onReceive = new Signal<any>();
     public readonly onRoomList = new Signal<string[]>();
     public readonly onMyRoomList = new Signal<string[]>();
-    public readonly onMessage = new Signal<MessageMessage>();
+    public readonly onMessage = new Signal<serverEvent.Message>();
 
     public readonly onConnectionClose = new Signal<CloseEvent>();
     public readonly onConnectionError = new Signal<Event>();
@@ -27,7 +29,7 @@ export class Session {
     public connect(): Promise<SessionDescription> {
         if (this.connection) return Promise.reject();
 
-        const connected = this.onReceive.filter(isWelcomeMessage).map(welcome => welcome.session).promisify();
+        const connected = this.onReceive.filter(isWelcomeEvent).map(welcome => welcome.session).promisify();
 
         this.connection = new WebSocket(this.url);
 
@@ -53,7 +55,7 @@ export class Session {
         this.connection = undefined;
     }
 
-    private handle(msg: Message) {
+    private handle(msg: ServerEvent) {
         this.onReceive.dispatch(msg);
         switch (msg.type) {
             case 'welcome': return this._onWelcome.dispatch(msg.session);
@@ -79,8 +81,7 @@ export class Session {
     }
 
     public join(room: string) {
-        const command: CommandJoin = { type: 'join', room };
-        this.sendCommand(command);
+        this.sendCommand({ type: 'join', room });
     }
 
     public listRooms() {
