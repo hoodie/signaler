@@ -15,6 +15,7 @@ pub mod protocol;
 
 pub mod session;
 pub mod server;
+pub mod presence;
 
 pub mod user_management;
 
