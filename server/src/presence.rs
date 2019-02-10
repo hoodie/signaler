@@ -21,7 +21,7 @@ mod simple {
 
     use super::*;
     use crate::server::SessionId;
-    use crate::user_management::NaiveUserDatabase;
+    use crate::static_data::StaticUserDatabase;
 
     /// Simple Presence Service
     pub type SimplePresenceService = PresenceService<UsernamePassword, AuthToken>;
@@ -41,7 +41,7 @@ mod simple {
 
     #[derive(Debug)]
     pub struct SimplePresenceHandler {
-        user_database: NaiveUserDatabase,
+        user_database: StaticUserDatabase,
         running_sessions: HashMap<AuthToken, SessionState>,
         last_update: Instant,
     }
@@ -49,7 +49,7 @@ mod simple {
     impl SimplePresenceHandler {
         pub fn new() -> Self {
             Self {
-                user_database: NaiveUserDatabase::load(),
+                user_database: StaticUserDatabase::load(),
                 last_update: Instant::now(),
                 running_sessions: Default::default()
             }
@@ -58,6 +58,7 @@ mod simple {
         fn still_fresh(created: Instant) -> bool {
             created.elapsed() < Duration::from_secs(30 * 5)
         }
+
     }
 
     impl PresenceHandler for SimplePresenceHandler {
@@ -94,6 +95,15 @@ mod simple {
                 Self::still_fresh(session.created)
             } else {
                 false
+            }
+        }
+
+        fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken> {
+            if let Some(state) = self.running_sessions.get_mut(token) {
+                state.created = Instant::now();
+                Some(*token)
+            } else {
+                None
             }
         }
 
@@ -164,6 +174,7 @@ pub trait PresenceHandler {
 
     fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken>;
     fn still_valid(&self, token: &AuthToken) -> bool;
+    fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken>;
     fn logout(&mut self, token: &AuthToken) -> bool;
     fn clean_up(&mut self);
 
@@ -181,12 +192,19 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
     fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken> {
         self.inner.associate_user(credentials, session_id)
     }
+
     fn still_valid(&self, token: &AuthToken) -> bool {
         self.inner.still_valid(token)
     }
+
+    fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken> {
+        self.inner.refresh(token)
+    }
+
     fn logout(&mut self, token: &AuthToken) -> bool {
         self.inner.logout(token)
     }
+
     fn clean_up(&mut self) {
         self.inner.clean_up()
     }

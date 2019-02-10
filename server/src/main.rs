@@ -18,6 +18,7 @@ pub mod server;
 pub mod presence;
 
 pub mod user_management;
+pub mod static_data;
 
 use crate::session::*;
 

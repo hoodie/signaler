@@ -6,6 +6,7 @@ export interface MyRoomList { type: 'myRoomList', rooms: string[] }
 export interface Message { type: 'message', message: ChatMessage, room: string }
 export interface Any { type: 'any', payload: any }
 export interface Ok { type: 'ok' }
+export interface Error { type: 'error', message: string }
 
 export type ServerEvent =
     | Welcome
@@ -13,4 +14,5 @@ export type ServerEvent =
     | MyRoomList
     | Message
     | Any
-    | Ok;
+    | Ok
+    | Error;

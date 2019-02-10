@@ -67,6 +67,7 @@ export class Session {
                 return;
             }
             case 'any': return console.debug(msg.payload);
+            case 'error': return console.error("Server Error", msg.message);
             default: return console.warn('unhandle message', msg);
         }
     }

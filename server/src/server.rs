@@ -112,6 +112,7 @@ pub mod command {
         }
     }
 
+
     #[derive(Message)]
     #[rtype(result = "Result<(), String>")]
     pub struct JoinRoom {
@@ -149,6 +150,8 @@ pub mod command {
             MessageResult(Ok(()))
         }
     }
+
+
     #[derive(Message)]
     #[rtype(result = "Vec<String>")]
     pub struct ListRooms;
@@ -162,6 +165,7 @@ pub mod command {
             )
         }
     }
+
 
     #[derive(Message)]
     #[rtype(result = "Vec<String>")]
@@ -232,8 +236,7 @@ pub mod command {
             MessageResult(Ok(()))
         }
     }
-
-
+    
 
     #[derive(Message)]
     #[rtype(result = "()")]
