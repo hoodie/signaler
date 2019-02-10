@@ -41,3 +41,15 @@ impl<P, C> UserManaging for UserManagement<P, C> {
         self.inner.associate_user(credentials)
     }
 }
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct NaiveUserDatabase {
+    pub credentials: HashMap<UserId, String>,
+    pub profiles: HashMap<UserId, UserProfile>,
+}
+
+impl NaiveUserDatabase {
+    pub fn load() -> Self {
+        serde_json::from_str(include_str!("../../test_users.json")).unwrap()
+    }
+}

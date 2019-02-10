@@ -1,11 +1,12 @@
 //! Presence Module
-//! 
+//!
 //! PresenceService Actor that keeps track of which users are logged in and have which status at a time.
 //! Work in progress...
-//! 
+//!
 
 use actix::prelude::*;
 use serde::{Serialize, Deserialize};
+use uuid::Uuid;
 
 use super::*;
 use crate::server::SessionId;
@@ -20,6 +21,7 @@ mod simple {
 
     use super::*;
     use crate::server::SessionId;
+    use crate::user_management::NaiveUserDatabase;
 
     /// Simple Presence Service
     pub type SimplePresenceService = PresenceService<UsernamePassword, AuthToken>;
@@ -32,13 +34,24 @@ mod simple {
 
     #[derive(Debug)]
     pub struct SessionState {
-        pub last_checking: Instant
+        created: Instant,
+        session_id: SessionId
     }
 
 
     #[derive(Default, Debug)]
     pub struct SimplePresenceHandler {
-        running_sessions: HashMap<SessionId, SessionState>
+        user_database: NaiveUserDatabase,
+        running_sessions: HashMap<AuthToken, SessionState>
+    }
+
+    impl SimplePresenceHandler {
+        pub fn new() -> Self {
+            Self {
+                user_database: NaiveUserDatabase::load(),
+                .. Default::default()
+            }
+        }
     }
 
     impl PresenceHandler for SimplePresenceHandler {
@@ -46,7 +59,22 @@ mod simple {
         type AuthToken = AuthToken;
 
         fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken> {
+            let UsernamePassword {username, password} = credentials;
+
+            if Some(password) == self.user_database.credentials.get(username) {
+                let token = AuthToken::new();
+                info!("valid login trace {:?} -> {:?}", credentials, token);
+                self.running_sessions.insert(token, SessionState {
+                    created: Instant::now(),
+                    session_id: *session_id
+                });
+                trace!("currently logged in {:#?}", self.running_sessions);
+                return Some(token);
+            } else {
+                debug!("not found {:?}", credentials);
+            }
             None
+
         }
 
     }
@@ -87,10 +115,15 @@ pub struct UsernamePassword {
 }
 
 /// Token returned after successful authentication
-/// 
+///
 /// Use this to make requests that require authentication. Should timeout.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AuthToken ();
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct AuthToken(Uuid);
+impl AuthToken {
+    pub fn new() -> Self {
+        Self (Uuid::new_v4())
+    }
+}
 
 /// General Behaviour of a PresenceService
 pub trait PresenceHandler {
@@ -118,7 +151,7 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
 impl PresenceService<UsernamePassword, AuthToken> {
     pub fn simple() -> simple::SimplePresenceService {
         Self {
-            inner: Box::new(simple::SimplePresenceHandler::default())
+            inner: Box::new(simple::SimplePresenceHandler::new())
         }
     }
 }

@@ -5,7 +5,8 @@
 use serde::{Deserialize, Serialize};
 use crate::session::ClientSession;
 use crate::server::{RoomId, SessionId};
-use crate::user_management::{UsernamePassword, UserProfile};
+use crate::presence::UsernamePassword;
+use crate::user_management::UserProfile;
 
 /// Actual chat Message
 ///

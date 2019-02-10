@@ -12,7 +12,7 @@ use serde::Serialize;
 
 use crate::protocol::*;
 use crate::server::{self, SignalingServer, SessionId};
-use crate::user_management::{AuthenticationRequest, UsernamePassword, UserManagement};
+use crate::presence::{UsernamePassword, SimplePresenceService, AuthenticationRequest};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
@@ -145,15 +145,19 @@ impl ClientSession {
 
     fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {
         let msg = AuthenticationRequest {
-            credentials
+            credentials,
+            session_id: self.session_id
         };
-        UserManagement::from_registry()
+        SimplePresenceService::from_registry()
             .send(msg)
             .into_actor(self)
             .then(|profile, _, ctx| {
                 debug!("userProfile {:?}", profile);
                 match profile {
-                    Ok(Some(profile)) => Self::send_message(SessionMessage::Authenticated{ profile }, ctx),
+                    Ok(Some(token)) => {
+                        info!("authenticated {:?}", token);
+                        //Self::send_message(SessionMessage::Authenticated{ profile }, ctx), TODO: send to client
+                    }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
                     Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
                 }

@@ -37,21 +37,15 @@ impl Default for NaiveUserManagment {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct UserDatabase {
-    credentials: HashMap<UserId, String>,
-    profiles: HashMap<UserId, UserProfile>,
-}
-
 #[derive(Debug, Default)]
 pub struct NaiveUserManager {
-    user_database: UserDatabase
+    user_database: NaiveUserDatabase
 }
 
 impl NaiveUserManager {
     pub fn new() -> NaiveUserManagment {
         let manager = NaiveUserManager {
-            user_database: serde_json::from_str(include_str!("../../test_users.json")).unwrap()
+            user_database: NaiveUserDatabase::load()
         };
         debug!("new NaiveUserManager {:?}", manager);
         UserManagement::new(Box::new(manager))
