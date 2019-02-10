@@ -100,6 +100,8 @@ pub mod command {
     use log::*;
     use super::{RoomId, ChatMessage, SignalingServer, SessionId};
 
+    use crate::presence::{AuthToken, PresenceService, ValidateRequest};
+
     #[derive(Message)]
     #[rtype(result = "()")]
     pub struct Ping;
@@ -118,33 +120,52 @@ pub mod command {
     pub struct JoinRoom {
         pub room: String,
         pub session_id: SessionId,
-        pub addr: Recipient<super::message::ServerToSession>,
+        pub return_addr: Recipient<super::message::ServerToSession>,
+        pub token: AuthToken,
     }
 
     impl Handler<JoinRoom> for SignalingServer {
         type Result = MessageResult<JoinRoom>;
 
-        fn handle(&mut self, join: JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
-            self.sessions.insert(join.session_id, join.addr);
-            if join.room.len() == 0 {
+        fn handle(&mut self, request: JoinRoom, ctx: &mut Self::Context) -> Self::Result {
+
+            let JoinRoom { room, session_id, token, return_addr } = request;
+
+            self.sessions.insert(session_id, return_addr);
+
+            if room.len() == 0 {
                 error!("listname must'n be empty");
                 return MessageResult(Err("listname must'n be empty".into()));
             }
 
-            let newly_joined = self.rooms
-                .entry(join.room.clone())
-                .or_insert(Default::default())
-                .insert(join.session_id);
+            PresenceService::from_registry()
+                .send(ValidateRequest { token })
+                .into_actor(self)
+                .then( move |is_valid, myself, _ctx| {
 
-            if newly_joined {
-                debug!(
-                    "rooms: {}, paricipants of {:?}",
-                    serde_json::to_string_pretty(&self.rooms).unwrap(),
-                    join.room
-                    );
-            } else {
-                debug!("{} attempts to join {:?} again", join.session_id, join.room)
-            }
+                    match is_valid {
+                        Ok(true)  => {
+                            let newly_joined = myself.rooms
+                                .entry(room.clone())
+                                .or_insert(Default::default())
+                                .insert(session_id);
+
+                            if newly_joined {
+                                debug!( "rooms: {}, paricipants of {:?}", serde_json::to_string_pretty(&myself.rooms).unwrap(), room);
+                            } else {
+                                debug!("{} attempts to join {:?} again", session_id, room)
+                            }
+                        }
+                        _ => {
+                            debug!("{} attempted to join {} with invalid authentication", session_id, room);
+                            // TODO: send error to client_session
+                        }
+                    }
+
+                    fut::ok(())
+                })
+                .spawn(ctx);
+
 
             self.print_state();
             MessageResult(Ok(()))

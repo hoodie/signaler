@@ -147,6 +147,13 @@ mod simple {
         }
     }
 
+    impl Handler<ValidateRequest> for SimplePresenceService {
+        type Result = MessageResult<ValidateRequest>;
+        fn handle(&mut self, request: ValidateRequest, _ctx: &mut Self::Context) -> Self::Result {
+            let ValidateRequest {token} = request;
+            MessageResult(self.still_valid(&token))
+        }
+    }
 }
 
 /// Simple Authentication Credentials
@@ -224,4 +231,11 @@ impl PresenceService<UsernamePassword, AuthToken> {
 pub struct AuthenticationRequest<CREDENTIALS> {
     pub credentials: CREDENTIALS,
     pub session_id: SessionId,
+}
+
+/// Message expected by PresenceService to add SessionId
+#[derive(Message)]
+#[rtype(result = "bool")]
+pub struct ValidateRequest {
+    pub token: AuthToken,
 }

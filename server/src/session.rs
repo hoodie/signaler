@@ -12,11 +12,12 @@ use serde::Serialize;
 
 use crate::protocol::*;
 use crate::server::{self, SignalingServer, SessionId};
-use crate::presence::{UsernamePassword, SimplePresenceService, AuthenticationRequest};
+use crate::presence::{AuthToken, UsernamePassword, SimplePresenceService, AuthenticationRequest};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ClientSession {
     session_id: SessionId,
+    token: Option<AuthToken>
 }
 
 impl ClientSession {
@@ -108,27 +109,33 @@ impl ClientSession {
     }
 
     fn join(&self, room: &str, ctx: &mut WebsocketContext<Self>) {
-        let msg = server::command::JoinRoom {
-            room: room.into(),
-            session_id: self.session_id,
-            addr: ctx.address().recipient()
-        };
+        if let Some(token) = self.token {
+            let msg = server::command::JoinRoom {
+                room: room.into(),
+                session_id: self.session_id,
+                return_addr: ctx.address().recipient(),
+                token
+            };
 
-        SignalingServer::from_registry()
-            .send(msg)
-            .into_actor(self)
-            .then(|joined, s, ctx| {
-                debug!("join request answered: {:?}", joined);
-                match joined {
-                    Ok(list) => {
-                        ctx.text(&SessionMessage::any(list).to_json());
-                        s.list_my_rooms(ctx);
-                    },
-                    Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
-                }
-                fut::ok(())
-            })
-            .spawn(ctx);
+            SignalingServer::from_registry()
+                .send(msg)
+                .into_actor(self)
+                .then(|joined, s, ctx| {
+                    debug!("join request answered: {:?}", joined);
+                    match joined {
+                        Ok(list) => {
+                            ctx.text(&SessionMessage::any(list).to_json());
+                            s.list_my_rooms(ctx);
+                        },
+                        Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
+                    }
+                    fut::ok(())
+                })
+                .spawn(ctx);
+        } else {
+            warn!("can't join room, no authentication token")
+        }
+
     }
 
     fn leave_all_rooms(&self, ctx: &mut WebsocketContext<Self>) {
@@ -151,11 +158,12 @@ impl ClientSession {
         SimplePresenceService::from_registry()
             .send(msg)
             .into_actor(self)
-            .then(|profile, _, ctx| {
+            .then(|profile, client_session, ctx| {
                 debug!("userProfile {:?}", profile);
                 match profile {
                     Ok(Some(token)) => {
                         info!("authenticated {:?}", token);
+                        client_session.token = Some(token);
                         //Self::send_message(SessionMessage::Authenticated{ profile }, ctx), TODO: send to client
                     }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
@@ -200,7 +208,8 @@ impl ClientSession {
 impl Default for ClientSession {
     fn default() -> Self {
         Self {
-            session_id: Uuid::new_v4()
+            session_id: Uuid::new_v4(),
+            token: None
         }
     }
 }
