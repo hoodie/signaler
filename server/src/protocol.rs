@@ -69,7 +69,7 @@ impl SessionCommand {
 pub enum SessionMessage {
     Welcome { session: ClientSession },
 
-    Authenticated { profile: UserProfile },
+    Authenticated, //{ profile: UserProfile },
 
     RoomList { rooms: Vec<String> },
 

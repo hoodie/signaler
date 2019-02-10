@@ -164,7 +164,7 @@ impl ClientSession {
                     Ok(Some(token)) => {
                         info!("authenticated {:?}", token);
                         client_session.token = Some(token);
-                        //Self::send_message(SessionMessage::Authenticated{ profile }, ctx), TODO: send to client
+                        Self::send_message(SessionMessage::Authenticated, ctx);
                     }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
                     Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
