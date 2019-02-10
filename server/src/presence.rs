@@ -11,7 +11,7 @@ use uuid::Uuid;
 use super::*;
 use crate::server::SessionId;
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
 pub use simple::SimplePresenceService;
@@ -39,18 +39,24 @@ mod simple {
     }
 
 
-    #[derive(Default, Debug)]
+    #[derive(Debug)]
     pub struct SimplePresenceHandler {
         user_database: NaiveUserDatabase,
-        running_sessions: HashMap<AuthToken, SessionState>
+        running_sessions: HashMap<AuthToken, SessionState>,
+        last_update: Instant,
     }
 
     impl SimplePresenceHandler {
         pub fn new() -> Self {
             Self {
                 user_database: NaiveUserDatabase::load(),
-                .. Default::default()
+                last_update: Instant::now(),
+                running_sessions: Default::default()
             }
+        }
+
+        fn still_fresh(created: Instant) -> bool {
+            created.elapsed() < Duration::from_secs(30 * 5)
         }
     }
 
@@ -60,6 +66,13 @@ mod simple {
 
         fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken> {
             let UsernamePassword {username, password} = credentials;
+
+            let clean_up_timeout = Duration::from_secs(5);
+            if self.last_update.elapsed() > clean_up_timeout {
+                debug!("no cleanup in {:?}", clean_up_timeout);
+                self.last_update = Instant::now();
+                self.clean_up();
+            }
 
             if Some(password) == self.user_database.credentials.get(username) {
                 let token = AuthToken::new();
@@ -74,7 +87,23 @@ mod simple {
                 debug!("not found {:?}", credentials);
             }
             None
+        }
 
+        fn still_valid(&self, token: &AuthToken) -> bool {
+            if let Some(session) = self.running_sessions.get(token) {
+                Self::still_fresh(session.created)
+            } else {
+                false
+            }
+        }
+
+        fn logout(&mut self, token: &AuthToken) -> bool {
+            self.running_sessions.remove(token).is_some()
+        }
+
+        fn clean_up(&mut self) {
+            debug!("cleaning up");
+            self.running_sessions = self.running_sessions.drain().filter(|(_token, state)| Self::still_fresh(state.created)).collect()
         }
 
     }
@@ -87,6 +116,9 @@ mod simple {
 
     impl Actor for SimplePresenceService {
         type Context = Context<Self>;
+        fn started(&mut self, _ctx: &mut Self::Context) {
+            debug!("presence started");
+        }
     }
 
     impl SystemService for SimplePresenceService {}
@@ -131,6 +163,9 @@ pub trait PresenceHandler {
     type AuthToken;
 
     fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken>;
+    fn still_valid(&self, token: &AuthToken) -> bool;
+    fn logout(&mut self, token: &AuthToken) -> bool;
+    fn clean_up(&mut self);
 
 }
 
@@ -145,6 +180,15 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
 
     fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken> {
         self.inner.associate_user(credentials, session_id)
+    }
+    fn still_valid(&self, token: &AuthToken) -> bool {
+        self.inner.still_valid(token)
+    }
+    fn logout(&mut self, token: &AuthToken) -> bool {
+        self.inner.logout(token)
+    }
+    fn clean_up(&mut self) {
+        self.inner.clean_up()
     }
 }
 
