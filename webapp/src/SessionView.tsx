@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { Session, SessionDescription, ChatMessage } from '../../client-lib/';
 import { SendForm } from './SendForm';
+import { AuthenticatedView } from './AuthenticatedView';
 
 type Fn<T, R=void> = (x:T) => R;
 
@@ -21,6 +22,7 @@ export interface SessionViewProps {
 }
 
 interface SessionViewState {
+    authenticated: boolean,
     rooms: string[];
     myrooms: string[];
     roomToSendTo: string;
@@ -50,6 +52,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
     constructor(props: SessionViewProps) {
         super(props);
         this.state = {
+            authenticated: false,
             rooms: [],
             myrooms: [],
             receivedMessagesByRoom: {},
@@ -64,6 +67,10 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.session.sendCommand({ type: 'listMyRooms' });
             this.session.join('default');
         });
+
+        this.session.onAuthenticated.add(token => {
+            this.setState({ authenticated: true });
+        })
 
         this.session.onConnectionClose.add(event => {
             console.error(event);
@@ -132,18 +139,16 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                             <pre>{this.state.sessionDescription.session_id}</pre>
                         </small>
 
+                        <AuthenticatedView authenticated={this.state.authenticated} onsubmit={(u, p) => this.session.authenticate(u, p)}>
+                            <h6> join room </h6>
 
-                        <h6>
-                            join
-                        </h6>
-
-                        <label>
                             <RoomSelector rooms={this.state.rooms} onSelect={room => { this.session.join(room) }} />
                             <input
                                 type="text" name="channelName" id="channelName"
                                 onChange={this.roomToJoin} placeholder="createNew" />
                             <button onClick={() => this.session.join(this.state.roomToJoin)}> join </button>
-                        </label>
+                        </AuthenticatedView>
+
                         <hr />
                         <button onClick={this.disconnect}> disconnect </button>
 

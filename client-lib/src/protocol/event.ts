@@ -1,6 +1,7 @@
 import { SessionDescription, ChatMessage } from ".";
 
 export interface Welcome { type: 'welcome', session: SessionDescription }
+export interface Authenticated { type: 'authenticated' }
 export interface RoomList { type: 'roomList', rooms: string[] }
 export interface MyRoomList { type: 'myRoomList', rooms: string[] }
 export interface Message { type: 'message', message: ChatMessage, room: string }
@@ -9,6 +10,7 @@ export interface Ok { type: 'ok' }
 export interface Error { type: 'error', message: string }
 
 export type ServerEvent =
+    | Authenticated 
     | Welcome
     | RoomList
     | MyRoomList
