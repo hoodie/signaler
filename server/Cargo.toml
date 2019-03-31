@@ -5,15 +5,17 @@ authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
 edition = "2018"
 
 [dependencies]
-actix-web = "0.7"
+actix-web = "1.0.0-alpha.2"
+actix-web-actors = "1.0.0-alpha.2"
+actix-files = "0.1.0-alpha.1"
 log = "0.4"
 env_logger = "0.6"
 build_timestamp = "0.1"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"]}
 
-uuid = { version = "0.7.1", features = ["serde"] }
+uuid = { version = "0.7.4", features = ["serde", "v4"] }
 
 [dependencies.actix]
-version = "0.7"
+version = "0.8.0-alpha.2"
 ##features = ["signal"]

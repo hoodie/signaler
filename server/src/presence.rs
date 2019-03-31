@@ -82,7 +82,7 @@ mod simple {
                     created: Instant::now(),
                     session_id: *session_id
                 });
-                trace!("currently logged in {:#?}", self.running_sessions);
+                trace!("currently logged in {:?}", self.running_sessions);
                 return Some(token);
             } else {
                 debug!("not found {:?}", credentials);
@@ -113,7 +113,10 @@ mod simple {
 
         fn clean_up(&mut self) {
             debug!("cleaning up");
-            self.running_sessions = self.running_sessions.drain().filter(|(_token, state)| Self::still_fresh(state.created)).collect()
+            self.running_sessions = self.running_sessions
+                .drain()
+                .filter(|(_token, state)| Self::still_fresh(state.created))
+                .collect()
         }
 
     }

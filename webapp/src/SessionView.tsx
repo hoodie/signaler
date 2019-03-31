@@ -65,11 +65,12 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.setState({ sessionDescription })
             this.session.sendCommand({ type: 'listRooms' });
             this.session.sendCommand({ type: 'listMyRooms' });
-            this.session.join('default');
+            this.session.authenticate('hendrik', 'password');
         });
 
         this.session.onAuthenticated.add(token => {
             this.setState({ authenticated: true });
+            this.session.join('default');
         })
 
         this.session.onConnectionClose.add(event => {

@@ -4,8 +4,9 @@
 
 // TODO: how to timeout sessions?
 
-use ::actix::prelude::*;
-use actix_web::ws::{self, WebsocketContext};
+use actix::prelude::*;
+// use actix::WeakAddr;
+use actix_web_actors::ws::{self, WebsocketContext};
 use log::*;
 use uuid::Uuid;
 use serde::Serialize;
@@ -20,6 +21,11 @@ pub struct ClientSession {
     token: Option<AuthToken>
 }
 
+pub struct ClientDescription {
+    //addr: WeakAddr<ClientSession>,
+    session_id: SessionId,
+}
+
 impl ClientSession {
 
     /// parses raw string and passes it to `dispatch_incoming_message` or replies with error
@@ -27,7 +33,7 @@ impl ClientSession {
         // trace!("handle message: {:?}", raw_msg);
         let parsed: Result<SessionCommand, _> = serde_json::from_str(raw_msg);
         if let Ok(msg) = parsed {
-            debug!("parsed ok\n{}\n{:#?}", raw_msg, msg);
+            debug!("parsed ok\n{}\n{:?}", raw_msg, msg);
             self.dispatch_incoming_message(msg, ctx)
 
         } else {
@@ -41,25 +47,29 @@ impl ClientSession {
         match msg {
             SessionCommand::Authenticate { credentials } => {
                 debug!("received credentials {:?}", credentials);
-                dbg!(&credentials);
                 self.authenticate(credentials, ctx);
             },
+
             SessionCommand::ListRooms => {
                 debug!("received ListRooms signal");
                 self.list_rooms(ctx);
             },
+
             SessionCommand::Join{ room } => {
                 debug!("requesting to Join {}", room);
                 self.join(&room, ctx);
             },
+
             SessionCommand::ListMyRooms => {
                 debug!("received ListMyRooms signal");
                 self.list_my_rooms(ctx);
             },
+
             SessionCommand::Message{ message, room } => {
                 debug!("received message to forward");
                 self.forward_message( message, &room, ctx);
             },
+
             SessionCommand::ShutDown => {
                 debug!("received shut down signal");
                 System::current().stop();
@@ -82,7 +92,7 @@ impl ClientSession {
                 debug!("list request answered: {:?}", rooms);
                 match rooms {
                     Ok(rooms) => Self::send_message(SessionMessage::RoomList{rooms}, ctx),
-                    Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
+                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).to_json())
                 }
                 fut::ok(())
             })
@@ -101,7 +111,7 @@ impl ClientSession {
                 debug!("my list request answered: {:?}", rooms);
                 match rooms {
                     Ok(rooms) => Self::send_message(SessionMessage::MyRoomList{rooms}, ctx),
-                    Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
+                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).to_json())
                 }
                 fut::ok(())
             })
@@ -124,10 +134,10 @@ impl ClientSession {
                     debug!("join request answered: {:?}", joined);
                     match joined {
                         Ok(list) => {
-                            ctx.text(&SessionMessage::any(list).to_json());
+                            ctx.text(SessionMessage::any(list).to_json());
                             s.list_my_rooms(ctx);
                         },
-                        Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
+                        Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).to_json())
                     }
                     fut::ok(())
                 })
@@ -167,7 +177,7 @@ impl ClientSession {
                         Self::send_message(SessionMessage::Authenticated, ctx);
                     }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
-                    Err(error) => ctx.text(&SessionMessage::err(format!("{:#?}", error)).to_json())
+                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).to_json())
                 }
                 fut::ok(())
             })

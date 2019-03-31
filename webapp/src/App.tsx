@@ -22,7 +22,7 @@ export class App extends React.Component<{}, AppState> {
     }
 
     private createSession = () => {
-        const session = new Session('ws://localhost:8080/ws/')
+        const session = new Session(`ws://${location.host}/ws/`)
         this.setState({ session });
         console.debug("creating session", session);
     };

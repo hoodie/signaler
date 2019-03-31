@@ -1,6 +1,8 @@
 //! Signaling Server
 //!
-//! Only on instance connecting many sessions
+//! Only on instance connecting many sessions.
+//! This is currently holding all the rooms and dispatching messages between ClientSessions within rooms,
+//! as soon as `WeakAddr` is available the server will only lookup rooms for ClientSessions to join.
 //!
 
 
@@ -10,22 +12,27 @@ use uuid::Uuid;
 
 use crate::protocol::ChatMessage;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 
 pub type RoomId = String;
 pub type SessionId = Uuid;
 
+#[derive(Debug)]
+pub struct Participant {
+    session_id: SessionId,
+}
+
 pub struct SignalingServer {
     sessions: HashMap<SessionId, Recipient<message::ServerToSession>>,
-    rooms: HashMap<RoomId, HashSet<SessionId>>,
+    rooms: HashMap<RoomId, HashMap<SessionId, Participant>>,
 }
 
 impl SignalingServer {
     pub fn print_state(&self) {
         let room_counts = self.rooms.iter().map(|(room, uuids)| (room, uuids.len())).collect::<HashMap<_,_>>();
         let sessions = self.sessions.keys().collect::<Vec<_>>();
-        debug!("room members {:#?}", room_counts);
+        debug!("room members {:?}", room_counts);
         debug!("sessions {:?}", sessions);
     }
 
@@ -33,8 +40,8 @@ impl SignalingServer {
 
         if let Some(_) = self.sessions.remove(session_id)  {
             let mut rooms_to_notify = Vec::new();
-            for (room, members) in &mut self.rooms {
-                if members.remove(session_id) {
+            for (room, participants) in &mut self.rooms {
+                if participants.remove(session_id).is_some() {
                     rooms_to_notify.push(room.to_owned())
                 }
             }
@@ -90,7 +97,9 @@ pub mod message {
         ChatMessage {
             room: RoomId,
             message: ChatMessage,
-        }
+        },
+
+        // Error(String)
     }
 }
 
@@ -98,9 +107,9 @@ pub mod command {
     //! Messages the server can receive
     use actix::prelude::*;
     use log::*;
-    use super::{RoomId, ChatMessage, SignalingServer, SessionId};
+    use super::{RoomId, ChatMessage, SignalingServer, SessionId, Participant};
 
-    use crate::presence::{AuthToken, PresenceService, ValidateRequest};
+    use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 
     #[derive(Message)]
     #[rtype(result = "()")]
@@ -134,8 +143,8 @@ pub mod command {
             self.sessions.insert(session_id, return_addr);
 
             if room.len() == 0 {
-                error!("listname must'n be empty");
-                return MessageResult(Err("listname must'n be empty".into()));
+                error!("roomname must'n be empty");
+                return MessageResult(Err("roomname must'n be empty".into()));
             }
 
             PresenceService::from_registry()
@@ -148,10 +157,10 @@ pub mod command {
                             let newly_joined = myself.rooms
                                 .entry(room.clone())
                                 .or_insert(Default::default())
-                                .insert(session_id);
+                                .insert(session_id, Participant { session_id });
 
-                            if newly_joined {
-                                debug!( "rooms: {}, paricipants of {:?}", serde_json::to_string_pretty(&myself.rooms).unwrap(), room);
+                            if newly_joined.is_some() {
+                                debug!( "rooms: {:?}, paricipants of {:?}", &myself.rooms, room);
                             } else {
                                 debug!("{} attempts to join {:?} again", session_id, room)
                             }
@@ -202,7 +211,7 @@ pub mod command {
             MessageResult(
                 self.rooms
                     .iter()
-                    .filter(|(_room, participants)| participants.iter().any(|&session_id| session_id == me.session_id))
+                    .filter(|(_room, participants)| participants.iter().any(|(&session_id, _)| session_id == me.session_id))
                     .map(|(room, _)| room)
                     .cloned()
                     .collect()
@@ -229,14 +238,14 @@ pub mod command {
             let Forward {room, sender, message} = fwd;
 
             if let Some(participants) = self.rooms.get(&room) {
-                if !participants.contains(&sender) {
+                if !participants.contains_key(&sender) {
                     warn!("sender not in room {:?} {}", room, sender);
                     return MessageResult(Err(format!("not member of this room {}", room)));
                 }
-                for participant in participants {
-                    let session = self.sessions.get(&participant).unwrap();
+                for (session_id, participant) in participants {
+                    let session = self.sessions.get(&session_id).unwrap();
 
-                    trace!("forwarding message to {:#?}", participant);
+                    trace!("forwarding message to {:?}", participant);
 
                     session
                         .send(ServerToSession::ChatMessage {

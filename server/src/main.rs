@@ -1,13 +1,15 @@
 use env_logger::{self, Env};
 use log::*;
 
-use actix_web::server::HttpServer;
+use actix_web::HttpServer;
 use actix_web::{
-    fs, ws,
-    middleware, pred, 
-    http::{header, StatusCode, Method },
+    middleware,
+    guard, web,
+    http::{header, StatusCode },
     App, Error, HttpRequest, HttpResponse,
 };
+use actix_files as fs;
+use actix_web_actors::ws;
 
 use std::env;
 
@@ -26,17 +28,17 @@ const LOG_VAR: &str = "SIGNALER_LOG";
 const BIND_VAR: &str = "SIGNALER_BIND";
 const BIND_TO: &str = "127.0.0.1:8080";
 
-fn ws_route(req: &HttpRequest<()>) -> Result<HttpResponse, Error> {
+fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     debug!("chat route: {:?}", req);
-    ws::start(req, ClientSession::default())
+    ws::start(ClientSession::default(), &req, stream)
 }
 
-fn not_found(_req: &HttpRequest) -> Result<fs::NamedFile, Error> {
+fn not_found(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     warn!(target: "WEB_INTERFACE", "not found");
     Ok(fs::NamedFile::open("../static/404.html")?.set_status_code(StatusCode::NOT_FOUND))
 }
 
-fn favicon(_req: &HttpRequest) -> Result<fs::NamedFile, Error> {
+fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     Ok(fs::NamedFile::open("../static/favicon.ico")?)
 }
 
@@ -52,43 +54,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let server = || HttpServer::new(move || {
         App::new()
-            .resource("/bad", |r| {
-                r.method(Method::GET).f(not_found);
-                r.route().filter(pred::Not(pred::Get())).f(|_req| {
-                    warn!("bad");
-                    HttpResponse::MethodNotAllowed()
-                });
-            })
 
-            .default_resource(|r| {
-                r.method(Method::GET).f(not_found);
-                r.route().filter(pred::Not(pred::Get())).f(|_req| HttpResponse::MethodNotAllowed());
-            })
+            .wrap(middleware::Logger::default())
 
-            .middleware(middleware::Logger::default())
+            .service(web::resource("/ws/").route(web::get().to(ws_route)))
+            .service(fs::Files::new("/app", "../static").show_files_listing())
 
-            .resource("/ws/", |r| r.route().f(ws_route))
+            // .resource("/favicon.ico", |r| r.f(favicon))
 
-            .resource("/favicon.ico", |r| r.f(favicon))
-            .handler(
-                "/app",
-                fs::StaticFiles::new("../static/")
-                .unwrap()
-                .index_file("index.html"),
-                )
-
-            .resource("/", |r| r.method(Method::GET).f(|req| {
-                println!("{:?}", req);
+            .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
+            .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
+                trace!("{:?}", req);
                 HttpResponse::Found()
                     .header(header::LOCATION, "app/index.html")
                     .finish()
-            }))
+            })))
+
+            .default_resource(|r| {
+                r.route(web::get().to(not_found))
+                    .route(
+                        web::route()
+                            .guard(guard::Not(guard::Get()))
+                            .to(|| HttpResponse::MethodNotAllowed()),
+                    )
+            })
+
     });
 
     info!("listening on http://{}", bind_to);
     server().bind(bind_to)?.start();
 
-    sys.run();
+    sys.run()?;
     info!("shutting down I guess");
 
     Ok(())

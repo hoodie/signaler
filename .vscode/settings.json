@@ -1,0 +1,9 @@
+{
+    "files.exclude": {
+        ".vscode": true,
+        "**/.gitignore": true,
+        "**/lib/": true,
+        "*/node_modules/": true,
+        "*/target/": true
+    }
+}

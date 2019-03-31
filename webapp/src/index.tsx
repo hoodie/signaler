@@ -7,5 +7,5 @@ import { App } from './App';
 ReactDOM.render(<App/>, document.querySelector('#app'));
 
 (window as any).initSession = () => {
-    const session = new Session('ws://localhost:8080/ws/');
+      const session = new Session(`ws://${location.host}/ws/`)
 };

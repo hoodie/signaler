@@ -46,6 +46,7 @@ pub enum SessionCommand {
     /// shutdown server 😈
     ShutDown,
 
+    /// Request Authentication Token
     Authenticate { credentials: UsernamePassword }
 }
 
@@ -69,6 +70,7 @@ impl SessionCommand {
 pub enum SessionMessage {
     Welcome { session: ClientSession },
 
+    /// response to `SessionCommand::Authenticate`
     Authenticated, //{ profile: UserProfile },
 
     RoomList { rooms: Vec<String> },
@@ -78,8 +80,6 @@ pub enum SessionMessage {
     Message { message: ChatMessage, room: RoomId},
 
     Any { payload: serde_json::Value },
-
-    Ok, // 200
 
     Error { message: String },
 }

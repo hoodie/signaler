@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "webapp"
+		},
+		{
+			"path": "client-lib"
+		},
+		{
+			"path": "server"
+		},
+		{
+			"path": "static"
+		}
+	],
+	"settings": {}
+}
