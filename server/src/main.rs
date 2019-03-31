@@ -1,5 +1,6 @@
 use env_logger::{self, Env};
-use log::*;
+#[allow(unused_imports)]
+use log::{info, error, debug, warn, trace};
 
 use actix_web::HttpServer;
 use actix_web::{
@@ -14,10 +15,12 @@ use actix_web_actors::ws;
 use std::env;
 
 pub mod protocol;
-
 pub mod session;
-pub mod server;
+// pub mod server;
 pub mod presence;
+pub mod room;
+pub mod room_manager;
+
 
 pub mod user_management;
 pub mod static_data;
