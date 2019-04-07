@@ -3,10 +3,9 @@
 //! these are messages the http client can send via a [ClientSession](../session/struct.ClientSession.html)
 
 use serde::{Deserialize, Serialize};
-use crate::session::ClientSession;
-use crate::server::{RoomId, SessionId};
+use crate::session::SessionId;
+use crate::room::RoomId;
 use crate::presence::UsernamePassword;
-use crate::user_management::UserProfile;
 
 /// Actual chat Message
 ///
@@ -68,7 +67,7 @@ impl SessionCommand {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum SessionMessage {
-    Welcome { session: ClientSession },
+    Welcome { session: SessionId },
 
     /// response to `SessionCommand::Authenticate`
     Authenticated, //{ profile: UserProfile },
