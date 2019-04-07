@@ -88,7 +88,7 @@ impl SessionMessage {
         SessionMessage::Error{ message: msg.into()}
     }
 
-    pub fn to_json(self) -> String {
+    pub fn into_json(self) -> String {
         serde_json::to_string(&self).unwrap()
     }
 

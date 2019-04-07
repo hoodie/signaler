@@ -84,8 +84,8 @@ impl ClientSession {
     }
 
     /// send message to client
-    fn send_message(kind: SessionMessage, ctx: &mut WebsocketContext<Self>) {
-        ctx.text(SessionMessage::from(kind).to_json())
+    fn send_message(message: SessionMessage, ctx: &mut WebsocketContext<Self>) {
+        ctx.text(message.into_json())
     }
 
     fn list_rooms(&self, ctx: &mut WebsocketContext<Self>) {
@@ -98,7 +98,7 @@ impl ClientSession {
                 debug!("list request answered: {:?}", rooms);
                 match rooms {
                     Ok(rooms) => Self::send_message(SessionMessage::RoomList{rooms}, ctx),
-                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).to_json())
+                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())
                 }
                 fut::ok(())
             })
@@ -170,7 +170,7 @@ impl ClientSession {
                         Self::send_message(SessionMessage::Authenticated, ctx);
                     }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
-                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).to_json())
+                    Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())
                 }
                 fut::ok(())
             })

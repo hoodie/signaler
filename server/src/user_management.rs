@@ -14,7 +14,7 @@ pub struct UserProfile {
 
 pub trait UserManaging {
     type UserProfile;
-    fn who_is(&self, user_id: &UserId) -> Option<Self::UserProfile>;
+    fn who_is(&self, user_id: &str) -> Option<Self::UserProfile>;
 }
 
 pub struct UserManager<P> {
@@ -29,7 +29,7 @@ impl<P> UserManager<P> {
 
 impl<P> UserManaging for UserManager<P> {
     type UserProfile = P;
-    fn who_is(&self, user_id: &UserId) -> Option<Self::UserProfile> {
+    fn who_is(&self, user_id: &str) -> Option<Self::UserProfile> {
         self.inner.who_is(user_id)
     }
 }
@@ -63,7 +63,7 @@ impl Handler<WhoIsRequest> for UserService {
 
 impl Default for UserService {
     fn default() -> Self {
-        NaiveUserManager::new()
+        NaiveUserManager::naive()
     }
 }
 
@@ -73,7 +73,7 @@ pub struct NaiveUserManager {
 }
 
 impl NaiveUserManager {
-    pub fn new() -> UserService {
+    pub fn naive() -> UserService {
         let manager = NaiveUserManager {
             user_database: StaticUserDatabase::load()
         };
@@ -85,7 +85,7 @@ impl NaiveUserManager {
 impl UserManaging for NaiveUserManager {
     type UserProfile = UserProfile;
 
-    fn who_is(&self, user_id: &UserId) -> Option<UserProfile> {
+    fn who_is(&self, user_id: &str) -> Option<UserProfile> {
         if let Some(profile) = self.user_database.profiles.get(user_id) {
             info!("found profile {:?}", user_id);
             return Some(profile.clone());

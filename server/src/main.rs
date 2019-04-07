@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route(
                         web::route()
                             .guard(guard::Not(guard::Get()))
-                            .to(|| HttpResponse::MethodNotAllowed()),
+                            .to(HttpResponse::MethodNotAllowed),
                     )
             })
 
