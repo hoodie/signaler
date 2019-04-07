@@ -4,14 +4,6 @@ use super::*;
 use crate::session::SessionId;
 use crate::static_data::StaticUserDatabase;
 
-/// Simple Presence Service
-pub type SimplePresenceService = PresenceService<UsernamePassword, AuthToken>;
-
-impl SimplePresenceService {
-    pub fn new() -> Self {
-        super::PresenceService::simple()
-    }
-}
 
 #[derive(Debug)]
 pub struct SessionState {
@@ -27,6 +19,7 @@ pub struct SimplePresenceHandler {
     last_update: Instant,
 }
 
+
 impl SimplePresenceHandler {
     pub fn new() -> Self {
         Self {
@@ -41,6 +34,7 @@ impl SimplePresenceHandler {
     }
 
 }
+
 
 impl PresenceHandler for SimplePresenceHandler {
     type Credentials = UsernamePassword;
@@ -100,41 +94,4 @@ impl PresenceHandler for SimplePresenceHandler {
             .collect()
     }
 
-}
-
-impl Default for SimplePresenceService {
-    fn default() -> Self {
-        PresenceService::simple()
-    }
-}
-
-impl Actor for SimplePresenceService {
-    type Context = Context<Self>;
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        debug!("presence started");
-    }
-}
-
-impl SystemService for SimplePresenceService {}
-impl Supervised for SimplePresenceService {}
-
-/// implementation docs
-impl Handler<AuthenticationRequest<UsernamePassword>> for SimplePresenceService {
-    type Result = MessageResult<AuthenticationRequest<UsernamePassword>>;
-
-    fn handle(&mut self, request: AuthenticationRequest<UsernamePassword>, _ctx: &mut Self::Context) -> Self::Result {
-        info!("received AuthenticationRequest");
-
-        let AuthenticationRequest {credentials, session_id} = request;
-
-        MessageResult(self.associate_user(&credentials, &session_id))
-    }
-}
-
-impl Handler<ValidateRequest> for SimplePresenceService {
-    type Result = MessageResult<ValidateRequest>;
-    fn handle(&mut self, request: ValidateRequest, _ctx: &mut Self::Context) -> Self::Result {
-        let ValidateRequest {token} = request;
-        MessageResult(self.still_valid(&token))
-    }
 }
