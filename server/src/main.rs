@@ -73,14 +73,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .finish()
             })))
 
-            .default_resource(|r| {
-                r.route(web::get().to(not_found))
+            .default_service(
+                web::resource("")
+                    .route(web::get().to(not_found))
                     .route(
                         web::route()
-                            .guard(guard::Not(guard::Get()))
-                            .to(HttpResponse::MethodNotAllowed),
+                        .guard(guard::Not(guard::Get()))
+                        .to(HttpResponse::MethodNotAllowed),
                     )
-            })
+            )
 
     });
 

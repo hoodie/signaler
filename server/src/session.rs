@@ -103,7 +103,6 @@ impl ClientSession {
                 fut::ok(())
             })
             .spawn(ctx);
-        Self::send_message(SessionMessage::RoomList{rooms: Vec::new()}, ctx);
     }
 
     fn list_my_rooms(&self, ctx: &mut WebsocketContext<Self>) {
