@@ -242,7 +242,11 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for ClientSession {
             ws::Message::Text(text) => {
                 self.handle_incoming_message(&text, ctx);
             },
-            _ => (),
+            ws::Message::Close(reason) => {
+                info!("websocket was closed {:?}", reason);
+                ctx.stop();
+            },
+            _ => (), // Pong, Nop, Binary
         }
     }
 }
