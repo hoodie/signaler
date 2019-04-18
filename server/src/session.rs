@@ -141,15 +141,12 @@ impl ClientSession {
         use room::command::RemoveParticipant;
         let rooms_to_leave: HashMap<String, WeakAddr<DefaultRoom>> = self.rooms.drain().collect();
         for (name, addr) in dbg!(rooms_to_leave) {
+            trace!("sending RemoveParticipant to {:?} (waiting)", name);
             addr.upgrade().unwrap()
                 .send(RemoveParticipant { session_id: self.session_id })
-                .into_actor(self)
-                .then(move |_, _, _| {
-                    trace!("sent RemoveParticipant to {:?}", name);
-                    fut::ok(())
-                })
-                .spawn(ctx);
+                .wait().unwrap();
         }
+        trace!("all rooms left");
     }
 
     fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {
@@ -225,7 +222,6 @@ impl Actor for ClientSession {
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         self.leave_all_rooms(ctx);
-        trace!("all rooms left");
 
         Running::Stop
     }

@@ -94,6 +94,7 @@ pub mod command {
             if let Some(_participant) = self.participants.remove(&session_id) {
                 debug!("successfully removed {} from {:?}", session_id, self.id);
                 trace!("{:?} participants: {:?}", self.id, self.participants);
+                trace!("{:?} is ephemeral {}", self.id, self.ephemeral);
             }
             else {
                 warn!("{} was not a participant in {:?}", session_id, self.id);
