@@ -6,6 +6,7 @@ use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
 
+use crate::protocol::ChatMessage;
 use crate::session::{ClientSession, SessionId};
 
 pub type RoomId = String;
@@ -20,6 +21,7 @@ pub struct Participant {
 pub struct DefaultRoom {
     id: RoomId,
     ephemeral: bool,
+    history: Vec<ChatMessage>,
     participants: HashMap<SessionId, Participant>,
 }
 
@@ -28,6 +30,7 @@ impl DefaultRoom {
         Self {
             id,
             ephemeral: false,
+            history: Vec::with_capacity(10_000),
             participants: Default::default()
          }
     }
@@ -64,7 +67,14 @@ pub mod command {
                 .addr.upgrade().unwrap()
                 .send(message::RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
                 .into_actor(self)
-                .then(|_,_,_| fut::ok(()))
+                .then(|_, _,_| fut::ok(()))
+                .spawn(ctx);
+
+            participant
+                .addr.upgrade().unwrap()
+                .send(message::RoomToSession::History{room: self.id.clone(), messages: self.history.clone() })
+                .into_actor(self)
+                .then(|_, _,_| fut::ok(()))
                 .spawn(ctx);
             self.participants.insert(participant.session_id, participant);
             trace!("{:?} participants: {:?}", self.id, self.participants);
@@ -104,7 +114,9 @@ pub mod command {
         fn handle(&mut self, fwd: Forward, ctx: &mut Self::Context) -> Self::Result {
             info!("room {:?} received {:?}", self.id, fwd);
 
-            let Forward {message, ..} = fwd;
+            let Forward { message, .. } = fwd;
+
+            self.history.push(message.clone());
 
             for  participant in self.participants.values() {
                 trace!("forwarding message to {:?}", participant);
@@ -115,7 +127,7 @@ pub mod command {
                         room: self.id.clone(),
                     })
                     .into_actor(self)
-                    .then(|_,_,_|{
+                    .then(|_, _slf, _| {
                         trace!("chatmessages passed on");
                         fut::ok(())
                     })
@@ -141,5 +153,9 @@ pub mod message {
             room: RoomId,
             message: ChatMessage,
         },
+        History {
+            room: RoomId,
+            messages: Vec<ChatMessage>
+        }
     }
 }

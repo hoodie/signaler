@@ -178,11 +178,8 @@ impl ClientSession {
 
     fn forward_message(&self, content: String, room: &str, ctx: &mut WebsocketContext<Self>) {
         let msg = room::command::Forward {
-            message: ChatMessage {
-                content,
-                sender: self.session_id.to_string()
-            },
-            sender: self.session_id
+            message: ChatMessage::new(content, self.session_id),
+            sender: self.session_id,
         };
 
         if let Some(room) = self.rooms.get(room) {
@@ -263,9 +260,16 @@ impl Handler<RoomToSession> for ClientSession {
                 self.list_my_rooms(ctx);
             },
 
-            RoomToSession::ChatMessage{ message, room } => {
+            RoomToSession::ChatMessage{ room, message } => {
                 Self::send_message(SessionMessage::Message{message, room}, ctx)
             },
+
+            RoomToSession::History{ room, mut messages } => {
+                // TODO: Self::send_history
+                for message in messages.drain(..) {
+                    Self::send_message(SessionMessage::Message{ message, room: room.clone() }, ctx)
+                }
+            }
         }
     }
 }

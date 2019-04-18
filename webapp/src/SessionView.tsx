@@ -33,7 +33,12 @@ interface SessionViewState {
 }
 
 const MessageList = ({ messages, me }: { messages: ChatMessage[], me?: string }) => <div className="messageList">
-    {messages.map(msg => <ChatMessageView message={msg} me={me} key={msg.received.toString()} />)}
+    {
+        messages.map(msg => {
+            console.debug({ divkey: msg.uuid })
+            return <ChatMessageView message={msg} me={me} key={msg.uuid} />
+        })
+    }
 </div>
 
 const ChatMessageView = ({ message, me }: { message: ChatMessage, me?: string }) => {

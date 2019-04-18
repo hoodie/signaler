@@ -3,6 +3,8 @@
 //! these are messages the http client can send via a [ClientSession](../session/struct.ClientSession.html)
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::session::SessionId;
 use crate::room::RoomId;
 use crate::presence::UsernamePassword;
@@ -14,14 +16,16 @@ use crate::presence::UsernamePassword;
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
     pub content: String,
-    pub sender: String,
+    pub sender: SessionId,
+    pub uuid: Uuid,
 }
 
 impl ChatMessage {
     pub fn new(content: String, sender: SessionId) -> Self {
         Self {
             content,
-            sender: sender.to_string()
+            sender,
+            uuid: Uuid::new_v4(),
         }
     }
 }

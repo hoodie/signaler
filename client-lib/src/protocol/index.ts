@@ -17,5 +17,6 @@ export const isSessionDescription = (d: any) => typeof d === 'object' && typeof 
 export interface ChatMessage {
     content: string;
     sender: string;
+    uuid: string;
     received: Date;
 }
