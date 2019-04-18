@@ -63,7 +63,8 @@ impl ClientSession {
 
             SessionCommand::Join{ room } => {
                 debug!("requesting to Join {}", room);
-                self.join(&room, ctx);
+                warn!("ignoring request");
+                // self.join(&room, ctx);
             },
 
             SessionCommand::ListMyRooms => {
@@ -117,7 +118,7 @@ impl ClientSession {
                 room: room.into(),
                 participant: Participant {
                     session_id: self.session_id,
-                    addr: ctx.address().downgrade()
+                    addr: ctx.address().recipient()
                 },
                 // return_addr: ctx.address().recipient(),
                 token
@@ -150,6 +151,7 @@ impl ClientSession {
                 })
                 .spawn(ctx);
         }
+        trace!("all rooms left");
     }
 
     fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {
@@ -220,12 +222,12 @@ impl Actor for ClientSession {
     type Context = WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("ClientSession started {:?}", self.session_id);
-        ClientSession::send_message(SessionMessage::Welcome{ session: self.session_id }, ctx);
+        // ClientSession::send_message(SessionMessage::Welcome{ session: self.session_id }, ctx);
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
-        self.leave_all_rooms(ctx);
-        trace!("all rooms left");
+        info!("stopping session");
+        // self.leave_all_rooms(ctx);
 
         Running::Stop
     }

@@ -5,16 +5,22 @@ use actix::WeakAddr;
 use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
+use std::fmt;
 
 use crate::protocol::ChatMessage;
 use crate::session::{ClientSession, SessionId};
 
 pub type RoomId = String;
 
-#[derive(Debug)]
 pub struct Participant {
     pub session_id: SessionId,
-    pub addr: WeakAddr<ClientSession>,
+    pub addr: Recipient<message::RoomToSession>,
+}
+
+impl fmt::Debug for Participant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Participant{{ {} }}", self.session_id)
+    }
 }
 
 #[derive(Debug)]
@@ -64,20 +70,20 @@ pub mod command {
             trace!("Room {:?} adds {:?}", self.id, participant);
             // TODO: prevent duplicates
             participant
-                .addr.upgrade().unwrap()
+                .addr
                 .send(message::RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
                 .into_actor(self)
                 .then(|_, _,_| fut::ok(()))
                 .spawn(ctx);
 
             participant
-                .addr.upgrade().unwrap()
+                .addr
                 .send(message::RoomToSession::History{room: self.id.clone(), messages: self.history.clone() })
                 .into_actor(self)
                 .then(|_, _,_| fut::ok(()))
                 .spawn(ctx);
             self.participants.insert(participant.session_id, participant);
-            trace!("{:?} participants: {:?}", self.id, self.participants);
+            trace!("{:?} {} participants: {:?}", self.id, self.participants.len(), self.participants);
         }
     }
 
@@ -121,7 +127,8 @@ pub mod command {
             for  participant in self.participants.values() {
                 trace!("forwarding message to {:?}", participant);
 
-                participant.addr.upgrade().unwrap()
+                participant
+                    .addr
                     .send(message::RoomToSession::ChatMessage {
                         message: message.clone(),
                         room: self.id.clone(),

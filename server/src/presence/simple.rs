@@ -30,7 +30,7 @@ impl SimplePresenceHandler {
     }
 
     fn still_fresh(created: Instant) -> bool {
-        created.elapsed() < Duration::from_secs(30 * 5)
+        created.elapsed() < Duration::from_secs(10 + 5)
     }
 
 }
@@ -57,7 +57,7 @@ impl PresenceHandler for SimplePresenceHandler {
                 created: Instant::now(),
                 session_id: *session_id
             });
-            trace!("currently logged in {:?}", self.running_sessions);
+            trace!("currently logged in {:#?}", self.running_sessions);
             return Some(token);
         } else {
             debug!("not found {:?}", credentials);

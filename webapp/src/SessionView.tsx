@@ -68,9 +68,9 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
 
         this.session.onWelcome.add(sessionDescription => {
             this.setState({ sessionDescription })
-            this.session.sendCommand({ type: 'listRooms' });
-            this.session.sendCommand({ type: 'listMyRooms' });
-            this.session.authenticate('hendrik', 'password');
+            // this.session.sendCommand({ type: 'listRooms' });
+            // this.session.sendCommand({ type: 'listMyRooms' });
+            // this.session.authenticate('hendrik', 'password');
         });
 
         this.session.onAuthenticated.add(token => {
@@ -117,7 +117,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
     // TODO: temporary
     componentDidMount = () => {
         console.debug("mounted")
-        this.session.connect();
+        // this.session.connect();
     };
 
     private connectionView = () => {

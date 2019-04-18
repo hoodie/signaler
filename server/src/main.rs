@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             .wrap(middleware::Logger::default())
 
-            .service(web::resource("/ws/").route(web::get().to(ws_route)))
+            .service(web::resource("/ws/").to(ws_route))
             .service(fs::Files::new("/app", "../static").show_files_listing())
 
             // .resource("/favicon.ico", |r| r.f(favicon))
