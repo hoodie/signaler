@@ -1257,7 +1257,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "signalizer"
+name = "signaler"
 version = "0.1.0"
 dependencies = [
  "actix 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -47,13 +47,13 @@ fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if env::var(LOG_VAR).is_err() {
-        env::set_var(LOG_VAR, "signalizer=trace,actix_web=info");
+        env::set_var(LOG_VAR, "signaler=trace,actix_web=info");
     }
     env_logger::init_from_env(Env::new().filter(LOG_VAR));
     let bind_to = env::var(BIND_VAR)
                 .unwrap_or_else(|_| BIND_TO.into());
 
-    let sys = actix::System::new("signalizer");
+    let sys = actix::System::new("signaler");
 
     let server = || HttpServer::new(move || {
         App::new()
