@@ -40,7 +40,7 @@ impl PresenceHandler for SimplePresenceHandler {
     type Credentials = UsernamePassword;
     type AuthToken = AuthToken;
 
-    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken> {
+    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<SimpleAuthResponse> {
         let UsernamePassword {username, password} = credentials;
 
         let clean_up_timeout = Duration::from_secs(5);
@@ -58,7 +58,14 @@ impl PresenceHandler for SimplePresenceHandler {
                 session_id: *session_id
             });
             trace!("currently logged in {:?}", self.running_sessions);
-            return Some(token);
+
+            let profile = self.user_database.profiles.get(username);
+
+            if let Some(profile) = profile {
+                trace!("found profile for {:?} -> {:#?}", username, profile);
+            }
+
+            return Some(AuthResponse{ token, profile: profile.cloned() });
         } else {
             debug!("not found {:?}", credentials);
         }

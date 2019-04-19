@@ -14,7 +14,7 @@ use std::collections::HashMap;
     use std::fmt;
 
 use crate::protocol::*;
-use crate::presence::{AuthToken, UsernamePassword, SimplePresenceService, AuthenticationRequest};
+use crate::presence::{AuthToken, AuthResponse, UsernamePassword, SimplePresenceService, AuthenticationRequest};
 use crate::room::{self, DefaultRoom, RoomId, Participant};
 use crate::room_manager::{self, RoomManagerService};
 
@@ -160,10 +160,13 @@ impl ClientSession {
             .then(|profile, client_session, ctx| {
                 debug!("userProfile {:?}", profile);
                 match profile {
-                    Ok(Some(token)) => {
+                    Ok(Some(AuthResponse {token, profile})) => {
                         info!("authenticated {:?}", token);
                         client_session.token = Some(token);
                         Self::send_message(SessionMessage::Authenticated, ctx);
+                        if let Some(profile) = profile {
+                            Self::send_message(SessionMessage::Profile { profile }, ctx);
+                        }
                     }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
                     Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())

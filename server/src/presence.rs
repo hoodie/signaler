@@ -8,6 +8,7 @@ use actix::prelude::*;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
+use crate::user_management::UserProfile;
 use super::*;
 
 use std::time::{Duration, Instant};
@@ -43,12 +44,18 @@ impl Default for AuthToken {
     }
 }
 
+#[derive(Debug)]
+pub struct AuthResponse<T, P> {
+    pub token: T,
+    pub profile: Option<P>,
+}
+
 /// General Behaviour of a PresenceService
 pub trait PresenceHandler {
     type Credentials;
     type AuthToken;
 
-    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken>;
+    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<AuthResponse<Self::AuthToken, UserProfile>>;
     fn still_valid(&self, token: &AuthToken) -> bool;
     fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken>;
     fn logout(&mut self, token: &AuthToken) -> bool;
@@ -65,7 +72,7 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
     type Credentials = C;
     type AuthToken = T;
 
-    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<Self::AuthToken> {
+    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<AuthResponse<Self::AuthToken, UserProfile>> {
         self.inner.associate_user(credentials, session_id)
     }
 
@@ -94,9 +101,11 @@ impl PresenceService<UsernamePassword, AuthToken> {
     }
 }
 
+pub type SimpleAuthResponse = AuthResponse<AuthToken, UserProfile>;
+
 /// Message expected by PresenceService to add SessionId
 #[derive(Message)]
-#[rtype(result = "Option<AuthToken>")]
+#[rtype(result = "Option<SimpleAuthResponse>")]
 pub struct AuthenticationRequest<CREDENTIALS> {
     pub credentials: CREDENTIALS,
     pub session_id: SessionId,
@@ -109,7 +118,7 @@ impl Handler<AuthenticationRequest<UsernamePassword>> for PresenceService<Userna
     fn handle(&mut self, request: AuthenticationRequest<UsernamePassword>, _ctx: &mut Self::Context) -> Self::Result {
         info!("received AuthenticationRequest");
 
-        let AuthenticationRequest {credentials, session_id} = request;
+        let AuthenticationRequest { credentials, session_id } = request;
 
         MessageResult(self.associate_user(&credentials, &session_id))
     }

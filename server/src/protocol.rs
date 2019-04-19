@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::session::SessionId;
 use crate::room::RoomId;
 use crate::presence::UsernamePassword;
+use crate::user_management::UserProfile;
 
 /// Actual chat Message
 ///
@@ -74,7 +75,8 @@ pub enum SessionMessage {
     Welcome { session: SessionId },
 
     /// response to `SessionCommand::Authenticate`
-    Authenticated, //{ profile: UserProfile },
+    Authenticated,
+    Profile { profile: UserProfile },
 
     RoomList { rooms: Vec<String> },
 
