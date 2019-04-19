@@ -37,7 +37,16 @@ impl RoomManagerService {
     }
 
     fn create_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {
+        trace!("create room: {:?}", name);
         let room = DefaultRoom::new(name.into()).start();
+        let weak_room = room.downgrade();
+        self.rooms.insert(name.into(), room);
+        weak_room
+    }
+
+    fn create_permanent_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {
+        trace!("create permanent room: {:?}", name);
+        let room = DefaultRoom::permanent(name.into()).start();
         let weak_room = room.downgrade();
         self.rooms.insert(name.into(), room);
         weak_room
@@ -46,12 +55,17 @@ impl RoomManagerService {
     fn list_rooms(&self) -> Vec<String> {
         self.rooms.keys().cloned().collect()
     }
+
+    fn close_room(&mut self, room_id: RoomId) -> bool {
+        self.rooms.remove(&room_id).is_some()
+    }
 }
 
 impl Actor for RoomManagerService {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
         debug!("RoomManager started");
+        self.create_permanent_room("default");
     }
 }
 
@@ -66,7 +80,7 @@ pub mod command {
     #[allow(unused_imports)]
     use log::{info, error, debug, warn, trace};
 
-    use crate::room::Participant;
+    use crate::room::{ Participant, RoomId};
     use super::RoomManagerService;
     use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 
@@ -116,6 +130,20 @@ pub mod command {
 
         fn handle(&mut self, _request: ListRooms, _ctx: &mut Self::Context) -> Self::Result {
             MessageResult(self.list_rooms())
+        }
+    }
+
+    #[derive(Message)]
+    #[rtype(result = "bool")]
+    pub struct CloseRoom (pub RoomId);
+
+
+    impl Handler<CloseRoom> for RoomManagerService {
+        type Result = MessageResult<CloseRoom>;
+
+        fn handle(&mut self, CloseRoom(room_id): CloseRoom, _ctx: &mut Self::Context) -> Self::Result {
+            // let CloseRoom(room_id) = request;
+            MessageResult(self.close_room(room_id))
         }
     }
 }

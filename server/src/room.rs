@@ -29,6 +29,15 @@ impl DefaultRoom {
     pub fn new(id: RoomId) -> Self {
         Self {
             id,
+            ephemeral: true,
+            history: Vec::with_capacity(10_000),
+            participants: Default::default()
+         }
+    }
+
+    pub fn permanent(id: RoomId) -> Self {
+        Self {
+            id,
             ephemeral: false,
             history: Vec::with_capacity(10_000),
             participants: Default::default()
@@ -47,6 +56,7 @@ pub mod command {
 
     use crate::protocol::ChatMessage;
     use crate::session::SessionId;
+    use crate::room_manager::RoomManagerService;
     use super::{message, DefaultRoom, Participant};
 
     // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
@@ -89,12 +99,36 @@ pub mod command {
     impl Handler<RemoveParticipant> for DefaultRoom {
         type Result = ();
 
-        fn handle(&mut self, command: RemoveParticipant, _ctx: &mut Self::Context)  {
+        fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context)  {
             let RemoveParticipant {session_id} = command;
             if let Some(_participant) = self.participants.remove(&session_id) {
                 debug!("successfully removed {} from {:?}", session_id, self.id);
                 trace!("{:?} participants: {:?}", self.id, self.participants);
-                trace!("{:?} is ephemeral {}", self.id, self.ephemeral);
+                if self.participants.values().count() == 0 {
+                    if self.ephemeral {
+                        trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
+                        RoomManagerService::from_registry()
+                            .send(crate::room_manager::command::CloseRoom(self.id.clone()))
+                            .into_actor(self)
+                            .then(|success, _slf, ctx| {
+                                match success {
+                                    Ok(true) => {
+                                        trace!("room_manager sais I'm fine to shut down");
+                                        ctx.stop();
+                                    },
+                                    _ => {
+                                        warn!("room_manager sais it wasn't able to delete me 🤷")
+                                    }
+                                }
+
+                                fut::ok(())
+                            })
+                            .spawn(ctx)
+
+                    } else {
+                        trace!("{:?} is empty but not ephemeral, staying around", self.id);
+                    }
+                }
             }
             else {
                 warn!("{} was not a participant in {:?}", session_id, self.id);

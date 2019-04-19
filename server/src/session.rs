@@ -137,7 +137,7 @@ impl ClientSession {
 
     }
 
-    fn leave_all_rooms(&mut self, ctx: &mut WebsocketContext<Self>) {
+    fn leave_all_rooms(&mut self, _ctx: &mut WebsocketContext<Self>) {
         use room::command::RemoveParticipant;
         let rooms_to_leave: HashMap<String, WeakAddr<DefaultRoom>> = self.rooms.drain().collect();
         for (name, addr) in dbg!(rooms_to_leave) {
