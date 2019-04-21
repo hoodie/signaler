@@ -5,9 +5,9 @@ authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
 edition = "2018"
 
 [dependencies]
-actix-web = "1.0.0-alpha"
+actix-web = "1.0.0-beta"
 actix-web-actors = "1.0.0-alpha"
-actix-files = "0.1.0-alpha"
+actix-files = "0.1.0-beta"
 actix = "0.8"
 log = "0.4"
 env_logger = "0.6"
