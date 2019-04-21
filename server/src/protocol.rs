@@ -31,6 +31,12 @@ impl ChatMessage {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionDescription {
+    pub session_id: SessionId,
+}
+
 /// Command sent to the server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -72,10 +78,11 @@ impl SessionCommand {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum SessionMessage {
-    Welcome { session: SessionId },
+    Welcome { session: SessionDescription },
 
     /// response to `SessionCommand::Authenticate`
     Authenticated,
+
     Profile { profile: UserProfile },
 
     RoomList { rooms: Vec<String> },

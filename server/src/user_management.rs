@@ -7,6 +7,7 @@ use crate::static_data::StaticUserDatabase;
 pub type UserId = String;
 
 #[derive(Clone, Debug, actix::Message, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserProfile {
     pub full_name: String,
 }

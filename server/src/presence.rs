@@ -16,9 +16,6 @@ use std::collections::HashMap;
 
 mod simple;
 
-/// Simple Presence Service
-pub type SimplePresenceService = PresenceService<UsernamePassword, AuthToken>;
-
 /// Simple Authentication Credentials
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UsernamePassword {
@@ -93,14 +90,6 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
     }
 }
 
-impl PresenceService<UsernamePassword, AuthToken> {
-    pub fn simple() -> Self {
-        Self {
-            inner: Box::new(simple::SimplePresenceHandler::new())
-        }
-    }
-}
-
 pub type SimpleAuthResponse = AuthResponse<AuthToken, UserProfile>;
 
 /// Message expected by PresenceService to add SessionId
@@ -117,9 +106,7 @@ impl Handler<AuthenticationRequest<UsernamePassword>> for PresenceService<Userna
 
     fn handle(&mut self, request: AuthenticationRequest<UsernamePassword>, _ctx: &mut Self::Context) -> Self::Result {
         info!("received AuthenticationRequest");
-
         let AuthenticationRequest { credentials, session_id } = request;
-
         MessageResult(self.associate_user(&credentials, &session_id))
     }
 }
@@ -148,9 +135,14 @@ impl Actor for PresenceService<UsernamePassword, AuthToken> {
 
 impl Default for PresenceService<UsernamePassword, AuthToken> {
     fn default() -> Self {
-        PresenceService::simple()
+        Self {
+            inner: Box::new(simple::SimplePresenceHandler::new())
+        }
     }
 }
 
 impl SystemService for PresenceService<UsernamePassword, AuthToken> {}
 impl Supervised for PresenceService<UsernamePassword, AuthToken> {}
+
+/// Simple Presence Service
+pub type SimplePresenceService = PresenceService<UsernamePassword, AuthToken>;

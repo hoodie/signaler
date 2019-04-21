@@ -1,6 +1,6 @@
 import { Signal } from 'micro-signals';
 
-import { Command } from './protocol';
+import { Command, UserProfile } from './protocol';
 import { serverEvent, ServerEvent } from './protocol';
 import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol';
 
@@ -14,6 +14,7 @@ export class Session {
     private _onWelcome = new Signal<SessionDescription>();
     public readonly onWelcome = this._onWelcome.readOnly();
     public readonly onAuthenticated = new Signal<void>();
+    public readonly onProfile = new Signal<UserProfile>();
 
     public readonly onReceive = new Signal<any>();
     public readonly onRoomList = new Signal<string[]>();
@@ -60,6 +61,7 @@ export class Session {
         this.onReceive.dispatch(msg);
         switch (msg.type) {
             case 'authenticated': return this.onAuthenticated.dispatch();
+            case 'profile': return this.onProfile.dispatch(msg.profile);
             case 'welcome': return this._onWelcome.dispatch(msg.session);
             case 'roomList': return this.onRoomList.dispatch(msg.rooms);
             case 'myRoomList': return this.onMyRoomList.dispatch(msg.rooms);

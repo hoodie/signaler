@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Session, SessionDescription, ChatMessage } from '../../client-lib/';
 import { SendForm } from './SendForm';
 import { AuthenticatedView } from './AuthenticatedView';
+import { UserProfile } from '../../client-lib/src/protocol';
 
 type Fn<T, R=void> = (x:T) => R;
 
@@ -29,6 +30,7 @@ interface SessionViewState {
     roomToJoin: string;
     receivedMessagesByRoom: { [index: string]: ChatMessage[] },
 
+    profile?: UserProfile;
     sessionDescription?: SessionDescription;
 }
 
@@ -73,10 +75,12 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.session.authenticate('hendrik', 'password');
         });
 
-        this.session.onAuthenticated.add(token => {
+        this.session.onAuthenticated.add(() => {
             this.setState({ authenticated: true });
             this.session.join('default');
         })
+
+        this.session.onProfile.add(profile => this.setState({profile}));
 
         this.session.onConnectionClose.add(event => {
             console.error(event);
@@ -176,6 +180,10 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             <div className="sessionView">
             <header>
                 <h3>Session</h3>
+                {this.state.profile && this.state.profile.fullName}
+                <pre>
+                    {this.state.sessionDescription && JSON.stringify(this.state.sessionDescription)}
+                </pre>
             </header>
                 {this.connectionView()}
             </div>

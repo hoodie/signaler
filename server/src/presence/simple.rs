@@ -1,4 +1,6 @@
 //! Simple `PresenceHandler` implementation
+//!
+//! for simplicity sake this handles user profiles itself, this should probably be handled by another actor
 
 use super::*;
 use crate::session::SessionId;
@@ -30,7 +32,7 @@ impl SimplePresenceHandler {
     }
 
     fn still_fresh(created: Instant) -> bool {
-        created.elapsed() < Duration::from_secs(30 * 5)
+        created.elapsed() < Duration::from_secs(60 * 2)
     }
 
 }

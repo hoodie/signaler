@@ -5,7 +5,7 @@ use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
 
-use crate::room::{DefaultRoom, Participant, RoomId};
+use crate::room::{DefaultRoom, Participant, RoomId, message::RoomToSession};
 use crate::room::command::AddParticipant;
 
 #[derive(Copy, Clone, Debug)]
@@ -34,6 +34,15 @@ impl RoomManagerService {
                 .spawn(ctx);
         }
 
+    }
+
+    fn send_decline(&mut self, room_id: &str, participant: Participant, ctx: &mut Context<Self>) {
+        participant
+            .addr.upgrade().unwrap()
+            .send(RoomToSession::JoinDeclined { room: room_id.into()})
+            .into_actor(self)
+            .then(|_, _, _| fut::ok(()))
+            .spawn(ctx);
     }
 
     fn create_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {
@@ -80,7 +89,7 @@ pub mod command {
     #[allow(unused_imports)]
     use log::{info, error, debug, warn, trace};
 
-    use crate::room::{ Participant, RoomId};
+    use crate::room::{Participant, RoomId};
     use super::RoomManagerService;
     use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 
@@ -102,14 +111,15 @@ pub mod command {
             PresenceService::from_registry()
                 .send(ValidateRequest { token })
                 .into_actor(self)
-                .then(move |is_valid, myself, ctx| {
+                .then(move |is_valid, slf, ctx| {
 
                     match is_valid {
                         Ok(true)  => {
-                            myself.join_room(&room, participant, ctx);
+                            slf.join_room(&room, participant, ctx);
                         }
                         _ => {
                             warn!("{} attempted to join {} with invalid authentication", participant.session_id, room);
+                            slf.send_decline(&room, participant, ctx);
                             // TODO: send error to client_session
                         }
                     }

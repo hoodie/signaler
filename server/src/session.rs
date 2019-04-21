@@ -39,7 +39,7 @@ impl ClientSession {
         // trace!("handle message: {:?}", raw_msg);
         let parsed: Result<SessionCommand, _> = serde_json::from_str(raw_msg);
         if let Ok(msg) = parsed {
-            debug!("parsed ok\n{}\n{:?}", raw_msg, msg);
+            trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
             self.dispatch_incoming_message(msg, ctx)
 
         } else {
@@ -52,32 +52,32 @@ impl ClientSession {
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut WebsocketContext<Self>) {
         match msg {
             SessionCommand::Authenticate { credentials } => {
-                debug!("received credentials {:?}", credentials);
+                trace!("received credentials {:?}", credentials);
                 self.authenticate(credentials, ctx);
             },
 
             SessionCommand::ListRooms => {
-                debug!("received ListRooms signal");
+                trace!("received ListRooms signal");
                 self.list_rooms(ctx);
             },
 
             SessionCommand::Join{ room } => {
-                debug!("requesting to Join {}", room);
+                trace!("requesting to Join {}", room);
                 self.join(&room, ctx);
             },
 
             SessionCommand::ListMyRooms => {
-                debug!("received ListMyRooms signal");
+                trace!("received ListMyRooms signal");
                 self.list_my_rooms(ctx);
             },
 
             SessionCommand::Message{ message, room } => {
-                debug!("received message to forward");
+                trace!("received message to forward");
                 self.forward_message( message, &room, ctx);
             },
 
             SessionCommand::ShutDown => {
-                debug!("received shut down signal");
+                trace!("received shut down signal");
                 System::current().stop();
             },
         }
@@ -112,7 +112,7 @@ impl ClientSession {
     }
 
     fn join(&self, room: &str, ctx: &mut WebsocketContext<Self>) {
-        if let Some(token) = self.token {
+        if let Some(token) = dbg!(self.token) {
             let msg = room_manager::command::JoinRoom {
                 room: room.into(),
                 participant: Participant {
@@ -150,6 +150,7 @@ impl ClientSession {
     }
 
     fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {
+        trace!("session starts authentication process");
         let msg = AuthenticationRequest {
             credentials,
             session_id: self.session_id
@@ -182,7 +183,7 @@ impl ClientSession {
             sender: self.session_id,
         };
 
-        if let Some(room) = self.rooms.get(room) {
+        if let Some(room) = dbg!(self.rooms.get(room)) {
             room.upgrade().unwrap().send(msg)
                 .into_actor(self)
                 .then(|resp, _, ctx| {
@@ -220,7 +221,7 @@ impl Actor for ClientSession {
     type Context = WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("ClientSession started {:?}", self.session_id);
-        ClientSession::send_message(SessionMessage::Welcome{ session: self.session_id }, ctx);
+        ClientSession::send_message(SessionMessage::Welcome{ session: SessionDescription { session_id: self.session_id } }, ctx);
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
@@ -272,6 +273,10 @@ impl Handler<RoomToSession> for ClientSession {
                 for message in messages.drain(..) {
                     Self::send_message(SessionMessage::Message{ message, room: room.clone() }, ctx)
                 }
+            },
+
+            RoomToSession::JoinDeclined{ room } => {
+                Self::send_message(SessionMessage::Error{message: format!("unable to join room {}", room) }, ctx)
             }
         }
     }

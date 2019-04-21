@@ -20,3 +20,7 @@ export interface ChatMessage {
     uuid: string;
     received: Date;
 }
+
+export interface UserProfile {
+    fullName: string;
+}

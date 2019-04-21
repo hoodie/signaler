@@ -191,6 +191,9 @@ pub mod message {
         History {
             room: RoomId,
             messages: Vec<ChatMessage>
+        },
+        JoinDeclined {
+            room: RoomId,
         }
     }
 }
