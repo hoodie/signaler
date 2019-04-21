@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use crate::protocol;
 use crate::session::{self, ClientSession, SessionId};
-use crate::user_management::UserProfile;
 
 pub type RoomId = String;
 

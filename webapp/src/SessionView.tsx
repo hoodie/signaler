@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Session, SessionDescription, ChatMessage } from '../../client-lib/';
 import { SendForm } from './SendForm';
 import { AuthenticatedView } from './AuthenticatedView';
-import { UserProfile } from '../../client-lib/src/protocol';
+import { UserProfile, Participant } from '../../client-lib/src/protocol';
 
 type Fn<T, R=void> = (x:T) => R;
 
@@ -26,6 +26,7 @@ interface SessionViewState {
     authenticated: boolean,
     rooms: string[];
     myrooms: string[];
+    participantsByRoom: {[room: string]: Array<Participant>};
     roomToSendTo: string;
     roomToJoin: string;
     receivedMessagesByRoom: { [index: string]: ChatMessage[] },
@@ -35,16 +36,11 @@ interface SessionViewState {
 }
 
 const MessageList = ({ messages, me }: { messages: ChatMessage[], me?: string }) => <div className="messageList">
-    {
-        messages.map(msg => {
-            console.debug({ divkey: msg.uuid })
-            return <ChatMessageView message={msg} me={me} key={msg.uuid} />
-        })
-    }
-</div>
+        { messages.map(msg => <ChatMessageView message={msg} me={me} key={msg.uuid} />) }
+    </div>
 
 const ChatMessageView = ({ message, me }: { message: ChatMessage, me?: string }) => {
-    const senderName = me === message.sender ? "me" : message.sender;
+    const senderName = message.sender === me ? 'me' : message.senderName;
     return (<React.Fragment>
         <span className="timestamp">{message.received.getHours()}:{message.received.getMinutes()}</span>
         <span className={`sender ${senderName}`}>{senderName}</span>
@@ -62,6 +58,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             authenticated: false,
             rooms: [],
             myrooms: [],
+            participantsByRoom: {},
             receivedMessagesByRoom: {},
             roomToJoin: "default",
             roomToSendTo: "default"
@@ -95,6 +92,11 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
         this.session.onMyRoomList.add(myrooms => {
             console.debug("onMyRoomList", myrooms)
             this.setState({ myrooms })
+        });
+
+        this.session.onRoomParticipants.add(({room, participants}) => {
+            let participantsByRoom = {...this.state.participantsByRoom, [room]: participants};
+            this.setState({participantsByRoom})
         });
 
         this.session.onMessage.add(({ message, room }) => {
@@ -131,12 +133,18 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                     <aside>
                         <h4>my rooms</h4>
                         <RoomSelector rooms={this.state.myrooms} onSelect={roomToSendTo => this.setState({ roomToSendTo })} />
+                        <ul> {
+                        (this.state.participantsByRoom[this.state.roomToSendTo] || [])
+                            .map(participant => <li key={participant.sessionId}>{participant.fullName}</li>)
+                        }</ul>
                     </aside>
 
                     <section>
                         <div className="messageBox">
                             <div>
-                                <MessageList messages={this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []} me={this.state.sessionDescription.session_id}></MessageList>
+                                <MessageList
+                                    messages={this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []}
+                                    me={this.state.sessionDescription.sessionId}/>
                                 <span ref={e => this.lastMessage = !e ? undefined : e} ></span>
                             </div>
                         </div>
@@ -146,7 +154,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                     <nav>
                         <small>
                             SessionId:
-                            <pre>{this.state.sessionDescription.session_id}</pre>
+                            <pre>{this.state.sessionDescription.sessionId}</pre>
                         </small>
 
                         <AuthenticatedView authenticated={this.state.authenticated} onsubmit={(u, p) => this.session.authenticate(u, p)}>
@@ -181,9 +189,6 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             <header>
                 <h3>Session</h3>
                 {this.state.profile && this.state.profile.fullName}
-                <pre>
-                    {this.state.sessionDescription && JSON.stringify(this.state.sessionDescription)}
-                </pre>
             </header>
                 {this.connectionView()}
             </div>

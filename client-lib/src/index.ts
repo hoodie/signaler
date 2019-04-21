@@ -1,6 +1,6 @@
 import { Signal } from 'micro-signals';
 
-import { Command, UserProfile } from './protocol';
+import { Command, UserProfile, RoomParticipants } from './protocol';
 import { serverEvent, ServerEvent } from './protocol';
 import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol';
 
@@ -19,6 +19,7 @@ export class Session {
     public readonly onReceive = new Signal<any>();
     public readonly onRoomList = new Signal<string[]>();
     public readonly onMyRoomList = new Signal<string[]>();
+    public readonly onRoomParticipants = new Signal<RoomParticipants>();
     public readonly onMessage = new Signal<serverEvent.Message>();
 
     public readonly onConnectionClose = new Signal<CloseEvent>();
@@ -65,6 +66,7 @@ export class Session {
             case 'welcome': return this._onWelcome.dispatch(msg.session);
             case 'roomList': return this.onRoomList.dispatch(msg.rooms);
             case 'myRoomList': return this.onMyRoomList.dispatch(msg.rooms);
+            case 'roomParticipants': return this.onRoomParticipants.dispatch(msg);
             case 'message': {
                 console.info('chatmessage received', msg);
                 this.onMessage.dispatch({...msg, message: {...msg.message, received: new Date()}});
@@ -72,7 +74,7 @@ export class Session {
             }
             case 'any': return console.debug(msg.payload);
             case 'error': return console.error("Server Error", msg.message);
-            default: return console.warn('unhandle message', msg);
+            default: return console.warn('unhandled message', msg);
         }
     }
 

@@ -182,8 +182,10 @@ impl ClientSession {
     }
 
     fn forward_message(&self, content: String, room: &str, ctx: &mut WebsocketContext<Self>) {
+        let full_name = if let Some(ref profile) = self.profile { profile.full_name.as_ref() } else { "unnamed" };
+
         let msg = room::command::Forward {
-            message: ChatMessage::new(content, self.session_id),
+            message: ChatMessage::new(content, self.session_id, full_name),
             sender: self.session_id,
         };
 

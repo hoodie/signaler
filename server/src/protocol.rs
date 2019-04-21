@@ -18,6 +18,7 @@ use crate::user_management::UserProfile;
 pub struct ChatMessage {
     pub content: String,
     pub sender: SessionId,
+    pub sender_name: String,
     pub uuid: Uuid,
 }
 
@@ -42,10 +43,11 @@ impl From<(UserProfile, SessionId)> for Participant {
 
 
 impl ChatMessage {
-    pub fn new(content: String, sender: SessionId) -> Self {
+    pub fn new(content: String, sender: SessionId, sender_name: &str) -> Self {
         Self {
             content,
             sender,
+            sender_name: sender_name.into(),
             uuid: Uuid::new_v4(),
         }
     }
