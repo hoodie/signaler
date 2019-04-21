@@ -17,12 +17,14 @@ use crate::protocol::*;
 use crate::presence::{AuthToken, AuthResponse, UsernamePassword, SimplePresenceService, AuthenticationRequest};
 use crate::room::{self, DefaultRoom, RoomId, Participant};
 use crate::room_manager::{self, RoomManagerService};
+use crate::user_management::UserProfile;
 
 pub type SessionId = Uuid;
 
 pub struct ClientSession {
     session_id: SessionId,
     token: Option<AuthToken>,
+    profile: Option<UserProfile>,
     rooms: HashMap<RoomId, WeakAddr<DefaultRoom>>,
 }
 
@@ -144,6 +146,7 @@ impl ClientSession {
             trace!("sending RemoveParticipant to {:?} (waiting)", name);
             addr.upgrade().unwrap()
                 .send(RemoveParticipant { session_id: self.session_id })
+                .timeout(std::time::Duration::new(1, 0))
                 .wait().unwrap();
         }
         trace!("all rooms left");
@@ -164,6 +167,7 @@ impl ClientSession {
                     Ok(Some(AuthResponse {token, profile})) => {
                         info!("authenticated {:?}", token);
                         client_session.token = Some(token);
+                        client_session.profile = profile.clone();
                         Self::send_message(SessionMessage::Authenticated, ctx);
                         if let Some(profile) = profile {
                             Self::send_message(SessionMessage::Profile { profile }, ctx);
@@ -212,6 +216,7 @@ impl Default for ClientSession {
         Self {
             session_id: Uuid::new_v4(),
             token: None,
+            profile: None,
             rooms: Default::default()
         }
     }
@@ -268,6 +273,11 @@ impl Handler<RoomToSession> for ClientSession {
                 Self::send_message(SessionMessage::Message{message, room}, ctx)
             },
 
+            RoomToSession::Participants{ room, participants } => {
+                debug!("forwarding participants for room: {:?}\n{:#?}", room, participants);
+                Self::send_message(SessionMessage::RoomParticipants{ room, participants }, ctx)
+            },
+
             RoomToSession::History{ room, mut messages } => {
                 // TODO: Self::send_history
                 for message in messages.drain(..) {
@@ -278,6 +288,28 @@ impl Handler<RoomToSession> for ClientSession {
             RoomToSession::JoinDeclined{ room } => {
                 Self::send_message(SessionMessage::Error{message: format!("unable to join room {}", room) }, ctx)
             }
+        }
+    }
+}
+
+pub mod command {
+    use actix::prelude::*;
+    use actix_web_actors::ws::WebsocketContext;
+    #[allow(unused_imports)]
+    use log::{info, error, debug, warn, trace};
+
+    use super::ClientSession;
+    use crate::user_management::UserProfile;
+
+    #[derive(Message)]
+    #[rtype(result = "Option<UserProfile>")]
+    pub struct ProvideProfile;
+
+    impl Handler<ProvideProfile> for ClientSession {
+        type Result = MessageResult<ProvideProfile>;
+
+        fn handle(&mut self, command: ProvideProfile, ctx: &mut WebsocketContext<Self>) -> Self::Result {
+            MessageResult(self.profile.clone())
         }
     }
 }

@@ -21,6 +21,26 @@ pub struct ChatMessage {
     pub uuid: Uuid,
 }
 
+/// Actual chat Message
+///
+/// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Participant {
+    pub full_name: String,
+    pub session_id: SessionId,
+}
+
+impl From<(UserProfile, SessionId)> for Participant {
+    fn from((profile, session_id): (UserProfile, SessionId)) -> Participant {
+        Participant {
+            full_name: profile.full_name,
+            session_id,
+        }
+    }
+}
+
+
 impl ChatMessage {
     pub fn new(content: String, sender: SessionId) -> Self {
         Self {
@@ -88,6 +108,8 @@ pub enum SessionMessage {
     RoomList { rooms: Vec<String> },
 
     MyRoomList { rooms: Vec<String> },
+
+    RoomParticipants { room: RoomId, participants: Vec<Participant>},
 
     Message { message: ChatMessage, room: RoomId},
 
