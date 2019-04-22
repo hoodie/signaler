@@ -20,7 +20,7 @@ export class Session {
     public readonly onRoomList = new Signal<string[]>();
     public readonly onMyRoomList = new Signal<string[]>();
     public readonly onRoomParticipants = new Signal<RoomParticipants>();
-    public readonly onMessage = new Signal<serverEvent.Message>();
+    public readonly onMessage = new Signal<{room: string, message: ChatMessage}>();
     public readonly onError = new Signal<string>();
 
     public readonly onConnectionClose = new Signal<CloseEvent>();
@@ -70,7 +70,14 @@ export class Session {
             case 'roomParticipants': return this.onRoomParticipants.dispatch(msg);
             case 'message': {
                 console.info('chatmessage received', msg);
-                this.onMessage.dispatch({...msg, message: {...msg.message, received: new Date()}});
+                this.onMessage.dispatch({
+                    message: {
+                        ...msg.message,
+                        received: new Date(),
+                        sent: new Date(msg.message.sent),
+                    },
+                    room: msg.room,
+                });
                 return;
             }
             case 'any': return console.debug(msg.payload);

@@ -19,7 +19,7 @@ pub struct ChatMessage {
     pub content: String,
     pub sender: SessionId,
     pub sender_name: String,
-    // pub sent: chrono::NaiveDateTime,
+    pub sent: chrono::DateTime<chrono::Utc>,
     pub uuid: Uuid,
 }
 
@@ -49,6 +49,7 @@ impl ChatMessage {
             content,
             sender,
             sender_name: sender_name.into(),
+            sent: chrono::Utc::now(),
             uuid: Uuid::new_v4(),
         }
     }
