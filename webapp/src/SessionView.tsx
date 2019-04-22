@@ -4,18 +4,8 @@ import { Session, SessionDescription, ChatMessage } from '../../client-lib/';
 import { SendForm } from './SendForm';
 import { AuthenticatedView } from './AuthenticatedView';
 import { UserProfile, Participant } from '../../client-lib/src/protocol';
-
-type Fn<T, R=void> = (x:T) => R;
-
-const RoomSelector = ({ rooms, onSelect }: { rooms: string[], onSelect: Fn<string> }) => {
-    return (
-        <React.Fragment>
-            {rooms.map(room => (
-                <button key={room} onClick={() => onSelect(room)}>{room}</button>
-            ))}
-        </React.Fragment>
-    )
-};
+import { MessageList } from './MessageViews';
+import { RoomSelector } from './RoomSelector';
 
 export interface SessionViewProps {
     session: Session;
@@ -34,19 +24,6 @@ interface SessionViewState {
     profile?: UserProfile;
     sessionDescription?: SessionDescription;
 }
-
-const MessageList = ({ messages, me }: { messages: ChatMessage[], me?: string }) => <div className="messageList">
-        { messages.map(msg => <ChatMessageView message={msg} me={me} key={msg.uuid} />) }
-    </div>
-
-const ChatMessageView = ({ message, me }: { message: ChatMessage, me?: string }) => {
-    const senderName = message.sender === me ? 'me' : message.senderName;
-    return (<React.Fragment>
-        <span className="timestamp">{message.received.getHours()}:{message.received.getMinutes()}</span>
-        <span className={`sender ${senderName}`}>{senderName}</span>
-        <span className="content">{message.content}</span>
-    </React.Fragment>);
-};
 
 export class SessionView extends React.Component<SessionViewProps, SessionViewState> {
     private session: Session;
@@ -69,7 +46,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.setState({ sessionDescription })
             this.session.sendCommand({ type: 'listRooms' });
             this.session.sendCommand({ type: 'listMyRooms' });
-            this.session.authenticate('hendrik', 'password');
+            // this.session.authenticate('hendrik', 'password');
         });
 
         this.session.onAuthenticated.add(() => {
@@ -109,6 +86,8 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.lastMessage!.scrollIntoView({ behavior: "smooth" });
         });
 
+        this.session.onError.add(alert);
+
         (window as any).session = this.session;
     }
 
@@ -123,7 +102,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
     // TODO: temporary
     componentDidMount = () => {
         console.debug("mounted")
-        this.session.connect();
+        // this.session.connect();
     };
 
     private connectionView = () => {
@@ -153,8 +132,13 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
 
                     <nav>
                         <small>
-                            SessionId:
-                            <pre>{this.state.sessionDescription.sessionId}</pre>
+                            <dl>
+                                <dt>Username</dt>
+                                <dd>{this.state.profile && this.state.profile.fullName}</dd>
+                                <dt>SessionId</dt>
+                                <dd><pre>{this.state.sessionDescription.sessionId}</pre></dd>
+                            </dl>
+
                         </small>
 
                         <AuthenticatedView authenticated={this.state.authenticated} onsubmit={(u, p) => this.session.authenticate(u, p)}>
@@ -186,10 +170,6 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
     render() {
         return (
             <div className="sessionView">
-            <header>
-                <h3>Session</h3>
-                {this.state.profile && this.state.profile.fullName}
-            </header>
                 {this.connectionView()}
             </div>
         )

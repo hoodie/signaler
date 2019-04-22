@@ -46,6 +46,7 @@ fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    color_backtrace::install();
     if env::var(LOG_VAR).is_err() {
         env::set_var(LOG_VAR, "signaler=trace,actix_web=info");
     }

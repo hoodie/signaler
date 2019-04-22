@@ -2,9 +2,9 @@ import * as React from "react";
 import * as ReactDOM from 'react-dom';
 
 import { Session } from '../../client-lib/';
-import { App } from './App';
+import { SignalerContainer } from './App';
 
-ReactDOM.render(<App/>, document.querySelector('#app'));
+ReactDOM.render(<SignalerContainer/>, document.querySelector('#app'));
 
 (window as any).initSession = () => {
       const session = new Session(`ws://${location.host}/ws/`)

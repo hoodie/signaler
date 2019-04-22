@@ -52,36 +52,21 @@ impl ClientSession {
 
     /// react to client messages
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut WebsocketContext<Self>) {
+        trace!("received {:?}", msg);
         match msg {
-            SessionCommand::Authenticate { credentials } => {
-                trace!("received credentials {:?}", credentials);
-                self.authenticate(credentials, ctx);
-            },
+            SessionCommand::Authenticate { credentials } => self.authenticate(credentials, ctx),
 
-            SessionCommand::ListRooms => {
-                trace!("received ListRooms signal");
-                self.list_rooms(ctx);
-            },
+            SessionCommand::ListRooms => self.list_rooms(ctx),
 
-            SessionCommand::Join{ room } => {
-                trace!("requesting to Join {}", room);
-                self.join(&room, ctx);
-            },
+            SessionCommand::Join{ room } =>  self.join(&room, ctx),
 
-            SessionCommand::ListMyRooms => {
-                trace!("received ListMyRooms signal");
-                self.list_my_rooms(ctx);
-            },
+            SessionCommand::ListMyRooms => self.list_my_rooms(ctx),
 
-            SessionCommand::Message{ message, room } => {
-                trace!("received message to forward");
-                self.forward_message( message, &room, ctx);
-            },
+            SessionCommand::ListParticipants { room } => self.request_room_update(&room, ctx),
 
-            SessionCommand::ShutDown => {
-                trace!("received shut down signal");
-                System::current().stop();
-            },
+            SessionCommand::Message{ message, room } => self.forward_message( message, &room, ctx),
+
+            SessionCommand::ShutDown => System::current().stop()
         }
     }
 
@@ -181,7 +166,16 @@ impl ClientSession {
             .spawn(ctx);
     }
 
-    fn forward_message(&self, content: String, room: &str, ctx: &mut WebsocketContext<Self>) {
+    fn room_addr(&self, room_id: &str) -> Option<Addr<DefaultRoom>> {
+        let addr = self.rooms.get(room_id).and_then(|room| room.upgrade());
+        if addr.is_none() {
+            warn!("room: {:?} was no longer reachable by clientsession {:?}, removing", room_id, self.session_id);
+            // self.rooms.remove(room_id); // TODO: do at Interval
+        }
+        addr
+    }
+
+    fn forward_message(&self, content: String, room_id: &str, ctx: &mut WebsocketContext<Self>) {
         let full_name = if let Some(ref profile) = self.profile { profile.full_name.as_ref() } else { "unnamed" };
 
         let msg = room::command::Forward {
@@ -189,8 +183,8 @@ impl ClientSession {
             sender: self.session_id,
         };
 
-        if let Some(room) = dbg!(self.rooms.get(room)) {
-            room.upgrade().unwrap().send(msg)
+        if let Some(addr) = self.room_addr(room_id) {
+            addr.send(msg)
                 .into_actor(self)
                 .then(|resp, _, ctx| {
                     debug!("message forwared -> {:?}", resp);
@@ -208,9 +202,27 @@ impl ClientSession {
                 })
                 .spawn(ctx);
         } else {
-            error!("no such room {:?}", room);
+            error!("no such room {:?}", room_id);
         }
     }
+
+    fn request_room_update(&self, room_id: &str, ctx: &mut WebsocketContext<Self>) {
+        let room_name = room_id.to_owned();
+        if let Some(addr) = self.room_addr(room_id) {
+            addr.send(room::command::RoomUpdate)
+                .into_actor(self)
+                .then(|resp, _, ctx| {
+                    debug!("received response for ListParticipants request");
+                    match resp {
+                        Ok(participants) => Self::send_message(SessionMessage::RoomParticipants{room: room_name, participants}, ctx),
+                        Err(error) => Self::send_message(SessionMessage::Error{ message: error.to_string()}, ctx)
+                    }
+                    fut::ok(())
+                })
+                .spawn(ctx);
+        }
+    }
+
 }
 
 impl Default for ClientSession {
@@ -275,7 +287,7 @@ impl Handler<RoomToSession> for ClientSession {
                 Self::send_message(SessionMessage::Message{message, room}, ctx)
             },
 
-            RoomToSession::Participants{ room, participants } => {
+            RoomToSession::RoomState{ room, participants } => {
                 debug!("forwarding participants for room: {:?}\n{:#?}", room, participants);
                 Self::send_message(SessionMessage::RoomParticipants{ room, participants }, ctx)
             },
@@ -310,7 +322,7 @@ pub mod command {
     impl Handler<ProvideProfile> for ClientSession {
         type Result = MessageResult<ProvideProfile>;
 
-        fn handle(&mut self, command: ProvideProfile, ctx: &mut WebsocketContext<Self>) -> Self::Result {
+        fn handle(&mut self, _: ProvideProfile, _: &mut WebsocketContext<Self>) -> Self::Result {
             MessageResult(self.profile.clone())
         }
     }

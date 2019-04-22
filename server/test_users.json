@@ -1,10 +1,22 @@
 {
   "credentials": {
-    "hendrik": "password"
+    "hendrik": "password",
+    "daenny": "dracarys",
+    "jon": "password",
+    "aria": "password"
   },
   "profiles": {
     "hendrik": {
-      "fullName": "Hendrik der Eroberer"
+      "fullName": "Hendrik"
+    },
+    "daenny": {
+      "fullName": "Daenerys Targaryen"
+    },
+    "jon": {
+      "fullName": "Jon Snow"
+    },
+    "aria": {
+      "fullName": "Aria Stark"
     }
   }
 }

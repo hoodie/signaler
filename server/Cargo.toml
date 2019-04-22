@@ -16,3 +16,4 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"]}
 
 uuid = { version = "0.7.4", features = ["serde", "v4"] }
+color-backtrace = "0.1.3"

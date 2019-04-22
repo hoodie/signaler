@@ -8,7 +8,7 @@ interface AppState {
     session?: Session;
 }
 
-export class App extends React.Component<{}, AppState> {
+export class SignalerContainer extends React.Component<{}, AppState> {
 
     constructor(props: any) {
         super(props);

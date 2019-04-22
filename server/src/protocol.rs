@@ -19,6 +19,7 @@ pub struct ChatMessage {
     pub content: String,
     pub sender: SessionId,
     pub sender_name: String,
+    // pub sent: chrono::NaiveDateTime,
     pub uuid: Uuid,
 }
 
@@ -74,6 +75,8 @@ pub enum SessionCommand {
 
     /// List rooms I'm member of
     ListMyRooms,
+
+    ListParticipants {room: RoomId},
 
     /// shutdown server 😈
     ShutDown,

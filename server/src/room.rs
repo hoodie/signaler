@@ -1,10 +1,12 @@
 use actix::prelude::*;
+use actix::utils::IntervalFunc;
 use actix::WeakAddr;
 
 #[allow(unused_imports)]
 use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use crate::protocol;
 use crate::session::{self, ClientSession, SessionId};
@@ -15,6 +17,12 @@ pub type RoomId = String;
 pub struct Participant {
     pub session_id: SessionId,
     pub addr: WeakAddr<ClientSession>,
+}
+
+#[derive(Debug)]
+struct LiveParticipant {
+    session_id: SessionId,
+    addr: Addr<ClientSession>,
 }
 
 #[derive(Debug)]
@@ -47,13 +55,69 @@ impl DefaultRoom {
          }
     }
 
-    fn lookup_presence_details(&self, ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
+    fn live_participants<'a>(&'a self) -> impl Iterator<Item=LiveParticipant> + 'a {
+        self.participants
+            .values()
+            .filter_map(|participant| {
+                if let Some(addr) = participant.addr.upgrade() {
+                    Some(LiveParticipant {
+                        session_id: participant.session_id,
+                        addr,
+                    })
+                } else {
+                   error!("participant {} was dead, skipping", participant.session_id);
+                   None
+                }
+            })
+    }
+
+    fn send_update_to_all_participants(&self, ctx: &mut Context<Self>) {
+
+            for participant in self.live_participants() {
+                trace!("forwarding message to {:?}", participant);
+
+                participant
+                    .addr
+                    .send(message::RoomToSession::RoomState {
+                        room: self.id.clone(),
+                        participants: self.list_participants(ctx),
+                    })
+                    .into_actor(self)
+                    .then(|_, _slf, _| {
+                        trace!("RoomState passed on");
+                        fut::ok(())
+                    })
+                    .spawn(ctx);
+                }
+    }
+
+    fn gc(&mut self, _ctx: &mut Context<Self>) {
+        self.clearout_dead_participants();
+    }
+
+    fn clearout_dead_participants(&mut self) {
+        self.participants =
+        self.participants
+        .drain()
+        .filter(|(_, participant)| {
+            if participant.addr.upgrade().is_none() {
+                debug!("garbage collecting participant {:?}", participant.session_id);
+                false
+            } else {
+                true
+            }
+        })
+        .collect()
+    }
+
+
+    fn lookup_presence_details(&self, _ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
         use std::time::Duration;
         // PresenceService.send... Lookup SessionIds
-        self.participants.values()
+        self.live_participants()
             .filter_map(|participant| {
                 participant
-                    .addr.upgrade().unwrap()
+                    .addr
                     .send(session::command::ProvideProfile)
                     .timeout(Duration::new(1, 0))
                     .wait()
@@ -64,6 +128,7 @@ impl DefaultRoom {
             .filter_map(|x|x)
             .collect()
     }
+
     fn list_participants(&self, ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
         self.lookup_presence_details(ctx)
     }
@@ -71,6 +136,12 @@ impl DefaultRoom {
 
 impl Actor for DefaultRoom {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Context<Self>) {
+        IntervalFunc::new(Duration::from_millis(5_000), Self::gc)
+                .finish()
+                .spawn(ctx);
+    }
 }
 
 pub mod command {
@@ -78,7 +149,7 @@ pub mod command {
     #[allow(unused_imports)]
     use log::{info, error, debug, warn, trace};
 
-    use crate::protocol::ChatMessage;
+    use crate::protocol;
     use crate::session::SessionId;
     use crate::room_manager::RoomManagerService;
     use super::{message, DefaultRoom, Participant};
@@ -97,33 +168,29 @@ pub mod command {
             let AddParticipant { participant } = command;
             trace!("Room {:?} adds {:?}", self.id, participant);
             // TODO: prevent duplicates
-            participant
-                .addr.upgrade().unwrap()
-                .send(message::RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
-                .into_actor(self)
-                .then(|_, _,_| fut::ok(()))
-                .spawn(ctx);
+            if let Some(addr) = participant.addr.upgrade() {
+                addr
+                    .send(message::RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
+                    .into_actor(self)
+                    .then(|_, _,_| fut::ok(()))
+                    .spawn(ctx);
 
-            // TODO: do this on client demand
-            participant
-                .addr.upgrade().unwrap()
-                .send(message::RoomToSession::History{room: self.id.clone(), messages: self.history.clone() })
-                .into_actor(self)
-                .then(|_, _,_| fut::ok(()))
-                .spawn(ctx);
+                // TODO: do this on client demand
+                addr
+                    .send(message::RoomToSession::History{room: self.id.clone(), messages: self.history.clone() })
+                    .into_actor(self)
+                    .then(|_, _,_| fut::ok(()))
+                    .spawn(ctx);
 
-            participant
-                .addr.upgrade().unwrap()
-                .send(message::RoomToSession::Participants {
-                    room: self.id.clone(),
-                    participants: self.list_participants(ctx),
-                })
-                .into_actor(self)
-                .then(|_, _,_| fut::ok(()))
-                .spawn(ctx);
+                self.participants.insert(participant.session_id, participant);
 
-            self.participants.insert(participant.session_id, participant);
-            trace!("{:?} participants: {:?}", self.id, self.participants);
+                self.send_update_to_all_participants(ctx);
+
+                trace!("{:?} participants: {:?}", self.id, self.participants);
+            } else {
+                error!("participant address is cannot be upgraded {:?}", participant);
+            }
+
         }
     }
 
@@ -164,6 +231,8 @@ pub mod command {
                     } else {
                         trace!("{:?} is empty but not ephemeral, staying around", self.id);
                     }
+                } else {
+                    self.send_update_to_all_participants(ctx);
                 }
             }
             else {
@@ -172,10 +241,21 @@ pub mod command {
         }
     }
 
+    #[derive(Message)]
+    #[rtype(result = "Vec<protocol::Participant>")]
+    pub struct RoomUpdate;
+
+    impl Handler<RoomUpdate> for DefaultRoom {
+        type Result = MessageResult<RoomUpdate>;
+        fn handle(&mut self, command: RoomUpdate, ctx: &mut Self::Context) -> Self::Result{
+            MessageResult(self.list_participants(ctx))
+        }
+    }
+
     #[derive(Debug, Message)]
     #[rtype(result = "Result<(), String>")]
     pub struct Forward {
-        pub message: ChatMessage,
+        pub message: protocol::ChatMessage,
         pub sender: SessionId,
     }
 
@@ -189,10 +269,11 @@ pub mod command {
 
             self.history.push(message.clone());
 
-            for  participant in self.participants.values() {
+            for participant in self.live_participants() {
                 trace!("forwarding message to {:?}", participant);
 
-                participant.addr.upgrade().unwrap()
+                participant
+                    .addr
                     .send(message::RoomToSession::ChatMessage {
                         message: message.clone(),
                         room: self.id.clone(),
@@ -230,7 +311,7 @@ pub mod message {
             messages: Vec<ChatMessage>
         },
 
-        Participants {
+        RoomState {
             room: RoomId,
             participants: Vec<Participant>
         },
@@ -239,4 +320,5 @@ pub mod message {
             room: RoomId,
         }
     }
-}
+
+    }

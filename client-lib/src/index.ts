@@ -21,6 +21,7 @@ export class Session {
     public readonly onMyRoomList = new Signal<string[]>();
     public readonly onRoomParticipants = new Signal<RoomParticipants>();
     public readonly onMessage = new Signal<serverEvent.Message>();
+    public readonly onError = new Signal<string>();
 
     public readonly onConnectionClose = new Signal<CloseEvent>();
     public readonly onConnectionError = new Signal<Event>();
@@ -73,7 +74,7 @@ export class Session {
                 return;
             }
             case 'any': return console.debug(msg.payload);
-            case 'error': return console.error("Server Error", msg.message);
+            case 'error': return this.onError.dispatch(msg.message);
             default: return console.warn('unhandled message', msg);
         }
     }
