@@ -2,7 +2,7 @@ import { Signal } from 'micro-signals';
 
 import { Command, UserProfile, RoomParticipants } from './protocol';
 import { serverEvent, ServerEvent } from './protocol';
-import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol';
+import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol/index'; // weird webpack bug
 
 export { ChatMessage, SessionDescription };
 
@@ -27,12 +27,13 @@ export class Session {
     public readonly onConnectionError = new Signal<Event>();
 
     constructor(private url: string) {
-        this.onReceive.add(m => console.debug('received', m));
+        this.onReceive.add(m => console.debug('⬅️ received', m));
     }
 
     public connect(): Promise<SessionDescription> {
         if (this.connection) return Promise.reject();
 
+        console.debug({isWelcomeEvent});
         const connected = this.onReceive.filter(isWelcomeEvent).map(welcome => welcome.session).promisify();
 
         this.connection = new WebSocket(this.url);
@@ -87,7 +88,7 @@ export class Session {
     }
 
     public sendCommand(cmd: Command) {
-        console.debug('sending', cmd)
+        console.debug('➡️ sending', cmd)
         this.connection && this.connection.send(JSON.stringify(cmd));
     }
 
