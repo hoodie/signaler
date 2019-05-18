@@ -93,7 +93,7 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
 pub type SimpleAuthResponse = AuthResponse<AuthToken, UserProfile>;
 
 /// Message expected by PresenceService to add SessionId
-#[derive(Message)]
+#[derive(Message, Debug, Clone)]
 #[rtype(result = "Option<SimpleAuthResponse>")]
 pub struct AuthenticationRequest<CREDENTIALS> {
     pub credentials: CREDENTIALS,
