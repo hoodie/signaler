@@ -6,6 +6,9 @@ import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol/inde
 
 export { ChatMessage, SessionDescription };
 
+
+const timeout = (time: number): Promise<never> => new Promise((_, reject) => setTimeout(reject, time));
+
 export class Session {
     private connection?: WebSocket;
 
@@ -92,8 +95,10 @@ export class Session {
         this.connection && this.connection.send(JSON.stringify(cmd));
     }
 
-    public authenticate(username: string, password: string) {
+    public authenticate(username: string, password: string): Promise<void> {
+        const authenticated = this.onAuthenticated.promisify();
         this.sendCommand({ type: 'authenticate', credentials: { username, password } });
+        return Promise.race([authenticated, timeout(1000)]);
     }
 
     public join(room: string) {

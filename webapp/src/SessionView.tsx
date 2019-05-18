@@ -46,7 +46,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.setState({ sessionDescription })
             this.session.sendCommand({ type: 'listRooms' });
             this.session.sendCommand({ type: 'listMyRooms' });
-            // this.session.authenticate('hendrik', 'password');
+            this.session.authenticate('hendrik', 'password').catch(() => {throw new Error("authentication timeout")});
         });
 
         this.session.onAuthenticated.add(() => {
@@ -101,8 +101,8 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
 
     // TODO: temporary
     componentDidMount = () => {
-        console.debug("mounted")
-        // this.session.connect();
+        console.debug("mounted -> auto connect")
+        this.session.connect();
     };
 
     private connectionView = () => {
