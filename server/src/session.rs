@@ -127,17 +127,18 @@ impl ClientSession {
 
     fn leave_all_rooms(&mut self, _ctx: &mut WebsocketContext<Self>) {
         warn!("not leaving any rooms");
+        // FIXME: this hangs all the time
         // use room::command::RemoveParticipant;
         // let rooms_to_leave: HashMap<String, WeakAddr<DefaultRoom>> = self.rooms.drain().collect();
         // for (name, addr) in dbg!(rooms_to_leave) {
-        //     trace!("sending RemoveParticipant to {:?} (⏳ waiting)", name);
+        //     debug!("sending RemoveParticipant to {:?} (⏳ waiting)", name);
         //     addr.upgrade().unwrap()
         //         .send(RemoveParticipant { session_id: self.session_id })
         //         .timeout(std::time::Duration::new(1, 0))
         //         .wait().unwrap();
-        //     trace!("sent RemoveParticipant ✅");
+        //     debug!("sent RemoveParticipant ✅");
         // }
-        // trace!("all rooms left ✅✅");
+        // debug!("all rooms left ✅✅");
     }
 
     fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {

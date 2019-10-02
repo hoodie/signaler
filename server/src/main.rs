@@ -48,7 +48,7 @@ fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
     if env::var(LOG_VAR).is_err() {
-        env::set_var(LOG_VAR, "signaler=trace,actix_web=info");
+        env::set_var(LOG_VAR, "signaler=debug,actix_web=info");
     }
     env_logger::init_from_env(Env::new().filter(LOG_VAR));
     let bind_to = env::var(BIND_VAR)
@@ -63,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             .service(web::resource("/ws/").route(web::get().to(ws_route)))
             .service(fs::Files::new("/app", "../static").show_files_listing())
+            .service(fs::Files::new("/app2", "../svelteapp/public").show_files_listing())
 
             // .resource("/favicon.ico", |r| r.f(favicon))
 

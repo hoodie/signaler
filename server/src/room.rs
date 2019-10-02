@@ -204,6 +204,7 @@ pub mod command {
 
         fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context)  {
             let RemoveParticipant {session_id} = command;
+            debug!("receive RemoveParticipant");
             if let Some(_participant) = self.participants.remove(&session_id) {
                 debug!("successfully removed {} from {:?}", session_id, self.id);
                 trace!("{:?} participants: {:?}", self.id, self.participants);
