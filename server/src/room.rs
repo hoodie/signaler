@@ -112,7 +112,6 @@ impl DefaultRoom {
 
 
     fn lookup_presence_details(&self, _ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
-        use std::time::Duration;
         // PresenceService.send... Lookup SessionIds
         self.live_participants()
             .filter_map(|participant| {
@@ -217,11 +216,11 @@ pub mod command {
                             .then(|success, _slf, ctx| {
                                 match success {
                                     Ok(true) => {
-                                        trace!("room_manager sais I'm fine to shut down");
+                                        trace!("room_manager says I'm fine to shut down");
                                         ctx.stop();
                                     },
                                     _ => {
-                                        warn!("room_manager sais it wasn't able to delete me 🤷")
+                                        warn!("room_manager says it wasn't able to delete me 🤷")
                                     }
                                 }
 
@@ -248,7 +247,7 @@ pub mod command {
 
     impl Handler<RoomUpdate> for DefaultRoom {
         type Result = MessageResult<RoomUpdate>;
-        fn handle(&mut self, command: RoomUpdate, ctx: &mut Self::Context) -> Self::Result{
+        fn handle(&mut self, _command: RoomUpdate, ctx: &mut Self::Context) -> Self::Result{
             MessageResult(self.list_participants(ctx))
         }
     }
