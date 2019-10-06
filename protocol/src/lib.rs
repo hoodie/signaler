@@ -5,8 +5,13 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[cfg(target_arch="wasm32")]
+extern crate wasm_bindgen;
+
 pub type SessionId = Uuid;
 pub type RoomId = String;
+
+
 /// Simple Authentication Credentials
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UsernamePassword {
@@ -83,7 +88,7 @@ pub enum SessionCommand {
     Join { room: RoomId },
 
     /// Send a message to all participants of that room
-    Message { message: String , room: RoomId},
+    Message { message: String, room: RoomId },
 
     /// List all rooms
     ListRooms,
@@ -91,7 +96,7 @@ pub enum SessionCommand {
     /// List rooms I'm member of
     ListMyRooms,
 
-    ListParticipants {room: RoomId},
+    ListParticipants { room: RoomId },
 
     /// shutdown server 😈
     ShutDown,
@@ -115,7 +120,7 @@ impl SessionCommand {
 }
 
 /// Message received from the server
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum SessionMessage {
     Welcome { session: SessionDescription },
@@ -154,4 +159,43 @@ impl SessionMessage {
         }
     }
 
+}
+
+#[cfg(target_arch="wasm32")]
+mod wasm_wrapper {
+    #![allow(unused_macros, unused_imports)]
+    use wasm_bindgen::prelude::*;
+    use wasm_bindgen::JsCast;
+    use serde_json;
+
+    use crate::SessionMessage;
+
+    #[wasm_bindgen]
+    extern {
+        #[wasm_bindgen(js_namespace = console)] pub fn warn(msg: &str);
+        #[wasm_bindgen(js_namespace = console)] pub fn debug(msg: &str);
+        #[wasm_bindgen(js_namespace = console)] pub fn error(msg: &str);
+    }
+
+    macro_rules! debug { ($($arg:tt)*) => (debug(&format!($($arg)*));) }
+    macro_rules! warn { ($($arg:tt)*) => (warn(&format!($($arg)*));) }
+    macro_rules! error { ($($arg:tt)*) => (error(&format!($($arg)*));) }
+
+
+    #[wasm_bindgen]
+    pub fn dispatch_message(raw: &JsValue) {
+        use SessionMessage::*;
+        let msg: SessionMessage = raw.into_serde().unwrap();
+        match msg {
+            Welcome { session } => debug!("welcome {:?}", session),
+            Authenticated => debug!(r"Authenticated \0/"),
+            Profile { profile } => debug!("profile: {:?}", profile),
+            RoomList { rooms } => debug!("RoomsList: {:?}", rooms),
+            MyRoomList { rooms } => debug!("MyRoomList: {:?}", rooms),
+            RoomParticipants { room, participants} => debug!("RoomParticipants of {:?}: {:?}", room, participants),
+            Message { message, room} => debug!("Message in {room:?} {message:?}", room = room, message = message ),
+            Any { payload } => debug!("Any: {:#?}", payload),
+            Error { message } => debug!("Error: {}", message),
+        }
+    }
 }
