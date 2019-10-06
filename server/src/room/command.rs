@@ -63,7 +63,7 @@ impl Handler<RemoveParticipant> for DefaultRoom {
         if let Some(participant) = self.participants.remove(&session_id) {
             debug!("successfully removed {} from {:?}", session_id, self.id);
             trace!("{:?} participants: {:?}", self.id, self.participants);
-            if let Some(participant) = LiveParticipant::try_from(&participant).ok() {
+            if let Ok(participant) = LiveParticipant::try_from(&participant) {
                 self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant, ctx);
             }
             if self.participants.values().count() == 0 {

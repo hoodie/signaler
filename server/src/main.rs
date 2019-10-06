@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             .service(web::resource("/ws/").route(web::get().to(ws_route)))
             .service(fs::Files::new("/app", "../static").show_files_listing())
-            .service(fs::Files::new("/app2", "../svelteapp/public").show_files_listing())
+            .service(fs::Files::new("/app2", "../webapp-svelte/public").show_files_listing())
 
             // .resource("/favicon.ico", |r| r.f(favicon))
 

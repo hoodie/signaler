@@ -90,6 +90,7 @@ impl PresenceHandler for SimplePresenceHandler {
         if let Some(session) = self.running_sessions.get(token) {
             Self::still_fresh(session.created)
         } else {
+            warn!("{:?} has expired", token);
             false
         }
     }

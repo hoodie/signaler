@@ -107,7 +107,7 @@ impl UserManaging for NaiveUserManager {
     fn who_is(&self, user_id: &str) -> Option<UserProfile> {
         if let Some(profile) = self.user_database.profiles.get(user_id) {
             info!("found profile {:?}", user_id);
-            return Some(profile.clone());
+            Some(profile.clone())
         } else {
             error!("found user but not profile {:?}", user_id);
             None

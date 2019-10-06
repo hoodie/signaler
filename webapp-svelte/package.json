@@ -1,0 +1,21 @@
+{
+  "name": "signaler-svelte-app",
+  "version": "0.1.0",
+  "devDependencies": {
+    "cross-env": "^6.0.3",
+    "css-loader": "^3.2.0",
+    "mini-css-extract-plugin": "^0.8.0",
+    "serve": "^11.0.0",
+    "style-loader": "^1.0.0",
+    "svelte": "^3.4.2",
+    "svelte-loader": "2.13.6",
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2",
+    "webpack-dev-server": "^3.4.1"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=development webpack",
+    "build:release": "cross-env NODE_ENV=production webpack",
+    "dev": "webpack-dev-server --content-base public"
+  }
+}
