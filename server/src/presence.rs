@@ -16,12 +16,7 @@ use std::collections::HashMap;
 
 mod simple;
 
-/// Simple Authentication Credentials
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UsernamePassword {
-    pub username: String,
-    pub password: String,
-}
+pub use signaler_protocol::UsernamePassword;
 
 /// Token returned after successful authentication
 ///

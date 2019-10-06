@@ -14,7 +14,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
     use std::fmt;
 
-use crate::protocol::*;
+use signaler_protocol::*;
 use crate::presence::{AuthToken, AuthResponse, UsernamePassword, SimplePresenceService, AuthenticationRequest};
 use crate::room::{self, DefaultRoom, RoomId, Participant, message::RoomToSession};
 use crate::room_manager::{self, RoomManagerService};
@@ -159,10 +159,10 @@ impl ClientSession {
                         client_session.profile = profile.clone();
                         Self::send_message(SessionMessage::Authenticated, ctx);
                         if let Some(profile) = profile {
-                            Self::send_message(SessionMessage::Profile { profile }, ctx);
+                            Self::send_message(SessionMessage::Profile { profile: profile.into() }, ctx);
                         }
                     }
-                    Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unabled to login")}, ctx),
+                    Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unable to login")}, ctx),
                     Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())
                 }
                 fut::ok(())
@@ -173,7 +173,7 @@ impl ClientSession {
     fn room_addr(&self, room_id: &str) -> Option<Addr<DefaultRoom>> {
         let addr = self.rooms.get(room_id).and_then(|room| room.upgrade());
         if addr.is_none() {
-            warn!("room: {:?} was no longer reachable by clientsession {:?}, removing", room_id, self.session_id);
+            warn!("room: {:?} was no longer reachable by client-session {:?}, removing", room_id, self.session_id);
             // self.rooms.remove(room_id); // TODO: do at Interval
         }
         addr
@@ -191,7 +191,7 @@ impl ClientSession {
             addr.send(msg)
                 .into_actor(self)
                 .then(|resp, _, ctx| {
-                    debug!("message forwared -> {:?}", resp);
+                    debug!("message forwarded -> {:?}", resp);
                     match resp {
                         Ok(Err(message)) => {
                             debug!("message rejected {:?}", message);
@@ -254,7 +254,7 @@ impl Actor for ClientSession {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        debug!("ClientSsession stopped: {}", self.session_id);
+        debug!("ClientSession stopped: {}", self.session_id);
     }
 }
 

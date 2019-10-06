@@ -8,7 +8,7 @@ use log::{info, error, debug, warn, trace};
 use std::collections::HashMap;
 use std::time::Duration;
 
-use crate::protocol;
+use signaler_protocol as protocol;
 use crate::session::{self, ClientSession, SessionId};
 
 pub type RoomId = String;
@@ -122,7 +122,7 @@ impl DefaultRoom {
                     .wait()
                     .map_err(|x| { error!("timeout requesting profile from ClientSession {}", participant.session_id); x })
                     .ok()
-                    .map(|maybe_profile| maybe_profile.map(|p| protocol::Participant::from((p, participant.session_id))))
+                    .map(|maybe_profile| maybe_profile.map(|p| protocol::Participant::from((p.into(), participant.session_id))))
             })
             .filter_map(|x|x)
             .collect()
@@ -148,7 +148,7 @@ pub mod command {
     #[allow(unused_imports)]
     use log::{info, error, debug, warn, trace};
 
-    use crate::protocol;
+    use signaler_protocol as protocol;
     use crate::session::SessionId;
     use crate::room_manager::RoomManagerService;
     use super::{message, DefaultRoom, Participant};
@@ -293,7 +293,7 @@ pub mod command {
 pub mod message {
     use actix::prelude::*;
     use actix::WeakAddr;
-    use crate::protocol::{ChatMessage, Participant};
+    use signaler_protocol::{ChatMessage, Participant};
 
     use super::{DefaultRoom, RoomId};
 

@@ -5,10 +5,24 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::session::SessionId;
-use crate::room::RoomId;
-use crate::presence::UsernamePassword;
-use crate::user_management::UserProfile;
+pub type SessionId = Uuid;
+pub type RoomId = String;
+/// Simple Authentication Credentials
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UsernamePassword {
+    pub username: String,
+    pub password: String,
+}
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserProfile {
+    pub full_name: String,
+}
+
+
+
 
 /// Actual chat Message
 ///

@@ -14,7 +14,6 @@ use actix_web_actors::ws;
 
 use std::env;
 
-pub mod protocol;
 pub mod session;
 // pub mod server;
 pub mod presence;
