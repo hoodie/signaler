@@ -36,7 +36,6 @@ impl fmt::Debug for ClientSession {
 }
 
 impl ClientSession {
-
     /// parses raw string and passes it to `dispatch_incoming_message` or replies with error
     fn handle_incoming_message(&self, raw_msg: &str, ctx: &mut WebsocketContext<Self>) {
         // trace!("handle message: {:?}", raw_msg);
@@ -44,7 +43,6 @@ impl ClientSession {
         if let Ok(msg) = parsed {
             trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
             self.dispatch_incoming_message(msg, ctx)
-
         } else {
             warn!("cannot parse: {}", raw_msg);
             debug!("suggestions:\n{}", SessionCommand::suggestions())
@@ -60,6 +58,8 @@ impl ClientSession {
             SessionCommand::ListRooms => self.list_rooms(ctx),
 
             SessionCommand::Join{ room } =>  self.join(&room, ctx),
+
+            SessionCommand::Leave { room } => self.leave_room(&room, ctx),
 
             SessionCommand::ListMyRooms => self.list_my_rooms(ctx),
 
@@ -122,7 +122,22 @@ impl ClientSession {
         } else {
             warn!("can't join room, no authentication token")
         }
+    }
 
+    fn leave_room(&self, room_id: &str, ctx: &mut WebsocketContext<Self>) {
+        if let Some(addr) = self.room_addr(room_id) {
+            addr.send(room::command::RemoveParticipant {
+                session_id: self.session_id,
+            })
+            .into_actor(self)
+            .then(|_, _, _| {
+                debug!("leave request forwarded to room successfully");
+                fut::ok(())
+            })
+            .spawn(ctx);
+        } else {
+            error!("no such room {:?}", room_id);
+        }
     }
 
     fn leave_all_rooms(&mut self, _ctx: &mut WebsocketContext<Self>) {
@@ -179,6 +194,7 @@ impl ClientSession {
         addr
     }
 
+
     fn forward_message(&self, content: String, room_id: &str, ctx: &mut WebsocketContext<Self>) {
         let full_name = if let Some(ref profile) = self.profile { profile.full_name.as_ref() } else { "unnamed" };
 
@@ -226,7 +242,6 @@ impl ClientSession {
                 .spawn(ctx);
         }
     }
-
 }
 
 impl Default for ClientSession {
@@ -286,6 +301,16 @@ impl Handler<RoomToSession> for ClientSession {
                 self.list_my_rooms(ctx);
             },
 
+            RoomToSession::Left{ room } => {
+                info!("successfully left room {:?}", room);
+                if let Some(room) = self.rooms.remove(&room) {
+                    debug!("removed room {:?} from {:?}", room, self.session_id);
+                } else {
+                    error!("remove from room {:?}, but had no reference ({:?})", room, self.session_id);
+                }
+                self.list_my_rooms(ctx);
+            },
+
             RoomToSession::ChatMessage{ room, message } => {
                 Self::send_message(SessionMessage::Message{message, room}, ctx)
             },
@@ -302,9 +327,12 @@ impl Handler<RoomToSession> for ClientSession {
                 }
             },
 
-            RoomToSession::JoinDeclined{ room } => {
-                Self::send_message(SessionMessage::Error{message: format!("unable to join room {}", room) }, ctx)
-            }
+            RoomToSession::JoinDeclined { room } => Self::send_message(
+                SessionMessage::Error {
+                    message: format!("unable to join room {}", room),
+                },
+                ctx,
+            )
         }
     }
 }

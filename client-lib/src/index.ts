@@ -105,6 +105,10 @@ export class Session {
         this.sendCommand({ type: 'join', room });
     }
 
+    public leave(room: string) {
+        this.sendCommand({ type: 'leave', room });
+    }
+
     public listRooms() {
         this.sendCommand({ type: 'listRooms' })
     }

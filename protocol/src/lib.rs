@@ -87,6 +87,9 @@ pub enum SessionCommand {
     /// Join a particular room
     Join { room: RoomId },
 
+    /// Join a particular room
+    Leave { room: RoomId },
+
     /// Send a message to all participants of that room
     Message { message: String, room: RoomId },
 

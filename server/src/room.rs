@@ -25,6 +25,22 @@ struct LiveParticipant {
     addr: Addr<ClientSession>,
 }
 
+use std::convert::TryFrom;
+impl TryFrom<&Participant> for LiveParticipant {
+    type Error = ();
+    fn try_from(p: &Participant) -> Result<Self, Self::Error> {
+        if let Some(addr) = p.addr.upgrade() {
+            Ok(LiveParticipant{
+                session_id: p.session_id,
+                addr
+            })
+        } else {
+            error!("participant {} was dead, skipping", p.session_id);
+            Err(())
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct DefaultRoom {
     id: RoomId,
@@ -55,6 +71,12 @@ impl DefaultRoom {
          }
     }
 
+    fn get_participant(&self, session_id: &SessionId) -> Option<LiveParticipant> {
+        self.participants
+            .get(session_id)
+            .and_then(|p| LiveParticipant::try_from(p).ok())
+    }
+
     fn live_participants<'a>(&'a self) -> impl Iterator<Item=LiveParticipant> + 'a {
         self.participants
             .values()
@@ -72,7 +94,6 @@ impl DefaultRoom {
     }
 
     fn send_update_to_all_participants(&self, ctx: &mut Context<Self>) {
-
             for participant in self.live_participants() {
                 trace!("forwarding message to {:?}", participant);
 
@@ -89,6 +110,23 @@ impl DefaultRoom {
                     })
                     .spawn(ctx);
                 }
+    }
+
+    fn send_to_participant<'a, M>(&'a self, message: M, participant: &'a LiveParticipant, ctx: &'a mut Context<Self>)
+        where M: Message + std::fmt::Debug + Send + 'static,
+        <M as Message>::Result: Send,
+        ClientSession: Handler<M>
+    {
+        trace!("sending {:?} to {}", message, participant.session_id);
+        participant
+                    .addr
+                    .send(message)
+                    .into_actor(self)
+                    .then(|_, _slf, _| {
+                        fut::ok(())
+                    })
+                    .spawn(ctx);
+
     }
 
     fn gc(&mut self, _ctx: &mut Context<Self>) {
@@ -151,7 +189,8 @@ pub mod command {
     use signaler_protocol as protocol;
     use crate::session::SessionId;
     use crate::room_manager::RoomManagerService;
-    use super::{message, DefaultRoom, Participant};
+    use super::{message, DefaultRoom, Participant, LiveParticipant};
+    use std::convert::TryFrom;
 
     // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 
@@ -204,9 +243,12 @@ pub mod command {
         fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context)  {
             let RemoveParticipant {session_id} = command;
             debug!("receive RemoveParticipant");
-            if let Some(_participant) = self.participants.remove(&session_id) {
+            if let Some(participant) = self.participants.remove(&session_id) {
                 debug!("successfully removed {} from {:?}", session_id, self.id);
                 trace!("{:?} participants: {:?}", self.id, self.participants);
+                if let Some(participant) = LiveParticipant::try_from(&participant).ok() {
+                    self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant, ctx);
+                }
                 if self.participants.values().count() == 0 {
                     if self.ephemeral {
                         trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
@@ -317,6 +359,10 @@ pub mod message {
         },
 
         JoinDeclined {
+            room: RoomId,
+        },
+
+        Left{
             room: RoomId,
         }
     }
