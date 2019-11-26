@@ -1,45 +1,18 @@
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
-use actix::WeakAddr;
 
 #[allow(unused_imports)]
 use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::time::Duration;
 
 use signaler_protocol as protocol;
+use crate::participant::{Participant, LiveParticipant};
 use crate::session::{self, ClientSession, SessionId};
 
 pub type RoomId = String;
-
-#[derive(Debug)]
-pub struct Participant {
-    pub session_id: SessionId,
-    pub addr: WeakAddr<ClientSession>,
-}
-
-#[derive(Debug)]
-struct LiveParticipant {
-    session_id: SessionId,
-    addr: Addr<ClientSession>,
-}
-
-use std::convert::TryFrom;
-impl TryFrom<&Participant> for LiveParticipant {
-    type Error = ();
-    fn try_from(p: &Participant) -> Result<Self, Self::Error> {
-        if let Some(addr) = p.addr.upgrade() {
-            Ok(LiveParticipant{
-                session_id: p.session_id,
-                addr
-            })
-        } else {
-            error!("participant {} was dead, skipping", p.session_id);
-            Err(())
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct DefaultRoom {
@@ -101,7 +74,7 @@ impl DefaultRoom {
                     .addr
                     .send(message::RoomToSession::RoomState {
                         room: self.id.clone(),
-                        participants: self.list_participants(ctx),
+                        participants: self.get_participant_profiles(ctx),
                     })
                     .into_actor(self)
                     .then(|_, _slf, _| {
@@ -122,34 +95,26 @@ impl DefaultRoom {
                     .addr
                     .send(message)
                     .into_actor(self)
-                    .then(|_, _slf, _| {
-                        fut::ok(())
-                    })
+                    .then(|_, _slf, _| fut::ok(()))
                     .spawn(ctx);
 
     }
 
     fn gc(&mut self, _ctx: &mut Context<Self>) {
-        self.clearout_dead_participants();
-    }
-
-    fn clearout_dead_participants(&mut self) {
         self.participants =
-        self.participants
-        .drain()
-        .filter(|(_, participant)| {
-            if participant.addr.upgrade().is_none() {
-                debug!("garbage collecting participant {:?}", participant.session_id);
-                false
-            } else {
-                true
-            }
-        })
-        .collect()
+            self.participants
+            .drain()
+            .inspect(|(_, participant)| {
+                if participant.addr.upgrade().is_none() {
+                    debug!("garbage collecting participant {:?}", participant.session_id);
+                }
+            })
+            .filter(|(_, participant)| participant.addr.upgrade().is_some())
+            .collect()
     }
 
 
-    fn lookup_presence_details(&self, _ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
+    fn get_participant_profiles(&self, _ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
         // PresenceService.send... Lookup SessionIds
         self.live_participants()
             .filter_map(|participant| {
@@ -164,10 +129,6 @@ impl DefaultRoom {
             })
             .filter_map(|x|x)
             .collect()
-    }
-
-    fn list_participants(&self, ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
-        self.lookup_presence_details(ctx)
     }
 }
 
@@ -189,7 +150,8 @@ pub mod command {
     use signaler_protocol as protocol;
     use crate::session::SessionId;
     use crate::room_manager::RoomManagerService;
-    use super::{message, DefaultRoom, Participant, LiveParticipant};
+    use crate::participant::{Participant, LiveParticipant};
+    use super::{message, DefaultRoom};
     use std::convert::TryFrom;
 
     // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
@@ -290,7 +252,7 @@ pub mod command {
     impl Handler<RoomUpdate> for DefaultRoom {
         type Result = MessageResult<RoomUpdate>;
         fn handle(&mut self, _command: RoomUpdate, ctx: &mut Self::Context) -> Self::Result{
-            MessageResult(self.list_participants(ctx))
+            MessageResult(self.get_participant_profiles(ctx))
         }
     }
 

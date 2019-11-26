@@ -5,7 +5,8 @@ use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
 
-use crate::room::{DefaultRoom, Participant, RoomId, message::RoomToSession};
+use crate::participant::Participant;
+use crate::room::{DefaultRoom, RoomId, message::RoomToSession};
 use crate::room::command::AddParticipant;
 
 #[derive(Copy, Clone, Debug)]
@@ -89,9 +90,10 @@ pub mod command {
     #[allow(unused_imports)]
     use log::{info, error, debug, warn, trace};
 
-    use crate::room::{Participant, RoomId};
+    use crate::participant::Participant;
+    use crate::presence::{AuthToken, PresenceService, ValidateRequest };
+    use crate::room::{RoomId};
     use super::RoomManagerService;
-    use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 
     #[derive(Message)]
     pub struct JoinRoom {
@@ -153,6 +155,7 @@ pub mod command {
 
         fn handle(&mut self, CloseRoom(room_id): CloseRoom, _ctx: &mut Self::Context) -> Self::Result {
             // let CloseRoom(room_id) = request;
+            trace!("received CloseRoom({:?})", room_id);
             MessageResult(self.close_room(room_id))
         }
     }

@@ -15,8 +15,9 @@ use std::collections::HashMap;
     use std::fmt;
 
 use signaler_protocol::*;
+use crate::participant::Participant;
 use crate::presence::{AuthToken, AuthResponse, UsernamePassword, SimplePresenceService, AuthenticationRequest};
-use crate::room::{self, DefaultRoom, RoomId, Participant, message::RoomToSession};
+use crate::room::{self, DefaultRoom, RoomId, message::RoomToSession};
 use crate::room_manager::{self, RoomManagerService};
 use crate::user_management::UserProfile;
 
@@ -100,7 +101,7 @@ impl ClientSession {
     }
 
     fn join(&self, room: &str, ctx: &mut WebsocketContext<Self>) {
-        if let Some(token) = dbg!(self.token) {
+        if let Some(token) = self.token {
             let msg = room_manager::command::JoinRoom {
                 room: room.into(),
                 participant: Participant {

@@ -19,7 +19,7 @@ pub mod session;
 pub mod presence;
 pub mod room;
 pub mod room_manager;
-
+pub mod participant;
 
 pub mod user_management;
 pub mod static_data;

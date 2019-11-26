@@ -76,7 +76,7 @@ impl PresenceHandler for SimplePresenceHandler {
 
     fn still_valid(&self, token: &AuthToken) -> bool {
         if let Some(session) = self.running_sessions.get(token) {
-            dbg!(Self::still_fresh(session.created))
+            Self::still_fresh(session.created)
         } else {
             false
         }
