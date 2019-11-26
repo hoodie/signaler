@@ -15,9 +15,8 @@ use std::collections::HashMap;
     use std::fmt;
 
 use signaler_protocol::*;
-use crate::participant::Participant;
 use crate::presence::{AuthToken, AuthResponse, UsernamePassword, SimplePresenceService, AuthenticationRequest};
-use crate::room::{self, DefaultRoom, RoomId, message::RoomToSession};
+use crate::room::{self, DefaultRoom, RoomId, message::RoomToSession, participant::Participant};
 use crate::room_manager::{self, RoomManagerService};
 use crate::user_management::UserProfile;
 

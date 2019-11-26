@@ -9,13 +9,15 @@ use std::convert::TryFrom;
 use std::time::Duration;
 
 use signaler_protocol as protocol;
-use crate::participant::{Participant, LiveParticipant};
 use crate::session::{self, ClientSession, SessionId};
 
 pub type RoomId = String;
 
 pub mod command;
 pub mod message;
+pub mod participant;
+
+use self::participant::{Participant, LiveParticipant};
 
 #[derive(Debug)]
 pub struct DefaultRoom {

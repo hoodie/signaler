@@ -5,9 +5,12 @@ use log::{info, error, debug, warn, trace};
 
 use std::collections::HashMap;
 
-use crate::participant::Participant;
-use crate::room::{DefaultRoom, RoomId, message::RoomToSession};
-use crate::room::command::AddParticipant;
+use crate::room::{
+    DefaultRoom, RoomId,
+    participant::Participant,
+    message::RoomToSession,
+    command::AddParticipant,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub enum RoomManagerError {
@@ -90,9 +93,8 @@ pub mod command {
     #[allow(unused_imports)]
     use log::{info, error, debug, warn, trace};
 
-    use crate::participant::Participant;
     use crate::presence::{AuthToken, PresenceService, ValidateRequest };
-    use crate::room::{RoomId};
+    use crate::room::{participant::Participant, RoomId};
     use super::RoomManagerService;
 
     #[derive(Message)]

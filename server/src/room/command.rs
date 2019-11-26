@@ -5,7 +5,7 @@ use log::{info, error, debug, warn, trace};
 use signaler_protocol as protocol;
 use crate::session::SessionId;
 use crate::room_manager::RoomManagerService;
-use crate::participant::{Participant, LiveParticipant};
+use super::participant::{Participant, LiveParticipant};
 use super::{message, DefaultRoom};
 use std::convert::TryFrom;
 
