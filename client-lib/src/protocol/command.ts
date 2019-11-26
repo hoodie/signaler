@@ -1,9 +1,8 @@
-export interface Authenticate { type: 'authenticate', credentials: UsernamePassword }
+export interface Authenticate { type: 'authenticate', credentials: Credentials }
 
-export interface UsernamePassword {
-    username: string;
-    password: string;
-}
+export type Credentials = 
+    |{ type: 'adHoc', username: string; }
+    |{ type: 'usernamePassword', username: string; password: string; }
 
 export interface Join { type: 'join', room: string }
 export interface Leave { type: 'leave', room: string }

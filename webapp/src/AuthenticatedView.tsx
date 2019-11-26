@@ -44,6 +44,7 @@ export class AuthenticatedView extends React.Component<AuthenticatedViewProps, A
                         placeholder="username"
                         onChange={this.handleUsername}
                         ref={e => (this.username = e ? e : undefined)}
+                        onKeyPress={e => e.key === "Enter" && this.send()}
                     />
 
                     <input type="password" name="password" id="password"
@@ -52,7 +53,7 @@ export class AuthenticatedView extends React.Component<AuthenticatedViewProps, A
                         ref={e => (this.password = e ? e : undefined)}
                         onKeyPress={e => e.key === "Enter" && this.send()}
                     />
-                    <button >login</button>
+                    <button onClick={this.send}>login</button>
 
                 </fieldset>
             </div>;

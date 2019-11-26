@@ -6,7 +6,6 @@
     "build:webapp": "yarn --cwd webapp build",
     "watch:client": "yarn build:client --watch",
     "watch:webapp": "yarn build:webapp --watch",
-    "build": "yarn build:client; yarn build:webapp",
-    "watch": "yarn watch:client& yarn watch:webapp"
+    "build": "yarn build:client &&  yarn build:webapp"
   }
 }

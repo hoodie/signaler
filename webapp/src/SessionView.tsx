@@ -49,8 +49,8 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.session.sendCommand({ type: 'listRooms' });
             this.session.sendCommand({ type: 'listMyRooms' });
             const {username, password} = this.props.config || {};
-            if (username && password) {
-                this.session.authenticate(username, password).catch(() => {throw new Error("authentication timeout")});
+            if (username) {
+                this.login(username, password)
             }
         });
 
@@ -104,6 +104,14 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
         this.session.sendMessage(content, this.state.roomToSendTo)
     };
 
+    private login = (username: string, password?: string | null) => {
+        if (password) {
+            this.session.authenticate(username, password).catch(() => {throw new Error("authentication timeout")});
+        } else {
+            this.session.adHoc(username).catch(() => {throw new Error("authentication timeout")});
+        }
+    };
+
     // TODO: temporary
     componentDidMount = () => {
         console.debug("mounted -> auto connect")
@@ -146,7 +154,7 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
 
                         </small>
 
-                        <AuthenticatedView authenticated={this.state.authenticated} onsubmit={(u, p) => this.session.authenticate(u, p)}>
+                        <AuthenticatedView authenticated={this.state.authenticated} onsubmit={(u, p) => this.login(u, p)}>
                             <h6> join room </h6>
 
                             <RoomSelector rooms={this.state.rooms} onSelect={room => { this.session.join(room) }} />

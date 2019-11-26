@@ -12,11 +12,19 @@ pub type SessionId = Uuid;
 pub type RoomId = String;
 
 
-/// Simple Authentication Credentials
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UsernamePassword {
-    pub username: String,
-    pub password: String,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum Credentials {
+    /// Simple Authentication Credentials
+    UsernamePassword {
+        username: String,
+        password: String,
+    },
+
+    /// Even simpler Authentication Credentials
+    AdHoc {
+        username: String,
+    }
 }
 
 
@@ -105,7 +113,7 @@ pub enum SessionCommand {
     ShutDown,
 
     /// Request Authentication Token
-    Authenticate { credentials: UsernamePassword }
+    Authenticate { credentials: Credentials }
 }
 
 impl SessionCommand {
@@ -115,6 +123,10 @@ impl SessionCommand {
         serde_json::to_string_pretty(&[
             Join { room: room.into() },
             Message { message:  "hello world".into(), room: room.into() },
+            Authenticate {credentials: Credentials::UsernamePassword {
+                username: "username".into(),
+                password: "password".into(),
+            }},
             ListRooms,
             ListMyRooms,
             ShutDown,

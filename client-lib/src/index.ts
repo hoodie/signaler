@@ -92,12 +92,20 @@ export class Session {
 
     public sendCommand(cmd: Command) {
         console.debug('➡️ sending', cmd)
-        this.connection && this.connection.send(JSON.stringify(cmd));
+        this.connection?.send(JSON.stringify(cmd));
+    }
+
+    public adHoc(username: string): Promise<void> {
+        const authenticated = this.onAuthenticated.promisify();
+        const type = 'adHoc';
+        this.sendCommand({ type: 'authenticate', credentials: {type, username } });
+        return Promise.race([authenticated, timeout(1000)]);
     }
 
     public authenticate(username: string, password: string): Promise<void> {
         const authenticated = this.onAuthenticated.promisify();
-        this.sendCommand({ type: 'authenticate', credentials: { username, password } });
+        const type = 'usernamePassword';
+        this.sendCommand({ type: 'authenticate', credentials: {type, username, password } });
         return Promise.race([authenticated, timeout(1000)]);
     }
 

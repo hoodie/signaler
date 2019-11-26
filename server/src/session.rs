@@ -15,7 +15,7 @@ use std::collections::HashMap;
     use std::fmt;
 
 use signaler_protocol::*;
-use crate::presence::{AuthToken, AuthResponse, UsernamePassword, SimplePresenceService, AuthenticationRequest};
+use crate::presence::{AuthToken, AuthResponse, Credentials, SimplePresenceService, AuthenticationRequest};
 use crate::room::{self, DefaultRoom, RoomId, message::RoomToSession, participant::Participant};
 use crate::room_manager::{self, RoomManagerService};
 use crate::user_management::UserProfile;
@@ -156,7 +156,7 @@ impl ClientSession {
         // debug!("all rooms left ✅✅");
     }
 
-    fn authenticate(&self, credentials: UsernamePassword, ctx: &mut WebsocketContext<Self>) {
+    fn authenticate(&self, credentials: Credentials, ctx: &mut WebsocketContext<Self>) {
         trace!("session starts authentication process");
         let msg = AuthenticationRequest {
             credentials,
@@ -171,11 +171,9 @@ impl ClientSession {
                     Ok(Some(AuthResponse {token, profile})) => {
                         info!("authenticated {:?}", token);
                         client_session.token = Some(token);
-                        client_session.profile = profile.clone();
+                        client_session.profile = Some(profile.clone());
                         Self::send_message(SessionMessage::Authenticated, ctx);
-                        if let Some(profile) = profile {
-                            Self::send_message(SessionMessage::Profile { profile: profile.into() }, ctx);
-                        }
+                        Self::send_message(SessionMessage::Profile { profile: profile.into() }, ctx);
                     }
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unable to login")}, ctx),
                     Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())

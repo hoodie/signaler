@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 mod simple;
 
-pub use signaler_protocol::UsernamePassword;
+pub use signaler_protocol::Credentials;
 
 /// Token returned after successful authentication
 ///
@@ -39,10 +39,10 @@ impl Default for AuthToken {
 #[derive(Debug)]
 pub struct AuthResponse<T, P> {
     pub token: T,
-    pub profile: Option<P>,
+    pub profile: P,
 }
 
-/// General Behaviour of a PresenceService
+/// General Behavior of a PresenceService
 pub trait PresenceHandler {
     type Credentials;
     type AuthToken;
@@ -90,16 +90,16 @@ pub type SimpleAuthResponse = AuthResponse<AuthToken, UserProfile>;
 /// Message expected by PresenceService to add SessionId
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Option<SimpleAuthResponse>")]
-pub struct AuthenticationRequest<CREDENTIALS> {
-    pub credentials: CREDENTIALS,
+pub struct AuthenticationRequest {
+    pub credentials: Credentials,
     pub session_id: SessionId,
 }
 
 /// implementation docs
-impl Handler<AuthenticationRequest<UsernamePassword>> for PresenceService<UsernamePassword, AuthToken> {
-    type Result = MessageResult<AuthenticationRequest<UsernamePassword>>;
+impl Handler<AuthenticationRequest> for PresenceService<Credentials, AuthToken> {
+    type Result = MessageResult<AuthenticationRequest>;
 
-    fn handle(&mut self, request: AuthenticationRequest<UsernamePassword>, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, request: AuthenticationRequest, _ctx: &mut Self::Context) -> Self::Result {
         info!("received AuthenticationRequest");
         let AuthenticationRequest { credentials, session_id } = request;
         MessageResult(self.associate_user(&credentials, &session_id))
@@ -113,7 +113,7 @@ pub struct ValidateRequest {
     pub token: AuthToken,
 }
 
-impl Handler<ValidateRequest> for PresenceService<UsernamePassword, AuthToken> {
+impl Handler<ValidateRequest> for PresenceService<Credentials, AuthToken> {
     type Result = MessageResult<ValidateRequest>;
     fn handle(&mut self, request: ValidateRequest, _ctx: &mut Self::Context) -> Self::Result {
         let ValidateRequest {token} = request;
@@ -121,14 +121,14 @@ impl Handler<ValidateRequest> for PresenceService<UsernamePassword, AuthToken> {
     }
 }
 
-impl Actor for PresenceService<UsernamePassword, AuthToken> {
+impl Actor for PresenceService<Credentials, AuthToken> {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
         debug!("presence started");
     }
 }
 
-impl Default for PresenceService<UsernamePassword, AuthToken> {
+impl Default for PresenceService<Credentials, AuthToken> {
     fn default() -> Self {
         Self {
             inner: Box::new(simple::SimplePresenceHandler::new())
@@ -136,8 +136,8 @@ impl Default for PresenceService<UsernamePassword, AuthToken> {
     }
 }
 
-impl SystemService for PresenceService<UsernamePassword, AuthToken> {}
-impl Supervised for PresenceService<UsernamePassword, AuthToken> {}
+impl SystemService for PresenceService<Credentials, AuthToken> {}
+impl Supervised for PresenceService<Credentials, AuthToken> {}
 
 /// Simple Presence Service
-pub type SimplePresenceService = PresenceService<UsernamePassword, AuthToken>;
+pub type SimplePresenceService = PresenceService<Credentials, AuthToken>;
