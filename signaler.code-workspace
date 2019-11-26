@@ -1,20 +1,10 @@
 {
 	"folders": [
-		{
-			"path": "webapp"
-		},
-		{
-			"path": "client-lib"
-		},
-		{
-			"path": "server"
-		},
-		{
-			"path": "protocol"
-		},
-		{
-			"path": "static"
-		}
+		{ "path": "webapp" },
+		{ "path": "client-lib" },
+		{ "path": "server" },
+		{ "path": "protocol" },
+		{ "path": "static" }
 	],
 	"settings": {}
 }
