@@ -6,8 +6,10 @@ import { AuthenticatedView } from './AuthenticatedView';
 import { UserProfile, Participant } from '../../client-lib/src/protocol';
 import { MessageList } from './MessageViews';
 import { RoomSelector } from './RoomSelector';
+import { Config } from '.';
 
 export interface SessionViewProps {
+    config?: Config;
     session: Session;
     onDisconnect: () => void;
 }
@@ -46,7 +48,10 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
             this.setState({ sessionDescription })
             this.session.sendCommand({ type: 'listRooms' });
             this.session.sendCommand({ type: 'listMyRooms' });
-            this.session.authenticate('hendrik', 'password').catch(() => {throw new Error("authentication timeout")});
+            const {username, password} = this.props.config || {};
+            if (username && password) {
+                this.session.authenticate(username, password).catch(() => {throw new Error("authentication timeout")});
+            }
         });
 
         this.session.onAuthenticated.add(() => {

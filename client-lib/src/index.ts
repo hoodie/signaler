@@ -34,7 +34,7 @@ export class Session {
     }
 
     public connect(): Promise<SessionDescription> {
-        if (this.connection) return Promise.reject();
+        if (this.connection) return Promise.reject(new Error("already connected"));
 
         console.debug({isWelcomeEvent});
         const connected = this.onReceive.filter(isWelcomeEvent).map(welcome => welcome.session).promisify();
