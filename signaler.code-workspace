@@ -4,6 +4,7 @@
 		{ "path": "webapp-svelte" },
 		{ "path": "client-lib" },
 		{ "path": "server" },
+		{ "path": "server-hyper" },
 		{ "path": "protocol" },
 		{ "path": "static" }
 	],

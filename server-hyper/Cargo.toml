@@ -1,0 +1,23 @@
+[package]
+name = "server-hyper"
+version = "0.1.0"
+authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
+edition = "2018"
+
+[dependencies]
+hyper = "0.13"
+http = "0.2"
+futures-util = "0.3"
+tracing = "0.1"
+tracing-subscriber = "0.1"
+tracing-log = "0.1"
+futures = "0.3.1"
+color-backtrace = "0.3.0"
+
+[dependencies.tokio]
+version = "0.2"
+features = ["full"] 
+
+[dependencies.tokio-tungstenite]
+# git = "https://github.com/dbcfd/tokio-tungstenite#ed88798"
+path = "../../hub/tokio-tungstenite"
