@@ -27,14 +27,15 @@ impl RoomManagerService {
         if let Some(room) = self.rooms.get(name) {
             trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
-            room.send(AddParticipant{participant}).into_actor(self)
-                .then(|_res, _slf, _ctx| fut::ok(()))
+            room.send(AddParticipant{participant})
+                .into_actor(self)
+                .then(|_res, _slf, _ctx| fut::ready(()))
                 .spawn(ctx);
         } else {
             let room = self.create_room(name);
             trace!("no room found {:?}, create and then join {:#?}", name, self.list_rooms());
             room.upgrade().unwrap().send(AddParticipant{participant}).into_actor(self)
-                .then(|_res, _slf, _ctx| fut::ok(()))
+                .then(|_res, _slf, _ctx| fut::ready(()))
                 .spawn(ctx);
         }
 
@@ -45,7 +46,7 @@ impl RoomManagerService {
             .addr.upgrade().unwrap()
             .send(RoomToSession::JoinDeclined { room: room_id.into()})
             .into_actor(self)
-            .then(|_, _, _| fut::ok(()))
+            .then(|_, _, _| fut::ready(()))
             .spawn(ctx);
     }
 
@@ -98,6 +99,7 @@ pub mod command {
     use super::RoomManagerService;
 
     #[derive(Message)]
+    #[rtype(result = "()")]
     pub struct JoinRoom {
         pub room: String,
         pub participant: Participant,
@@ -128,7 +130,7 @@ pub mod command {
                         }
                     }
 
-                    fut::ok(())
+                    fut::ready(())
                 })
                 .spawn(ctx);
         }

@@ -79,7 +79,7 @@ impl PresenceHandler for SimplePresenceHandler {
             trace!("currently logged in {:?}", self.running_sessions);
 
             self.running_sessions.insert(token, session_state); // TODO: prevent clashes
-            Some(AuthResponse{ token, profile: profile.clone() })
+            Some(AuthResponse{ token, profile })
         } else {
             None
         }

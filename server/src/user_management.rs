@@ -10,6 +10,7 @@ pub type UserId = String;
 
 #[derive(Clone, Debug, actix::Message, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
 pub struct UserProfile (signaler_protocol::UserProfile);
 
 impl From<signaler_protocol::UserProfile> for UserProfile {

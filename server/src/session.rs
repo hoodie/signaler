@@ -8,11 +8,13 @@
 use actix::prelude::*;
 use actix::WeakAddr;
 use actix_web_actors::ws::{self, WebsocketContext};
+use actix::utils::IntervalFunc;
 use log::*;
 use uuid::Uuid;
 
 use std::collections::HashMap;
-    use std::fmt;
+use std::fmt;
+use std::time::Duration;
 
 use signaler_protocol::*;
 use crate::presence::{AuthToken, AuthResponse, Credentials, SimplePresenceService, AuthenticationRequest};
@@ -88,7 +90,7 @@ impl ClientSession {
                     Ok(rooms) => Self::send_message(SessionMessage::RoomList{rooms}, ctx),
                     Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())
                 }
-                fut::ok(())
+                fut::ready(())
             })
             .spawn(ctx);
     }
@@ -116,7 +118,7 @@ impl ClientSession {
                 .into_actor(self)
                 .then(|_, _, _| {
                     debug!("join request forwarded to room successfully");
-                    fut::ok(())
+                    fut::ready(())
                 })
                 .spawn(ctx);
         } else {
@@ -132,7 +134,7 @@ impl ClientSession {
             .into_actor(self)
             .then(|_, _, _| {
                 debug!("leave request forwarded to room successfully");
-                fut::ok(())
+                fut::ready(())
             })
             .spawn(ctx);
         } else {
@@ -178,7 +180,7 @@ impl ClientSession {
                     Ok(None) => Self::send_message(SessionMessage::Error{ message: String::from("unable to login")}, ctx),
                     Err(error) => ctx.text(SessionMessage::err(format!("{:?}", error)).into_json())
                 }
-                fut::ok(())
+                fut::ready(())
             })
             .spawn(ctx);
     }
@@ -216,7 +218,7 @@ impl ClientSession {
                         }
                         Err(error) => Self::send_message(SessionMessage::Error{ message: error.to_string()}, ctx)
                     }
-                    fut::ok(())
+                    fut::ready(())
                 })
                 .spawn(ctx);
         } else {
@@ -235,10 +237,16 @@ impl ClientSession {
                         Ok(participants) => Self::send_message(SessionMessage::RoomParticipants{room: room_name, participants}, ctx),
                         Err(error) => Self::send_message(SessionMessage::Error{ message: error.to_string()}, ctx)
                     }
-                    fut::ok(())
+                    fut::ready(())
                 })
                 .spawn(ctx);
         }
+    }
+
+    fn send_ping(&mut self, ctx: &mut WebsocketContext<Self>) {
+        let ping_msg = self.session_id.to_string();
+        ctx.ping(ping_msg.as_bytes());
+        trace!("sent     PING {:?}", ping_msg);
     }
 }
 
@@ -258,6 +266,9 @@ impl Actor for ClientSession {
     fn started(&mut self, ctx: &mut Self::Context) {
         info!("ClientSession started {:?}", self.session_id);
         ClientSession::send_message(SessionMessage::Welcome{ session: SessionDescription { session_id: self.session_id } }, ctx);
+        IntervalFunc::new(Duration::from_millis(5_000), Self::send_ping)
+            .finish()
+            .spawn(ctx);
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
@@ -271,15 +282,25 @@ impl Actor for ClientSession {
     }
 }
 
-impl StreamHandler<ws::Message, ws::ProtocolError> for ClientSession {
-    fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ClientSession {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
-            ws::Message::Ping(msg) => ctx.pong(&msg),
-            ws::Message::Text(text) => {
+            Ok(ws::Message::Ping(msg)) => {
+                warn!("PING -> PONG");
+                ctx.pong(&msg)
+            },
+            Ok(ws::Message::Pong(msg)) => {
+                debug!("received PONG {:?}", msg);
+            },
+            Ok(ws::Message::Text(text)) => {
                 self.handle_incoming_message(&text, ctx);
             },
-            ws::Message::Close(reason) => {
+            Ok(ws::Message::Close(reason)) => {
                 info!("websocket was closed {:?}", reason);
+                ctx.stop();
+            },
+            Err(e) => {
+                warn!("websocket was closed because of error {:?}", e);
                 ctx.stop();
             },
             _ => (), // Pong, Nop, Binary
