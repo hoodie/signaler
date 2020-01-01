@@ -12,7 +12,7 @@ use actix_web::{
 use actix_files as fs;
 use actix_web_actors::ws;
 
-use std::env;
+use std::{env, path::Path};
 
 pub mod session;
 // pub mod server;
@@ -29,17 +29,17 @@ const LOG_VAR: &str = "SIGNALER_LOG";
 const BIND_VAR: &str = "SIGNALER_BIND";
 const BIND_TO: &str = "127.0.0.1:8080";
 
-fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     debug!("chat route: {:?}", req);
     ws::start(ClientSession::default(), &req, stream)
 }
 
-fn not_found(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
+async fn not_found(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     warn!(target: "WEB_INTERFACE", "not found");
     Ok(fs::NamedFile::open("../static/404.html")?.set_status_code(StatusCode::NOT_FOUND))
 }
 
-fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
+async fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     Ok(fs::NamedFile::open("../static/favicon.ico")?)
 }
 
@@ -52,6 +52,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bind_to = env::var(BIND_VAR)
                 .unwrap_or_else(|_| BIND_TO.into());
 
+    let home = Path::new(env!("CARGO_MANIFEST_DIR"));
+    info!("running in {}", home.display());
+
     let sys = actix::System::new("signaler");
 
     let server = || HttpServer::new(move || {
@@ -60,8 +63,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .wrap(middleware::Logger::default())
 
             .service(web::resource("/ws/").route(web::get().to(ws_route)))
-            .service(fs::Files::new("/app", "../static").show_files_listing())
-            .service(fs::Files::new("/app2", "../webapp-svelte/public").show_files_listing())
+            .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
+            .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
 
             // .resource("/favicon.ico", |r| r.f(favicon))
 
@@ -86,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     info!("listening on http://{}", bind_to);
-    server().bind(bind_to)?.start();
+    server().bind(bind_to)?.run();
 
     sys.run()?;
     info!("shutting down I guess");

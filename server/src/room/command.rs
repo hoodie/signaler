@@ -12,6 +12,7 @@ use std::convert::TryFrom;
 // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct AddParticipant {
     pub participant: Participant,
 }
@@ -27,14 +28,14 @@ impl Handler<AddParticipant> for DefaultRoom {
             addr
                 .send(message::RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
                 .into_actor(self)
-                .then(|_, _,_| fut::ok(()))
+                .then(|_, _,_| fut::ready(()))
                 .spawn(ctx);
 
             // TODO: do this on client demand
             addr
                 .send(message::RoomToSession::History{room: self.id.clone(), messages: self.history.clone() })
                 .into_actor(self)
-                .then(|_, _,_| fut::ok(()))
+                .then(|_, _,_| fut::ready(()))
                 .spawn(ctx);
 
             self.participants.insert(participant.session_id, participant);
@@ -50,6 +51,7 @@ impl Handler<AddParticipant> for DefaultRoom {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct RemoveParticipant {
     pub session_id: SessionId,
 }
@@ -83,7 +85,7 @@ impl Handler<RemoveParticipant> for DefaultRoom {
                                 }
                             }
 
-                            fut::ok(())
+                            fut::ready(())
                         })
                         .spawn(ctx)
 
@@ -140,11 +142,10 @@ impl Handler<Forward> for DefaultRoom {
                 .into_actor(self)
                 .then(|_, _slf, _| {
                     trace!("chatmessages passed on");
-                    fut::ok(())
+                    fut::ready(())
                 })
                 .spawn(ctx);
             }
         MessageResult(Ok(()))
     }
 }
-
