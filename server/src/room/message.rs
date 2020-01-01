@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use actix::WeakAddr;
-use signaler_protocol::{ChatMessage, Participant};
+use signaler_protocol::{ChatMessage, Participant, RoomEvent};
 
 use super::{DefaultRoom, RoomId};
 
@@ -21,6 +21,11 @@ pub enum RoomToSession {
     RoomState {
         room: RoomId,
         roster: Vec<Participant>,
+    },
+
+    RoomEvent {
+        room: RoomId,
+        event: RoomEvent,
     },
 
     JoinDeclined {

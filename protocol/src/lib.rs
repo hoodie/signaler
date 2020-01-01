@@ -50,6 +50,18 @@ pub struct ChatMessage {
     pub uuid: Uuid,
 }
 
+impl ChatMessage {
+    pub fn new(content: String, sender: SessionId, sender_name: &str) -> Self {
+        Self {
+            content,
+            sender,
+            sender_name: sender_name.into(),
+            sent: chrono::Utc::now(),
+            uuid: Uuid::new_v4(),
+        }
+    }
+}
+
 /// Actual chat Message
 ///
 /// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
@@ -69,18 +81,13 @@ impl From<(UserProfile, SessionId)> for Participant {
     }
 }
 
-
-impl ChatMessage {
-    pub fn new(content: String, sender: SessionId, sender_name: &str) -> Self {
-        Self {
-            content,
-            sender,
-            sender_name: sender_name.into(),
-            sent: chrono::Utc::now(),
-            uuid: Uuid::new_v4(),
-        }
-    }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RoomEvent {
+    ParticipantJoined{name: String},
+    ParticipantLeft{name: String},
 }
+
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -150,6 +157,7 @@ pub enum SessionMessage {
     MyRoomList { rooms: Vec<String> },
 
     RoomParticipants { room: RoomId, participants: Vec<Participant>},
+    RoomEvent{ room: RoomId, event: RoomEvent},
 
     Message { message: ChatMessage, room: RoomId},
 

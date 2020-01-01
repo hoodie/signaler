@@ -395,6 +395,20 @@ impl Handler<RoomToSession> for ClientSession {
                 )
             }
 
+            RoomToSession::RoomEvent { room, event} => {
+                debug!(
+                    "forwarding event from room: {:?}\n{:#?}",
+                    room, event
+                );
+                Self::send_message(
+                    SessionMessage::RoomEvent{
+                        room,
+                        event
+                    },
+                    ctx,
+                )
+            }
+
             RoomToSession::History { room, mut messages } => {
                 // TODO: Self::send_history
                 for message in messages.drain(..) {
@@ -427,7 +441,6 @@ pub mod command {
 
     use super::ClientSession;
     use crate::room::{command::UpdateParticipant, DefaultRoom};
-    use crate::user_management::UserProfile;
 
     #[derive(Message, Debug)]
     // #[rtype(result = "Option<UserProfile>")]
