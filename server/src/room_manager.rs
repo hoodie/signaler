@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::room::{
     DefaultRoom, RoomId,
-    participant::Participant,
+    participant::RosterParticipant,
     message::RoomToSession,
     command::AddParticipant,
 };
@@ -23,7 +23,7 @@ pub struct RoomManagerService {
 }
 
 impl RoomManagerService {
-    fn join_room(&mut self, name: &str, participant: Participant, ctx: &mut Context<Self>) {
+    fn join_room(&mut self, name: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
         if let Some(room) = self.rooms.get(name) {
             trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
@@ -41,7 +41,7 @@ impl RoomManagerService {
 
     }
 
-    fn send_decline(&mut self, room_id: &str, participant: Participant, ctx: &mut Context<Self>) {
+    fn send_decline(&mut self, room_id: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
         participant
             .addr.upgrade().unwrap()
             .send(RoomToSession::JoinDeclined { room: room_id.into()})
@@ -95,14 +95,14 @@ pub mod command {
     use log::{info, error, debug, warn, trace};
 
     use crate::presence::{AuthToken, PresenceService, ValidateRequest };
-    use crate::room::{participant::Participant, RoomId};
+    use crate::room::{participant::RosterParticipant, RoomId};
     use super::RoomManagerService;
 
     #[derive(Message)]
     #[rtype(result = "()")]
     pub struct JoinRoom {
         pub room: String,
-        pub participant: Participant,
+        pub participant: RosterParticipant,
         pub token: AuthToken,
     }
 

@@ -5,7 +5,8 @@ use log::{info, error, debug, warn, trace};
 use signaler_protocol as protocol;
 use crate::session::SessionId;
 use crate::room_manager::RoomManagerService;
-use super::participant::{Participant, LiveParticipant};
+use crate::user_management::UserProfile;
+use super::participant::{RosterParticipant, LiveParticipant};
 use super::{message, DefaultRoom};
 use std::convert::TryFrom;
 
@@ -14,7 +15,7 @@ use std::convert::TryFrom;
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct AddParticipant {
-    pub participant: Participant,
+    pub participant: RosterParticipant,
 }
 
 impl Handler<AddParticipant> for DefaultRoom {
@@ -38,14 +39,43 @@ impl Handler<AddParticipant> for DefaultRoom {
                 .then(|_, _,_| fut::ready(()))
                 .spawn(ctx);
 
-            self.participants.insert(participant.session_id, participant);
+            self.roster.insert(participant.session_id, participant);
 
             self.send_update_to_all_participants(ctx);
 
-            trace!("{:?} participants: {:?}", self.id, self.participants);
+            trace!("{:?} roster: {:?}", self.id, self.roster);
         } else {
             error!("participant address is cannot be upgraded {:?}", participant);
         }
+
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct UpdateParticipant {
+    pub profile: UserProfile,
+    pub session_id: SessionId,
+}
+
+impl Handler<UpdateParticipant> for DefaultRoom {
+    type Result = ();
+
+    fn handle(&mut self, command: UpdateParticipant, ctx: &mut Self::Context)  {
+        let UpdateParticipant { profile, session_id} = command;
+        trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile );
+        // if let Some(addr) = participant.addr.upgrade() {
+
+            if let Some(roster_entry) = self.roster.get_mut(&session_id) {
+                roster_entry.profile = Some(profile);
+            }
+
+            self.send_update_to_all_participants(ctx);
+
+            trace!("{:?} roster: {:?}", self.id, self.roster);
+        // } else {
+        //     error!("participant address is cannot be upgraded {:?}", participant);
+        // }
 
     }
 }
@@ -62,13 +92,13 @@ impl Handler<RemoveParticipant> for DefaultRoom {
     fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context)  {
         let RemoveParticipant {session_id} = command;
         debug!("receive RemoveParticipant");
-        if let Some(participant) = self.participants.remove(&session_id) {
+        if let Some(participant) = self.roster.remove(&session_id) {
             debug!("successfully removed {} from {:?}", session_id, self.id);
-            trace!("{:?} participants: {:?}", self.id, self.participants);
+            trace!("{:?} roster: {:?}", self.id, self.roster);
             if let Ok(participant) = LiveParticipant::try_from(&participant) {
                 self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant, ctx);
             }
-            if self.participants.values().count() == 0 {
+            if self.roster.values().count() == 0 {
                 if self.ephemeral {
                     trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
                     RoomManagerService::from_registry()
@@ -108,8 +138,8 @@ pub struct RoomUpdate;
 
 impl Handler<RoomUpdate> for DefaultRoom {
     type Result = MessageResult<RoomUpdate>;
-    fn handle(&mut self, _command: RoomUpdate, ctx: &mut Self::Context) -> Self::Result{
-        MessageResult(self.get_participant_profiles(ctx))
+    fn handle(&mut self, _command: RoomUpdate, _ctx: &mut Self::Context) -> Self::Result{
+        MessageResult(self.get_roster())
     }
 }
 

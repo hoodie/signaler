@@ -20,7 +20,7 @@ pub enum RoomToSession {
 
     RoomState {
         room: RoomId,
-        participants: Vec<Participant>,
+        roster: Vec<Participant>,
     },
 
     JoinDeclined {

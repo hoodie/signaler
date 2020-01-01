@@ -5,6 +5,7 @@ use actix::utils::IntervalFunc;
 use log::{debug, error, info, trace, warn};
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::time::Duration;
 
 use crate::session::{self, ClientSession, SessionId};
@@ -16,7 +17,7 @@ pub mod command;
 pub mod message;
 pub mod participant;
 
-use self::participant::{LiveParticipant, Participant};
+use self::participant::{LiveParticipant, RosterParticipant};
 
 #[derive(Debug)]
 pub struct DefaultRoom {
@@ -25,7 +26,7 @@ pub struct DefaultRoom {
     history: Vec<protocol::ChatMessage>,
     // TODO: for privacy reasons the session_id should not be used as participant_id as well
     // because this id will be sent with every chat message
-    participants: HashMap<SessionId, Participant>,
+    roster: HashMap<SessionId, RosterParticipant>,
 }
 
 impl DefaultRoom {
@@ -34,7 +35,7 @@ impl DefaultRoom {
             id,
             ephemeral: true,
             history: Vec::with_capacity(10_000),
-            participants: Default::default(),
+            roster: Default::default(),
         }
     }
 
@@ -43,21 +44,30 @@ impl DefaultRoom {
             id,
             ephemeral: false,
             history: Vec::with_capacity(10_000),
-            participants: Default::default(),
+            roster: Default::default(),
         }
     }
 
-    /*
-    use std::convert::TryFrom;
+    fn room_state(&self) -> message::RoomToSession {
+        message::RoomToSession::RoomState {
+            room: self.id.clone(),
+            roster: self.get_roster(),
+        }
+    }
+
+    fn get_roster(&self) -> Vec<protocol::Participant> {
+        self.roster.values().map(Into::into).collect()
+    }
+
+    #[allow(dead_code)]
     fn get_participant(&self, session_id: &SessionId) -> Option<LiveParticipant> {
-        self.participants
+        self.roster
             .get(session_id)
             .and_then(|p| LiveParticipant::try_from(p).ok())
     }
-    */
 
     fn live_participants<'a>(&'a self) -> impl Iterator<Item = LiveParticipant> + 'a {
-        self.participants.values().filter_map(|participant| {
+        self.roster.values().filter_map(|participant| {
             if let Some(addr) = participant.addr.upgrade() {
                 Some(LiveParticipant {
                     session_id: participant.session_id,
@@ -76,15 +86,9 @@ impl DefaultRoom {
 
             participant
                 .addr
-                .send(message::RoomToSession::RoomState {
-                    room: self.id.clone(),
-                    participants: self.get_participant_profiles(ctx),
-                })
+                .send(self.room_state())
                 .into_actor(self)
-                .then(|_, _slf, _| {
-                    trace!("RoomState passed on");
-                    fut::ready(())
-                })
+                .then(|_, _slf, _| fut::ready(()))
                 .spawn(ctx);
         }
     }
@@ -108,53 +112,42 @@ impl DefaultRoom {
             .spawn(ctx);
     }
 
-    fn gc(&mut self, _ctx: &mut Context<Self>) {
-        self.participants = self
-            .participants
+    fn gc(&mut self, ctx: &mut Context<Self>) {
+        let mut send_update = false;
+        self.roster = self
+            .roster
             .drain()
             .inspect(|(_, participant)| {
                 if participant.addr.upgrade().is_none() {
-                    debug!(
-                        "garbage collecting participant {:?}",
-                        participant.session_id
-                    );
+                    debug!("garbage collecting participant {:?}", participant.session_id);
+                    send_update = true;
                 }
             })
             .filter(|(_, participant)| participant.addr.upgrade().is_some())
-            .collect()
+            .collect();
+        if send_update {
+            self.send_update_to_all_participants(ctx);
+        }
     }
 
-    fn get_participant_profiles(&self, ctx: &mut Context<Self>) -> Vec<protocol::Participant> {
-        // PresenceService.send... Lookup SessionIds
-        self.live_participants().for_each(|participant| {
-            let mut profiles: Vec<protocol::Participant> = Vec::new();
-            participant
-                .addr
-                .send(session::command::ProvideProfile)
-                .timeout(Duration::new(1, 0))
-                .into_actor(self)
-                .then(move |response, _slf, _ctx| {
-                    match response {
-                        Ok(maybe_profile) => {
-                            if let Some(p) = maybe_profile {
-                                profiles.push(protocol::Participant::from((
-                                    p.into(),
-                                    participant.session_id,
-                                )));
-                            } else {
-                                warn!(
-                                    "get_participant_profiles (room: {:?}) received empty profile",
-                                    _slf.id
-                                );
-                            }
-                        }
-                        Err(err) => warn!("get_participant_profiles (room: {:?}) {}", _slf.id, err),
-                    }
-                    fut::ready(())
-                })
-                .spawn(ctx);
-        });
-        vec![]
+    fn update_participant_profile(
+        &mut self,
+        participant: LiveParticipant,
+        ctx: &mut Context<Self>,
+    ) {
+        let room_addr = ctx.address().downgrade();
+        self.send_to_participant(
+            session::command::ProvideProfile { room_addr },
+            &participant,
+            ctx,
+        );
+    }
+
+    pub fn update_roster(&mut self, ctx: &mut Context<Self>) {
+        let participants =  self.live_participants().collect::<Vec<_>>();
+        for participant in participants.into_iter() {
+            self.update_participant_profile(participant, ctx);
+        }
     }
 }
 
@@ -162,6 +155,9 @@ impl Actor for DefaultRoom {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Context<Self>) {
+        // IntervalFunc::new(Duration::from_millis(15_000), Self::update_roster)
+        //     .finish()
+        //     .spawn(ctx);
         IntervalFunc::new(Duration::from_millis(5_000), Self::gc)
             .finish()
             .spawn(ctx);
