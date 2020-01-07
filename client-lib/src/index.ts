@@ -1,4 +1,4 @@
-import { Signal } from 'micro-signals';
+import { Signal, ReadableSignal, Listener } from 'micro-signals';
 
 import { Command, UserProfile, RoomParticipants } from './protocol';
 import { serverEvent, ServerEvent } from './protocol';
@@ -92,6 +92,9 @@ export class Session {
 
     public sendCommand(cmd: Command) {
         console.debug('➡️ sending', cmd)
+        if (!this.connection) {
+            throw new Error("connection already closed, can't send")
+        }
         this.connection?.send(JSON.stringify(cmd));
     }
 
@@ -109,8 +112,9 @@ export class Session {
         return Promise.race([authenticated, timeout(1000)]);
     }
 
-    public join(room: string) {
+    public join(room: string): RoomHandle {
         this.sendCommand({ type: 'join', room });
+        return this.createRoomHandle(room);
     }
 
     public leave(room: string) {
@@ -129,4 +133,22 @@ export class Session {
         this.sendCommand({ type: 'message', message, room });
     }
 
+    public createRoomHandle(room: string): RoomHandle {
+        return createRoomHandle(this, room);
+    }
+
+}
+
+interface RoomHandle {
+    readonly onMessage: ReadableSignal<ChatMessage>;
+    send(messages: string): void;
+}
+
+function createRoomHandle(session: Session, room: string): RoomHandle {
+    const onMessage = session.onMessage.filter(msg => msg.room === room).map(msg => msg.message);
+    const send = (msg: string) => session.sendMessage(msg, room);
+
+    return {
+        onMessage, send
+    }
 }

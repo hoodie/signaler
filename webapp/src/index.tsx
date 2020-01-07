@@ -7,21 +7,38 @@ import { SignalerContainer } from "./App";
 export interface Config {
     username: string | null;
     password: string | null;
+    cli: string | null;
 }
 
-const config: Config = (() => {
-    const { username, password } = Object.fromEntries(
-        new URLSearchParams(window.location.search).entries()
-    );
-    return { username: username || null, password: password || null };
-})();
+const defaultConfig: Config = {
+    username: null,
+    password: null,
+    cli: null
+};
+
+const config: Config = {
+    ...defaultConfig,
+    ...Object.fromEntries(new URLSearchParams(window.location.search).entries())
+};
+
 console.table(config);
 
-ReactDOM.render(
-    <SignalerContainer config={config} />,
-    document.querySelector("#app")
-);
+function initApp() {
+    ReactDOM.render(
+        <SignalerContainer config={config} />,
+        document.querySelector("#app")
+    );
+}
 
-(window as any).initSession = () => {
-    const session = new Session(`ws://${location.host}/ws/`);
-};
+function initCli() {
+    (window as any)["session"] = new Session(`ws://${location.host}/ws/`);
+}
+
+(window as any)["initApp"] = initApp;
+(window as any)["initCli"] = initCli;
+
+if (config.cli === "true") {
+    initCli();
+} else {
+    initApp();
+}
