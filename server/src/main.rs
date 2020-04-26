@@ -12,7 +12,7 @@ use actix_web::{
 use actix_files as fs;
 use actix_web_actors::ws;
 
-use std::{env, path::Path};
+use std::{env, path::PathBuf};
 
 pub mod session;
 // pub mod server;
@@ -52,7 +52,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bind_to = env::var(BIND_VAR)
                 .unwrap_or_else(|_| BIND_TO.into());
 
-    let home = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let home = if option_env!("DOCKERIZE").is_some() {
+        std::env::current_dir().unwrap()
+    } else {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    };
     info!("running in {}", home.display());
 
     let sys = actix::System::new("signaler");

@@ -1,11 +1,26 @@
 {
 	"folders": [
-		{ "path": "webapp" },
-		{ "path": "webapp-svelte" },
-		{ "path": "client-lib" },
-		{ "path": "server" },
-		{ "path": "protocol" },
-		{ "path": "static" }
+		{
+			"path": "webapp"
+		},
+		{
+			"path": "webapp-svelte"
+		},
+		{
+			"path": "client-lib"
+		},
+		{
+			"path": "server"
+		},
+		{
+			"path": "protocol"
+		},
+		{
+			"path": "static"
+		},
+		{
+			"path": "docker"
+		}
 	],
 	"settings": {}
 }

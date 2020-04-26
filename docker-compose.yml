@@ -1,0 +1,12 @@
+version: "3"
+services:
+  signaler:
+    build:
+      context: .
+      dockerfile: docker/signaler.Dockerfile
+    container_name: "signaler-server"
+    environment:
+      - SIGNALER_BIND=0.0.0.0:8080
+      - SIGNALER_LOG=signaler=debug,actix_web=debug
+    ports:
+      - "8080:8080"
