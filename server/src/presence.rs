@@ -5,14 +5,14 @@
 //!
 
 use actix::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::user_management::UserProfile;
 use super::*;
+use crate::user_management::UserProfile;
 
-use std::time::{Duration, Instant};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 mod simple;
 
@@ -32,7 +32,7 @@ impl AuthToken {
 
 impl Default for AuthToken {
     fn default() -> Self {
-        Self (Uuid::new_v4())
+        Self(Uuid::new_v4())
     }
 }
 
@@ -47,24 +47,31 @@ pub trait PresenceHandler {
     type Credentials;
     type AuthToken;
 
-    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<AuthResponse<Self::AuthToken, UserProfile>>;
+    fn associate_user(
+        &mut self,
+        credentials: &Self::Credentials,
+        session_id: &SessionId,
+    ) -> Option<AuthResponse<Self::AuthToken, UserProfile>>;
     fn still_valid(&self, token: &AuthToken) -> bool;
     fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken>;
     fn logout(&mut self, token: &AuthToken) -> bool;
     fn clean_up(&mut self);
-
 }
 
 /// Actor Container for Generic PresenceService implementations
 pub struct PresenceService<C, T> {
-    inner: Box<dyn PresenceHandler<Credentials=C, AuthToken=T>>
+    inner: Box<dyn PresenceHandler<Credentials = C, AuthToken = T>>,
 }
 
 impl<C, T> PresenceHandler for PresenceService<C, T> {
     type Credentials = C;
     type AuthToken = T;
 
-    fn associate_user(&mut self, credentials: &Self::Credentials, session_id: &SessionId) -> Option<AuthResponse<Self::AuthToken, UserProfile>> {
+    fn associate_user(
+        &mut self,
+        credentials: &Self::Credentials,
+        session_id: &SessionId,
+    ) -> Option<AuthResponse<Self::AuthToken, UserProfile>> {
         self.inner.associate_user(credentials, session_id)
     }
 
@@ -101,7 +108,10 @@ impl Handler<AuthenticationRequest> for PresenceService<Credentials, AuthToken> 
 
     fn handle(&mut self, request: AuthenticationRequest, _ctx: &mut Self::Context) -> Self::Result {
         info!("received AuthenticationRequest");
-        let AuthenticationRequest { credentials, session_id } = request;
+        let AuthenticationRequest {
+            credentials,
+            session_id,
+        } = request;
         MessageResult(self.associate_user(&credentials, &session_id))
     }
 }
@@ -116,7 +126,7 @@ pub struct ValidateRequest {
 impl Handler<ValidateRequest> for PresenceService<Credentials, AuthToken> {
     type Result = MessageResult<ValidateRequest>;
     fn handle(&mut self, request: ValidateRequest, _ctx: &mut Self::Context) -> Self::Result {
-        let ValidateRequest {token} = request;
+        let ValidateRequest { token } = request;
         MessageResult(self.still_valid(&token))
     }
 }
@@ -131,7 +141,7 @@ impl Actor for PresenceService<Credentials, AuthToken> {
 impl Default for PresenceService<Credentials, AuthToken> {
     fn default() -> Self {
         Self {
-            inner: Box::new(simple::SimplePresenceHandler::new())
+            inner: Box::new(simple::SimplePresenceHandler::new()),
         }
     }
 }

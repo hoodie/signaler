@@ -395,18 +395,9 @@ impl Handler<RoomToSession> for ClientSession {
                 )
             }
 
-            RoomToSession::RoomEvent { room, event} => {
-                debug!(
-                    "forwarding event from room: {:?}\n{:#?}",
-                    room, event
-                );
-                Self::send_message(
-                    SessionMessage::RoomEvent{
-                        room,
-                        event
-                    },
-                    ctx,
-                )
+            RoomToSession::RoomEvent { room, event } => {
+                debug!("forwarding event from room: {:?}\n{:#?}", room, event);
+                Self::send_message(SessionMessage::RoomEvent { room, event }, ctx)
             }
 
             RoomToSession::History { room, mut messages } => {
@@ -458,17 +449,20 @@ pub mod command {
             ctx: &mut WebsocketContext<Self>,
         ) -> Self::Result {
             if let Some(profile) = self.profile.clone() {
-            if let Some(addr) = p.room_addr.upgrade() {
-                addr.send(UpdateParticipant {
-                    session_id: self.session_id,
-                    profile,
-                })
-                .into_actor(self)
-                .then(|_, _, _| fut::ready(()))
-                .spawn(ctx);
-            }
-            }else{
-                warn!("{:?} was asked for profile, but didn't have one", self.session_id);
+                if let Some(addr) = p.room_addr.upgrade() {
+                    addr.send(UpdateParticipant {
+                        session_id: self.session_id,
+                        profile,
+                    })
+                    .into_actor(self)
+                    .then(|_, _, _| fut::ready(()))
+                    .spawn(ctx);
+                }
+            } else {
+                warn!(
+                    "{:?} was asked for profile, but didn't have one",
+                    self.session_id
+                );
             }
             MessageResult(())
         }

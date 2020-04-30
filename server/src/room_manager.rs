@@ -1,20 +1,18 @@
 use actix::prelude::*;
 use actix::WeakAddr;
 #[allow(unused_imports)]
-use log::{info, error, debug, warn, trace};
+use log::{debug, error, info, trace, warn};
 
 use std::collections::HashMap;
 
 use crate::room::{
-    DefaultRoom, RoomId,
-    participant::RosterParticipant,
-    message::RoomToSession,
-    command::AddParticipant,
+    command::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom,
+    RoomId,
 };
 
 #[derive(Copy, Clone, Debug)]
 pub enum RoomManagerError {
-    NoSuchRoom
+    NoSuchRoom,
 }
 
 #[derive(Default)]
@@ -27,24 +25,39 @@ impl RoomManagerService {
         if let Some(room) = self.rooms.get(name) {
             trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
-            room.send(AddParticipant{participant})
+            room.send(AddParticipant { participant })
                 .into_actor(self)
                 .then(|_res, _slf, _ctx| fut::ready(()))
                 .spawn(ctx);
         } else {
             let room = self.create_room(name);
-            trace!("no room found {:?}, create and then join {:#?}", name, self.list_rooms());
-            room.upgrade().unwrap().send(AddParticipant{participant}).into_actor(self)
+            trace!(
+                "no room found {:?}, create and then join {:#?}",
+                name,
+                self.list_rooms()
+            );
+            room.upgrade()
+                .unwrap()
+                .send(AddParticipant { participant })
+                .into_actor(self)
                 .then(|_res, _slf, _ctx| fut::ready(()))
                 .spawn(ctx);
         }
-
     }
 
-    fn send_decline(&mut self, room_id: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
+    fn send_decline(
+        &mut self,
+        room_id: &str,
+        participant: RosterParticipant,
+        ctx: &mut Context<Self>,
+    ) {
         participant
-            .addr.upgrade().unwrap()
-            .send(RoomToSession::JoinDeclined { room: room_id.into()})
+            .addr
+            .upgrade()
+            .unwrap()
+            .send(RoomToSession::JoinDeclined {
+                room: room_id.into(),
+            })
             .into_actor(self)
             .then(|_, _, _| fut::ready(()))
             .spawn(ctx);
@@ -92,11 +105,11 @@ pub mod command {
     use actix::prelude::*;
 
     #[allow(unused_imports)]
-    use log::{info, error, debug, warn, trace};
+    use log::{debug, error, info, trace, warn};
 
-    use crate::presence::{AuthToken, PresenceService, ValidateRequest };
-    use crate::room::{participant::RosterParticipant, RoomId};
     use super::RoomManagerService;
+    use crate::presence::{AuthToken, PresenceService, ValidateRequest};
+    use crate::room::{participant::RosterParticipant, RoomId};
 
     #[derive(Message)]
     #[rtype(result = "()")]
@@ -106,25 +119,33 @@ pub mod command {
         pub token: AuthToken,
     }
 
-
     impl Handler<JoinRoom> for RoomManagerService {
         type Result = ();
 
         fn handle(&mut self, request: JoinRoom, ctx: &mut Self::Context) -> Self::Result {
-            trace!("RoomManagerService received request to join {:?}", request.room);
-            let JoinRoom {room, participant, token} = request;
+            trace!(
+                "RoomManagerService received request to join {:?}",
+                request.room
+            );
+            let JoinRoom {
+                room,
+                participant,
+                token,
+            } = request;
             // TODO: check token
             PresenceService::from_registry()
                 .send(ValidateRequest { token })
                 .into_actor(self)
                 .then(move |is_valid, slf, ctx| {
-
                     match is_valid {
-                        Ok(true)  => {
+                        Ok(true) => {
                             slf.join_room(&room, participant, ctx);
                         }
                         _ => {
-                            warn!("{} attempted to join {} with invalid authentication", participant.session_id, room);
+                            warn!(
+                                "{} attempted to join {} with invalid authentication",
+                                participant.session_id, room
+                            );
                             slf.send_decline(&room, participant, ctx);
                             // TODO: send error to client_session
                         }
@@ -140,7 +161,6 @@ pub mod command {
     #[rtype(result = "Vec<String>")]
     pub struct ListRooms;
 
-
     impl Handler<ListRooms> for RoomManagerService {
         type Result = MessageResult<ListRooms>;
 
@@ -149,18 +169,17 @@ pub mod command {
         }
     }
 
-    #[derive(Message)]
+    #[derive(Message, Debug)]
     #[rtype(result = "bool")]
-    pub struct CloseRoom (pub RoomId);
-
+    pub struct CloseRoom(pub RoomId);
 
     impl Handler<CloseRoom> for RoomManagerService {
         type Result = MessageResult<CloseRoom>;
 
-        fn handle(&mut self, CloseRoom(room_id): CloseRoom, _ctx: &mut Self::Context) -> Self::Result {
+        fn handle(&mut self, room_id: CloseRoom, _ctx: &mut Self::Context) -> Self::Result {
             // let CloseRoom(room_id) = request;
-            trace!("received CloseRoom({:?})", room_id);
-            MessageResult(self.close_room(room_id))
+            trace!("received {:?}", room_id);
+            MessageResult(self.close_room(room_id.0))
         }
     }
 }

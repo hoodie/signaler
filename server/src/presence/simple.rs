@@ -2,18 +2,16 @@
 //!
 //! for simplicity sake this handles user profiles itself, this should probably be handled by another actor
 
-use signaler_protocol as protocol;
 use super::*;
 use crate::session::SessionId;
 use crate::static_data::StaticUserDatabase;
-
+use signaler_protocol as protocol;
 
 #[derive(Debug)]
 pub struct SessionState {
     created: Instant,
-    session_id: SessionId
+    session_id: SessionId,
 }
-
 
 #[derive(Debug)]
 pub struct SimplePresenceHandler {
@@ -22,13 +20,12 @@ pub struct SimplePresenceHandler {
     last_update: Instant,
 }
 
-
 impl SimplePresenceHandler {
     pub fn new() -> Self {
         Self {
             user_database: StaticUserDatabase::load(),
             last_update: Instant::now(),
-            running_sessions: Default::default()
+            running_sessions: Default::default(),
         }
     }
 
@@ -38,7 +35,7 @@ impl SimplePresenceHandler {
 
     fn grab_profile(&mut self, credentials: &Credentials) -> Option<UserProfile> {
         match credentials {
-            Credentials::UsernamePassword {username, password} => {
+            Credentials::UsernamePassword { username, password } => {
                 if Some(password) == self.user_database.credentials.get(username) {
                     info!("valid login trace {:?}", credentials);
 
@@ -53,37 +50,37 @@ impl SimplePresenceHandler {
                     debug!("not found {:?}", credentials);
                     None
                 }
-            },
-            Credentials::AdHoc{ username } => {
-                Some(protocol::UserProfile {full_name: format!("{} (adhoc)", username) }.into())
             }
+            Credentials::AdHoc { username } => Some(
+                protocol::UserProfile {
+                    full_name: format!("{} (adhoc)", username),
+                }
+                .into(),
+            ),
         }
     }
-
 }
-
 
 impl PresenceHandler for SimplePresenceHandler {
     type Credentials = Credentials;
     type AuthToken = AuthToken;
 
-    fn associate_user(&mut self, credentials: &Credentials, session_id: &SessionId) -> Option<SimpleAuthResponse> {
+    fn associate_user(&mut self, cred: &Credentials, id: &SessionId) -> Option<SimpleAuthResponse> {
         self.clean_up();
 
-        if let Some(profile) = self.grab_profile(credentials) {
+        if let Some(profile) = self.grab_profile(cred) {
             let token = AuthToken::new();
             let session_state = SessionState {
                 created: Instant::now(),
-                session_id: *session_id
+                session_id: *id,
             };
             trace!("currently logged in {:?}", self.running_sessions);
 
             self.running_sessions.insert(token, session_state); // TODO: prevent clashes
-            Some(AuthResponse{ token, profile })
+            Some(AuthResponse { token, profile })
         } else {
             None
         }
-
     }
 
     fn still_valid(&self, token: &AuthToken) -> bool {
@@ -114,12 +111,11 @@ impl PresenceHandler for SimplePresenceHandler {
             debug!("no cleanup in {:?}", clean_up_timeout);
             self.last_update = Instant::now();
             debug!("cleaning up");
-            self.running_sessions = self.running_sessions
+            self.running_sessions = self
+                .running_sessions
                 .drain()
                 .filter(|(_token, state)| Self::still_fresh(state.created))
                 .collect()
         }
     }
-
-
 }

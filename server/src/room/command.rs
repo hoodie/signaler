@@ -1,13 +1,14 @@
 use actix::prelude::*;
 #[allow(unused_imports)]
-use log::{info, error, debug, warn, trace};
-
+use log::{debug, error, info, trace, warn};
 use signaler_protocol as protocol;
-use crate::session::SessionId;
-use crate::room_manager::RoomManagerService;
-use crate::user_management::UserProfile;
-use super::participant::{RosterParticipant, LiveParticipant};
+
+use super::participant::{LiveParticipant, RosterParticipant};
 use super::{message, DefaultRoom};
+use crate::room_manager::RoomManagerService;
+use crate::session::SessionId;
+use crate::user_management::UserProfile;
+
 use std::convert::TryFrom;
 
 // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
@@ -21,23 +22,27 @@ pub struct AddParticipant {
 impl Handler<AddParticipant> for DefaultRoom {
     type Result = ();
 
-    fn handle(&mut self, command: AddParticipant, ctx: &mut Self::Context)  {
+    fn handle(&mut self, command: AddParticipant, ctx: &mut Self::Context) {
         let AddParticipant { participant } = command;
         trace!("Room {:?} adds {:?}", self.id, participant);
         // TODO: prevent duplicates
         if let Some(addr) = participant.addr.upgrade() {
-            addr
-                .send(message::RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
-                .into_actor(self)
-                .then(|_, _,_| fut::ready(()))
-                .spawn(ctx);
+            addr.send(message::RoomToSession::Joined(
+                self.id.clone(),
+                ctx.address().downgrade(),
+            ))
+            .into_actor(self)
+            .then(|_, _, _| fut::ready(()))
+            .spawn(ctx);
 
             // TODO: do this on client demand
-            addr
-                .send(message::RoomToSession::History{room: self.id.clone(), messages: self.history.clone() })
-                .into_actor(self)
-                .then(|_, _,_| fut::ready(()))
-                .spawn(ctx);
+            addr.send(message::RoomToSession::History {
+                room: self.id.clone(),
+                messages: self.history.clone(),
+            })
+            .into_actor(self)
+            .then(|_, _, _| fut::ready(()))
+            .spawn(ctx);
 
             self.roster.insert(participant.session_id, participant);
 
@@ -45,9 +50,11 @@ impl Handler<AddParticipant> for DefaultRoom {
 
             trace!("{:?} roster: {:?}", self.id, self.roster);
         } else {
-            error!("participant address is cannot be upgraded {:?}", participant);
+            error!(
+                "participant address is cannot be upgraded {:?}",
+                participant
+            );
         }
-
     }
 }
 
@@ -61,22 +68,29 @@ pub struct UpdateParticipant {
 impl Handler<UpdateParticipant> for DefaultRoom {
     type Result = ();
 
-    fn handle(&mut self, command: UpdateParticipant, ctx: &mut Self::Context)  {
-        let UpdateParticipant { profile, session_id} = command;
-        trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile );
+    fn handle(&mut self, command: UpdateParticipant, ctx: &mut Self::Context) {
+        let UpdateParticipant {
+            profile,
+            session_id,
+        } = command;
+        trace!(
+            "Room {:?} updates {:?} with {:?}",
+            self.id,
+            session_id,
+            profile
+        );
         // if let Some(addr) = participant.addr.upgrade() {
 
-            if let Some(roster_entry) = self.roster.get_mut(&session_id) {
-                roster_entry.profile = Some(profile);
-            }
+        if let Some(roster_entry) = self.roster.get_mut(&session_id) {
+            roster_entry.profile = Some(profile);
+        }
 
-            self.send_update_to_all_participants(ctx);
+        self.send_update_to_all_participants(ctx);
 
-            trace!("{:?} roster: {:?}", self.id, self.roster);
+        trace!("{:?} roster: {:?}", self.id, self.roster);
         // } else {
         //     error!("participant address is cannot be upgraded {:?}", participant);
         // }
-
     }
 }
 
@@ -89,18 +103,28 @@ pub struct RemoveParticipant {
 impl Handler<RemoveParticipant> for DefaultRoom {
     type Result = ();
 
-    fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context)  {
-        let RemoveParticipant {session_id} = command;
+    fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context) {
+        let RemoveParticipant { session_id } = command;
         debug!("receive RemoveParticipant");
         if let Some(participant) = self.roster.remove(&session_id) {
             debug!("successfully removed {} from {:?}", session_id, self.id);
             trace!("{:?} roster: {:?}", self.id, self.roster);
             if let Ok(participant) = LiveParticipant::try_from(&participant) {
-                self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant, ctx);
+                self.send_to_participant(
+                    message::RoomToSession::Left {
+                        room: self.id.clone(),
+                    },
+                    &participant,
+                    ctx,
+                );
             }
             if self.roster.values().count() == 0 {
                 if self.ephemeral {
-                    trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
+                    trace!(
+                        "{:?} is empty and ephemeral => trying to stop {:?}",
+                        self.id,
+                        self
+                    );
                     RoomManagerService::from_registry()
                         .send(crate::room_manager::command::CloseRoom(self.id.clone()))
                         .into_actor(self)
@@ -109,24 +133,20 @@ impl Handler<RemoveParticipant> for DefaultRoom {
                                 Ok(true) => {
                                     trace!("room_manager says I'm fine to shut down");
                                     ctx.stop();
-                                },
-                                _ => {
-                                    warn!("room_manager says it wasn't able to delete me 🤷")
                                 }
+                                _ => warn!("room_manager says it wasn't able to delete me 🤷"),
                             }
 
                             fut::ready(())
                         })
                         .spawn(ctx)
-
                 } else {
                     trace!("{:?} is empty but not ephemeral, staying around", self.id);
                 }
             } else {
                 self.send_update_to_all_participants(ctx);
             }
-        }
-        else {
+        } else {
             warn!("{} was not a participant in {:?}", session_id, self.id);
         }
     }
@@ -138,7 +158,7 @@ pub struct RoomUpdate;
 
 impl Handler<RoomUpdate> for DefaultRoom {
     type Result = MessageResult<RoomUpdate>;
-    fn handle(&mut self, _command: RoomUpdate, _ctx: &mut Self::Context) -> Self::Result{
+    fn handle(&mut self, _command: RoomUpdate, _ctx: &mut Self::Context) -> Self::Result {
         MessageResult(self.get_roster())
     }
 }
@@ -175,7 +195,7 @@ impl Handler<Forward> for DefaultRoom {
                     fut::ready(())
                 })
                 .spawn(ctx);
-            }
+        }
         MessageResult(Ok(()))
     }
 }

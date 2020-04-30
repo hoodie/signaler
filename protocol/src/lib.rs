@@ -5,37 +5,27 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
 extern crate wasm_bindgen;
 
 pub type SessionId = Uuid;
 pub type RoomId = String;
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum Credentials {
     /// Simple Authentication Credentials
-    UsernamePassword {
-        username: String,
-        password: String,
-    },
+    UsernamePassword { username: String, password: String },
 
     /// Even simpler Authentication Credentials
-    AdHoc {
-        username: String,
-    }
+    AdHoc { username: String },
 }
-
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserProfile {
     pub full_name: String,
 }
-
-
-
 
 /// Actual chat Message
 ///
@@ -84,10 +74,9 @@ impl From<(UserProfile, SessionId)> for Participant {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum RoomEvent {
-    ParticipantJoined{name: String},
-    ParticipantLeft{name: String},
+    ParticipantJoined { name: String },
+    ParticipantLeft { name: String },
 }
-
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -98,6 +87,7 @@ pub struct SessionDescription {
 /// Command sent to the server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
+#[rustfmt::skip]
 pub enum SessionCommand {
     /// Join a particular room
     Join { room: RoomId },
@@ -120,7 +110,7 @@ pub enum SessionCommand {
     ShutDown,
 
     /// Request Authentication Token
-    Authenticate { credentials: Credentials }
+    Authenticate { credentials: Credentials },
 }
 
 impl SessionCommand {
@@ -129,21 +119,28 @@ impl SessionCommand {
         let room = "roomName";
         serde_json::to_string_pretty(&[
             Join { room: room.into() },
-            Message { message:  "hello world".into(), room: room.into() },
-            Authenticate {credentials: Credentials::UsernamePassword {
-                username: "username".into(),
-                password: "password".into(),
-            }},
+            Message {
+                message: "hello world".into(),
+                room: room.into(),
+            },
+            Authenticate {
+                credentials: Credentials::UsernamePassword {
+                    username: "username".into(),
+                    password: "password".into(),
+                },
+            },
             ListRooms,
             ListMyRooms,
             ShutDown,
-        ]).unwrap()
+        ])
+        .unwrap()
     }
 }
 
 /// Message received from the server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
+#[rustfmt::skip]
 pub enum SessionMessage {
     Welcome { session: SessionDescription },
 
@@ -156,10 +153,10 @@ pub enum SessionMessage {
 
     MyRoomList { rooms: Vec<String> },
 
-    RoomParticipants { room: RoomId, participants: Vec<Participant>},
-    RoomEvent{ room: RoomId, event: RoomEvent},
+    RoomParticipants { room: RoomId, participants: Vec<Participant> },
+    RoomEvent { room: RoomId, event: RoomEvent },
 
-    Message { message: ChatMessage, room: RoomId},
+    Message { message: ChatMessage, room: RoomId },
 
     Any { payload: serde_json::Value },
 
@@ -168,7 +165,9 @@ pub enum SessionMessage {
 
 impl SessionMessage {
     pub fn err(msg: impl Into<String>) -> Self {
-        SessionMessage::Error{ message: msg.into()}
+        SessionMessage::Error {
+            message: msg.into(),
+        }
     }
 
     pub fn into_json(self) -> String {
@@ -178,23 +177,23 @@ impl SessionMessage {
     /// dev convenience only!
     pub fn any<T: serde::Serialize>(anything: T) -> Self {
         SessionMessage::Any {
-            payload: serde_json::to_value(&anything).unwrap()
+            payload: serde_json::to_value(&anything).unwrap(),
         }
     }
-
 }
 
-#[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
 mod wasm_wrapper {
     #![allow(unused_macros, unused_imports)]
+    use serde_json;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen::JsCast;
-    use serde_json;
 
     use crate::SessionMessage;
 
     #[wasm_bindgen]
-    extern {
+    #[rustfmt::skip]
+    extern "C" {
         #[wasm_bindgen(js_namespace = console)] pub fn warn(msg: &str);
         #[wasm_bindgen(js_namespace = console)] pub fn debug(msg: &str);
         #[wasm_bindgen(js_namespace = console)] pub fn error(msg: &str);
@@ -204,8 +203,8 @@ mod wasm_wrapper {
     macro_rules! warn { ($($arg:tt)*) => (warn(&format!($($arg)*));) }
     macro_rules! error { ($($arg:tt)*) => (error(&format!($($arg)*));) }
 
-
     #[wasm_bindgen]
+    #[rustfmt::skip]
     pub fn dispatch_message(raw: &JsValue) {
         use SessionMessage::*;
         let msg: SessionMessage = raw.into_serde().unwrap();
@@ -215,8 +214,8 @@ mod wasm_wrapper {
             Profile { profile } => debug!("profile: {:?}", profile),
             RoomList { rooms } => debug!("RoomsList: {:?}", rooms),
             MyRoomList { rooms } => debug!("MyRoomList: {:?}", rooms),
-            RoomParticipants { room, participants} => debug!("RoomParticipants of {:?}: {:?}", room, participants),
-            Message { message, room} => debug!("Message in {room:?} {message:?}", room = room, message = message ),
+            RoomParticipants { room, participants } => debug!("RoomParticipants of {:?}: {:?}", room, participants),
+            Message { message, room } => debug!( "Message in {room:?} {message:?}", room = room, message = message),
             Any { payload } => debug!("Any: {:#?}", payload),
             Error { message } => debug!("Error: {}", message),
         }

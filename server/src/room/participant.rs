@@ -42,7 +42,11 @@ impl TryFrom<&RosterParticipant> for LiveParticipant {
 impl Into<protocol::Participant> for &RosterParticipant {
     fn into(self) -> protocol::Participant {
         protocol::Participant {
-            full_name: self.profile.as_ref().map(|p| p.full_name.to_string()).unwrap_or_else(|| String::from("unidentified")),
+            full_name: self
+                .profile
+                .as_ref()
+                .map(|p| p.full_name.to_string())
+                .unwrap_or_else(|| String::from("unidentified")),
             session_id: self.session_id,
         }
     }

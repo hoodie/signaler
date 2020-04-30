@@ -1,15 +1,14 @@
 use env_logger::{self, Env};
 #[allow(unused_imports)]
-use log::{info, error, debug, warn, trace};
+use log::{debug, error, info, trace, warn};
 
+use actix_files as fs;
 use actix_web::HttpServer;
 use actix_web::{
-    middleware,
-    guard, web,
-    http::{header, StatusCode },
-    App, Error, HttpRequest, HttpResponse,
+    guard,
+    http::{header, StatusCode},
+    middleware, web, App, Error, HttpRequest, HttpResponse,
 };
-use actix_files as fs;
 use actix_web_actors::ws;
 
 use std::{env, path::PathBuf};
@@ -20,8 +19,8 @@ pub mod presence;
 pub mod room;
 pub mod room_manager;
 
-pub mod user_management;
 pub mod static_data;
+pub mod user_management;
 
 use crate::session::*;
 
@@ -49,8 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         env::set_var(LOG_VAR, "signaler=debug,actix_web=info");
     }
     env_logger::init_from_env(Env::new().filter(LOG_VAR));
-    let bind_to = env::var(BIND_VAR)
-                .unwrap_or_else(|_| BIND_TO.into());
+    let bind_to = env::var(BIND_VAR).unwrap_or_else(|_| BIND_TO.into());
 
     let home = if option_env!("DOCKERIZE").is_some() {
         std::env::current_dir().unwrap()
@@ -61,36 +59,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let sys = actix::System::new("signaler");
 
-    let server = || HttpServer::new(move || {
-        App::new()
-
-            .wrap(middleware::Logger::default())
-
-            .service(web::resource("/ws/").route(web::get().to(ws_route)))
-            .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
-            .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
-
-            // .resource("/favicon.ico", |r| r.f(favicon))
-
-            .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
-            .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
-                trace!("{:?}", req);
-                HttpResponse::Found()
-                    .header(header::LOCATION, "app/index.html")
-                    .finish()
-            })))
-
-            .default_service(
-                web::resource("")
-                    .route(web::get().to(not_found))
-                    .route(
+    let server = || {
+        HttpServer::new(move || {
+            App::new()
+                // logger
+                .wrap(middleware::Logger::default())
+                // routes
+                .service(web::resource("/ws/").route(web::get().to(ws_route)))
+                .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
+                .service(
+                    fs::Files::new("/app2", home.join("../webapp-svelte/public"))
+                        .index_file("index.html"),
+                )
+                // statics
+                .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
+                // redirects
+                .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
+                    trace!("{:?}", req);
+                    HttpResponse::Found()
+                        .header(header::LOCATION, "app/index.html")
+                        .finish()
+                })))
+                // fallback
+                .default_service(
+                    web::resource("").route(web::get().to(not_found)).route(
                         web::route()
-                        .guard(guard::Not(guard::Get()))
-                        .to(HttpResponse::MethodNotAllowed),
-                    )
-            )
-
-    });
+                            .guard(guard::Not(guard::Get()))
+                            .to(HttpResponse::MethodNotAllowed),
+                    ),
+                )
+        })
+    };
 
     info!("listening on http://{}", bind_to);
     server().bind(bind_to)?.run();

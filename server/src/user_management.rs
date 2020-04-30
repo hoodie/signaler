@@ -11,7 +11,7 @@ pub type UserId = String;
 #[derive(Clone, Debug, actix::Message, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
-pub struct UserProfile (signaler_protocol::UserProfile);
+pub struct UserProfile(signaler_protocol::UserProfile);
 
 impl From<signaler_protocol::UserProfile> for UserProfile {
     fn from(user_profile: signaler_protocol::UserProfile) -> UserProfile {
@@ -42,8 +42,10 @@ pub struct UserManager<P> {
 }
 
 impl<P> UserManager<P> {
-    pub fn new(implementation: Box<dyn UserManaging<UserProfile=P>>) -> Self {
-        Self { inner: implementation }
+    pub fn new(implementation: Box<dyn UserManaging<UserProfile = P>>) -> Self {
+        Self {
+            inner: implementation,
+        }
     }
 }
 
@@ -74,12 +76,11 @@ impl Handler<WhoIsRequest> for UserService {
     fn handle(&mut self, request: WhoIsRequest, _ctx: &mut Self::Context) -> Self::Result {
         info!("received WhoIsRequest");
 
-        let WhoIsRequest {user_id} = request;
+        let WhoIsRequest { user_id } = request;
 
         MessageResult(self.who_is(&user_id))
     }
 }
-
 
 impl Default for UserService {
     fn default() -> Self {
@@ -89,13 +90,13 @@ impl Default for UserService {
 
 #[derive(Debug, Default)]
 pub struct NaiveUserManager {
-    user_database: StaticUserDatabase
+    user_database: StaticUserDatabase,
 }
 
 impl NaiveUserManager {
     pub fn naive() -> UserService {
         let manager = NaiveUserManager {
-            user_database: StaticUserDatabase::load()
+            user_database: StaticUserDatabase::load(),
         };
         debug!("new NaiveUserManager {:?}", manager);
         UserManager::new(Box::new(manager))
@@ -114,5 +115,4 @@ impl UserManaging for NaiveUserManager {
             None
         }
     }
-
 }
