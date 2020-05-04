@@ -128,6 +128,11 @@ impl DefaultRoom {
             })
             .filter(|(_, participant)| participant.addr.upgrade().is_some())
             .collect();
+
+        if self.roster.len() == 0 && self.ephemeral {
+            debug!("empty ephemeral room {:?} - stopping", self.id);
+            ctx.stop();
+        }
         if send_update {
             self.send_update_to_all_participants(ctx);
         }
@@ -158,11 +163,11 @@ impl Actor for DefaultRoom {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Context<Self>) {
-        // IntervalFunc::new(Duration::from_millis(15_000), Self::update_roster)
-        //     .finish()
-        //     .spawn(ctx);
-        IntervalFunc::new(Duration::from_millis(5_000), Self::gc)
-            .finish()
-            .spawn(ctx);
+        ctx.run_interval(Duration::from_millis(5_000), Self::gc);
+        trace!("room {:?} started", self.id);
+    }
+
+    fn stopped(&mut self, _ctx: &mut Context<Self>) {
+        trace!("room {:?} stopped", self.id);
     }
 }
