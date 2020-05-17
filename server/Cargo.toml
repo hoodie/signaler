@@ -17,6 +17,6 @@ serde = { version = "1.0", features = ["derive"]}
 
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "0.8", features = ["serde", "v4"] }
-color-backtrace = "0.3"
+color-backtrace = "0.4"
 
 signaler-protocol = { path = "../protocol" }

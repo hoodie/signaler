@@ -3,31 +3,37 @@
 //! One session per participant
 
 // TODO: how to timeout sessions?
-#![allow(clippy::redundant_closure)]
 
-use actix::prelude::*;
-use actix::utils::IntervalFunc;
-use actix::WeakAddr;
+use actix::{prelude::*, utils::IntervalFunc, WeakAddr};
 use actix_web_actors::ws::{self, WebsocketContext};
-use log::*;
+
+#[allow(unused_imports)]
+use log::{debug, error, info, trace, warn};
+
+use signaler_protocol::*;
+
 use uuid::Uuid;
 
-use std::collections::HashMap;
-use std::fmt;
-use std::time::Duration;
+use std::{collections::HashMap, fmt, time::Duration};
 
-use crate::presence::{
-    AuthResponse, AuthToken, AuthenticationRequest, Credentials, SimplePresenceService,
+use crate::{
+    presence::{
+        command::{AuthToken, AuthenticationRequest},
+        message::AuthResponse,
+        Credentials, SimplePresenceService,
+    },
+    room::{self, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId},
+    room_manager::{self, RoomManagerService},
+    user_management::UserProfile,
 };
-use crate::room::{
-    self, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId,
-};
-use crate::room_manager::{self, RoomManagerService};
-use crate::user_management::UserProfile;
-use signaler_protocol::*;
+
+pub mod command;
 
 pub type SessionId = Uuid;
 
+/// Communicates back and forth between WebSocket and other Actors.
+///
+/// Talks to `Room`s, `PresenceService` and `RoomService`
 pub struct ClientSession {
     session_id: SessionId,
     token: Option<AuthToken>,
@@ -419,52 +425,6 @@ impl Handler<RoomToSession> for ClientSession {
                 },
                 ctx,
             ),
-        }
-    }
-}
-
-pub mod command {
-    use actix::prelude::*;
-    use actix::WeakAddr;
-    use actix_web_actors::ws::WebsocketContext;
-    #[allow(unused_imports)]
-    use log::{debug, error, info, trace, warn};
-
-    use super::ClientSession;
-    use crate::room::{command::UpdateParticipant, DefaultRoom};
-
-    #[derive(Message, Debug)]
-    // #[rtype(result = "Option<UserProfile>")]
-    #[rtype(result = "()")]
-    pub struct ProvideProfile<T: Actor> {
-        pub room_addr: WeakAddr<T>,
-    }
-
-    impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
-        type Result = MessageResult<ProvideProfile<DefaultRoom>>;
-
-        fn handle(
-            &mut self,
-            p: ProvideProfile<DefaultRoom>,
-            ctx: &mut WebsocketContext<Self>,
-        ) -> Self::Result {
-            if let Some(profile) = self.profile.clone() {
-                if let Some(addr) = p.room_addr.upgrade() {
-                    addr.send(UpdateParticipant {
-                        session_id: self.session_id,
-                        profile,
-                    })
-                    .into_actor(self)
-                    .then(|_, _, _| fut::ready(()))
-                    .spawn(ctx);
-                }
-            } else {
-                warn!(
-                    "{:?} was asked for profile, but didn't have one",
-                    self.session_id
-                );
-            }
-            MessageResult(())
         }
     }
 }

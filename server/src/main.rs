@@ -1,3 +1,5 @@
+//! Signaler is a chat server that I use to explore actix for use in real time scenarios.
+
 use env_logger::{self, Env};
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
@@ -14,7 +16,6 @@ use actix_web_actors::ws;
 use std::{env, path::PathBuf};
 
 pub mod session;
-// pub mod server;
 pub mod presence;
 pub mod room;
 pub mod room_manager;

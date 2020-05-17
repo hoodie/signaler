@@ -1,5 +1,6 @@
+//! Room Actor etc
+
 use actix::prelude::*;
-use actix::utils::IntervalFunc;
 
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
@@ -19,6 +20,7 @@ pub mod participant;
 
 use self::participant::{LiveParticipant, RosterParticipant};
 
+/// Holds a roster of Participants and distributes messages to `Participant`s
 #[derive(Debug)]
 pub struct DefaultRoom {
     id: RoomId,

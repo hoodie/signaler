@@ -65,7 +65,7 @@ impl PresenceHandler for SimplePresenceHandler {
     type Credentials = Credentials;
     type AuthToken = AuthToken;
 
-    fn associate_user(&mut self, cred: &Credentials, id: &SessionId) -> Option<SimpleAuthResponse> {
+    fn associate_user(&mut self, cred: &Credentials, id: &SessionId) -> Option<message::SimpleAuthResponse> {
         self.clean_up();
 
         if let Some(profile) = self.grab_profile(cred) {
@@ -77,7 +77,7 @@ impl PresenceHandler for SimplePresenceHandler {
             trace!("currently logged in {:?}", self.running_sessions);
 
             self.running_sessions.insert(token, session_state); // TODO: prevent clashes
-            Some(AuthResponse { token, profile })
+            Some(message::AuthResponse { token, profile })
         } else {
             None
         }
