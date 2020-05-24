@@ -15,10 +15,10 @@ use actix_web_actors::ws;
 
 use std::{env, path::PathBuf};
 
-pub mod session;
 pub mod presence;
 pub mod room;
 pub mod room_manager;
+pub mod session;
 
 pub mod static_data;
 pub mod user_management;
@@ -26,8 +26,18 @@ pub mod user_management;
 use crate::session::*;
 
 const LOG_VAR: &str = "SIGNALER_LOG";
+const STOP_ON_PANIC_VAR: &str = "SIGNALER_STOP_ON_PANIC";
 const BIND_VAR: &str = "SIGNALER_BIND";
 const BIND_TO: &str = "127.0.0.1:8080";
+
+fn stop_on_panic() -> bool {
+    if let Ok(_) = env::var(STOP_ON_PANIC_VAR) {
+        warn!("configured to stop on panic");
+        true
+    } else {
+        false
+    }
+}
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     debug!("chat route: {:?}", req);
@@ -58,7 +68,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     info!("running in {}", home.display());
 
-    let sys = actix::System::new("signaler");
+    // let sys = actix::System::new("signaler").;
+    let sys = actix::System::builder()
+        .name("signaler")
+        .stop_on_panic({ stop_on_panic() })
+        .build();
 
     let server = || {
         HttpServer::new(move || {
@@ -68,10 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // routes
                 .service(web::resource("/ws/").route(web::get().to(ws_route)))
                 .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
-                .service(
-                    fs::Files::new("/app2", home.join("../webapp-svelte/public"))
-                        .index_file("index.html"),
-                )
+                .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
                 // statics
                 .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
                 // redirects

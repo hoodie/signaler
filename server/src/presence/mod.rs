@@ -33,8 +33,9 @@ pub trait PresenceHandler {
         session_id: &SessionId,
     ) -> Option<message::AuthResponse<Self::AuthToken, UserProfile>>;
     fn still_valid(&self, token: &AuthToken) -> bool;
-    fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken>;
+    fn refresh_token(&mut self, token: &AuthToken) -> Option<AuthToken>;
     fn logout(&mut self, token: &AuthToken) -> bool;
+    fn reload_users(&mut self);
     fn clean_up(&mut self);
 }
 
@@ -62,8 +63,12 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
         self.inner.still_valid(token)
     }
 
-    fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken> {
-        self.inner.refresh(token)
+    fn refresh_token(&mut self, token: &AuthToken) -> Option<AuthToken> {
+        self.inner.refresh_token(token)
+    }
+
+    fn reload_users(&mut self) {
+        self.inner.reload_users()
     }
 
     fn logout(&mut self, token: &AuthToken) -> bool {
@@ -77,7 +82,8 @@ impl<C, T> PresenceHandler for PresenceService<C, T> {
 
 impl Actor for PresenceService<Credentials, AuthToken> {
     type Context = Context<Self>;
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.run_interval(Duration::from_millis(30_000), |slf, _| slf.reload_users());
         debug!("presence started");
     }
 }

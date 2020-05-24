@@ -8,7 +8,7 @@ use super::*;
 /// Naive implementation of a `UserService`
 #[derive(Debug, Default)]
 pub struct NaiveUserManager {
-    pub user_database: StaticUserDatabase,
+    user_database: StaticUserDatabase,
 }
 
 impl NaiveUserManager {
@@ -17,6 +17,26 @@ impl NaiveUserManager {
             user_database: StaticUserDatabase::load(),
         };
         debug!("new NaiveUserManager {:?}", manager);
-        UserManager::new(Box::new(manager))
+        UserService::new(Box::new(manager))
     }
+}
+
+
+impl UserManaging for NaiveUserManager {
+    type UserProfile = UserProfile;
+
+    fn who_is(&self, user_id: &str) -> Option<UserProfile> {
+        if let Some(profile) = self.user_database.profiles.get(user_id) {
+            info!("found profile {:?}", user_id);
+            Some(profile.clone())
+        } else {
+            error!("found user but not profile {:?}", user_id);
+            None
+        }
+    }
+    fn update(&mut self) {
+        self.user_database = StaticUserDatabase::load();
+        trace!("usermanager updated {:?}", self.user_database);
+    }
+    
 }

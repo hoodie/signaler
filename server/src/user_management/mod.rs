@@ -2,7 +2,9 @@
 
 use actix::prelude::*;
 #[allow(unused_imports)]
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
+
+use std::time::Duration;
 
 pub mod command;
 pub mod message;
@@ -17,6 +19,7 @@ type UserService = UserManager<UserProfile>;
 pub trait UserManaging {
     type UserProfile;
     fn who_is(&self, user_id: &str) -> Option<Self::UserProfile>;
+    fn update(&mut self);
 }
 
 pub struct UserManager<P> {
@@ -36,10 +39,19 @@ impl<P> UserManaging for UserManager<P> {
     fn who_is(&self, user_id: &str) -> Option<Self::UserProfile> {
         self.inner.who_is(user_id)
     }
+    fn update(&mut self) {
+        trace!("UserManager updating");
+        self.inner.update()
+    }
 }
 
-impl Actor for UserManager<UserProfile> {
+impl Actor for UserService {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Context<Self>) {
+        ctx.run_interval(Duration::from_millis(5_000), |slf, _| slf.update());
+        trace!("usermanager started");
+    }
 }
 
 impl SystemService for UserService {}
@@ -48,19 +60,5 @@ impl Supervised for UserService {}
 impl Default for UserService {
     fn default() -> Self {
         NaiveUserManager::naive()
-    }
-}
-
-impl UserManaging for NaiveUserManager {
-    type UserProfile = UserProfile;
-
-    fn who_is(&self, user_id: &str) -> Option<UserProfile> {
-        if let Some(profile) = self.user_database.profiles.get(user_id) {
-            info!("found profile {:?}", user_id);
-            Some(profile.clone())
-        } else {
-            error!("found user but not profile {:?}", user_id);
-            None
-        }
     }
 }

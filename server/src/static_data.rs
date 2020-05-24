@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fs};
 
 use crate::user_management::{UserId, UserProfile};
 
@@ -14,6 +14,6 @@ pub struct StaticUserDatabase {
 
 impl StaticUserDatabase {
     pub fn load() -> Self {
-        serde_json::from_str(include_str!("../test_users.json")).unwrap()
+        serde_json::from_str(&fs::read_to_string("./config/test_users.json").unwrap()).unwrap()
     }
 }

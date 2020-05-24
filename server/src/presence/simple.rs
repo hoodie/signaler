@@ -29,6 +29,10 @@ impl SimplePresenceHandler {
         }
     }
 
+    fn reload_db(&mut self) {
+        self.user_database = StaticUserDatabase::load();
+    }
+
     fn still_fresh(created: Instant) -> bool {
         created.elapsed() < Duration::from_secs(60 * 2)
     }
@@ -92,13 +96,18 @@ impl PresenceHandler for SimplePresenceHandler {
         }
     }
 
-    fn refresh(&mut self, token: &AuthToken) -> Option<AuthToken> {
+    fn refresh_token(&mut self, token: &AuthToken) -> Option<AuthToken> {
         if let Some(state) = self.running_sessions.get_mut(token) {
             state.created = Instant::now();
             Some(*token)
         } else {
             None
         }
+    }
+
+    fn reload_users(&mut self) {
+        trace!("Reload users");
+        self.reload_db();
     }
 
     fn logout(&mut self, token: &AuthToken) -> bool {

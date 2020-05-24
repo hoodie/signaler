@@ -1,6 +1,7 @@
 {
   "credentials": {
     "hendrik": "password",
+    "gilbert": "password",
     "daenny": "dracarys",
     "jon": "password",
     "aria": "password"
@@ -8,6 +9,9 @@
   "profiles": {
     "hendrik": {
       "fullName": "Hendrik"
+    },
+    "gilbert": {
+      "fullName": "Gilbert"
     },
     "daenny": {
       "fullName": "Daenerys Targaryen"
