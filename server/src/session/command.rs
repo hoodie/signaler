@@ -1,6 +1,5 @@
 use actix::prelude::*;
 use actix::WeakAddr;
-use actix_web_actors::ws::WebsocketContext;
 
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
@@ -18,11 +17,7 @@ pub struct ProvideProfile<T: Actor> {
 impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
     type Result = MessageResult<ProvideProfile<DefaultRoom>>;
 
-    fn handle(
-        &mut self,
-        p: ProvideProfile<DefaultRoom>,
-        ctx: &mut WebsocketContext<Self>,
-    ) -> Self::Result {
+    fn handle(&mut self, p: ProvideProfile<DefaultRoom>, ctx: &mut Context<Self>) -> Self::Result {
         if let Some(profile) = self.profile.clone() {
             if let Some(addr) = p.room_addr.upgrade() {
                 addr.send(UpdateParticipant {
@@ -34,10 +29,7 @@ impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
                 .spawn(ctx);
             }
         } else {
-            warn!(
-                "{:?} was asked for profile, but didn't have one",
-                self.session_id
-            );
+            warn!("{:?} was asked for profile, but didn't have one", self.session_id);
         }
         MessageResult(())
     }

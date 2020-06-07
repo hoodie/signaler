@@ -19,6 +19,8 @@ pub enum Credentials {
 
     /// Even simpler Authentication Credentials
     AdHoc { username: String },
+
+    // TODO: Token { token: Uuid }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -52,7 +54,7 @@ impl ChatMessage {
     }
 }
 
-/// Actual chat Message
+/// SessionId and Full Name
 ///
 /// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -137,6 +139,12 @@ impl SessionCommand {
     }
 }
 
+pub trait SessionCommandDispatcher {
+    type Context;
+
+    fn dispatch_command(&self, msg: SessionCommand, ctx: &mut Self::Context);
+}
+
 /// Message received from the server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -165,9 +173,7 @@ pub enum SessionMessage {
 
 impl SessionMessage {
     pub fn err(msg: impl Into<String>) -> Self {
-        SessionMessage::Error {
-            message: msg.into(),
-        }
+        SessionMessage::Error { message: msg.into() }
     }
 
     pub fn into_json(self) -> String {

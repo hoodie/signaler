@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 
 pub mod command;
 pub mod message;
+mod session_manager;
 mod simple;
 
 pub use signaler_protocol::Credentials;

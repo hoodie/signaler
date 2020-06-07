@@ -1,0 +1,20 @@
+@startuml Actors
+
+class Connection { }
+class Session { }
+class Room { }
+
+package SystemServices {
+    class SessionManager { }
+    class RoomManager {}
+    class UserManager {}
+    class AuthenticationManager {}
+}
+
+Connection ..> Session : ref
+Session ..>  Room : ref
+
+Room --o RoomManager
+Session --o SessionManager
+
+@enduml

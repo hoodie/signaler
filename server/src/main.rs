@@ -15,14 +15,20 @@ use actix_web_actors::ws;
 
 use std::{env, path::PathBuf};
 
-pub mod presence;
-pub mod room;
-pub mod room_manager;
-pub mod session;
+mod connection;
+mod socket_connection;
+mod presence;
+mod room;
+mod session;
 
-pub mod static_data;
-pub mod user_management;
+mod static_data;
 
+mod room_manager;
+mod session_manager;
+mod user_management;
+
+//use crate::connection::ClientConnection;
+use crate::socket_connection::SocketConnection;
 use crate::session::*;
 
 const LOG_VAR: &str = "SIGNALER_LOG";
@@ -41,7 +47,8 @@ fn stop_on_panic() -> bool {
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     debug!("chat route: {:?}", req);
-    ws::start(ClientSession::default(), &req, stream)
+    // ws::start(ClientSession::default(), &req, stream)
+    ws::start(SocketConnection::default(), &req, stream)
 }
 
 async fn not_found(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
@@ -71,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let sys = actix::System::new("signaler").;
     let sys = actix::System::builder()
         .name("signaler")
-        .stop_on_panic({ stop_on_panic() })
+        .stop_on_panic(stop_on_panic())
         .build();
 
     let server = || {
