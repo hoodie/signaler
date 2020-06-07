@@ -25,10 +25,7 @@ impl Handler<JoinRoom> for RoomManagerService {
     type Result = ();
 
     fn handle(&mut self, request: JoinRoom, ctx: &mut Self::Context) -> Self::Result {
-        trace!(
-            "RoomManagerService received request to join {:?}",
-            request.room
-        );
+        trace!("RoomManagerService received request to join {:?}", request.room);
         let JoinRoom {
             room,
             participant,

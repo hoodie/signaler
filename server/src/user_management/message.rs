@@ -24,4 +24,3 @@ impl Deref for UserProfile {
         &self.0
     }
 }
-

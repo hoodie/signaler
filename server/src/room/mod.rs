@@ -61,8 +61,7 @@ impl DefaultRoom {
         self.roster.values().map(Into::into).collect()
     }
 
-    #[allow(dead_code)]
-    fn get_participant(&self, session_id: &SessionId) -> Option<LiveParticipant> {
+    pub fn get_participant(&self, session_id: &SessionId) -> Option<LiveParticipant> {
         self.roster
             .get(session_id)
             .and_then(|p| LiveParticipant::try_from(p).ok())
@@ -95,12 +94,8 @@ impl DefaultRoom {
         }
     }
 
-    fn send_to_participant<'a, M>(
-        &'a self,
-        message: M,
-        participant: &'a LiveParticipant,
-        ctx: &'a mut Context<Self>,
-    ) where
+    fn send_to_participant<'a, M>(&'a self, message: M, participant: &'a LiveParticipant, ctx: &'a mut Context<Self>)
+    where
         M: Message + std::fmt::Debug + Send + 'static,
         <M as Message>::Result: Send,
         ClientSession: Handler<M>,
@@ -121,17 +116,14 @@ impl DefaultRoom {
             .drain()
             .inspect(|(_, participant)| {
                 if participant.addr.upgrade().is_none() {
-                    debug!(
-                        "garbage collecting participant {:?}",
-                        participant.session_id
-                    );
+                    debug!("garbage collecting participant {:?}", participant.session_id);
                     send_update = true;
                 }
             })
             .filter(|(_, participant)| participant.addr.upgrade().is_some())
             .collect();
 
-        if self.roster.len() == 0 && self.ephemeral {
+        if self.roster.is_empty() && self.ephemeral {
             debug!("empty ephemeral room {:?} - stopping", self.id);
             ctx.stop();
         }
@@ -140,17 +132,9 @@ impl DefaultRoom {
         }
     }
 
-    fn update_participant_profile(
-        &mut self,
-        participant: LiveParticipant,
-        ctx: &mut Context<Self>,
-    ) {
+    fn update_participant_profile(&mut self, participant: LiveParticipant, ctx: &mut Context<Self>) {
         let room_addr = ctx.address().downgrade();
-        self.send_to_participant(
-            session::command::ProvideProfile { room_addr },
-            &participant,
-            ctx,
-        );
+        self.send_to_participant(session::command::ProvideProfile { room_addr }, &participant, ctx);
     }
 
     pub fn update_roster(&mut self, ctx: &mut Context<Self>) {

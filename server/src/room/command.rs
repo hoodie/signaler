@@ -50,10 +50,7 @@ impl Handler<AddParticipant> for DefaultRoom {
 
             trace!("{:?} roster: {:?}", self.id, self.roster);
         } else {
-            error!(
-                "participant address is cannot be upgraded {:?}",
-                participant
-            );
+            error!("participant address is cannot be upgraded {:?}", participant);
         }
     }
 }
@@ -69,16 +66,8 @@ impl Handler<UpdateParticipant> for DefaultRoom {
     type Result = ();
 
     fn handle(&mut self, command: UpdateParticipant, ctx: &mut Self::Context) {
-        let UpdateParticipant {
-            profile,
-            session_id,
-        } = command;
-        trace!(
-            "Room {:?} updates {:?} with {:?}",
-            self.id,
-            session_id,
-            profile
-        );
+        let UpdateParticipant { profile, session_id } = command;
+        trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile);
         // if let Some(addr) = participant.addr.upgrade() {
 
         if let Some(roster_entry) = self.roster.get_mut(&session_id) {
@@ -111,20 +100,14 @@ impl Handler<RemoveParticipant> for DefaultRoom {
             trace!("{:?} roster: {:?}", self.id, self.roster);
             if let Ok(participant) = LiveParticipant::try_from(&participant) {
                 self.send_to_participant(
-                    message::RoomToSession::Left {
-                        room: self.id.clone(),
-                    },
+                    message::RoomToSession::Left { room: self.id.clone() },
                     &participant,
                     ctx,
                 );
             }
             if self.roster.values().count() == 0 {
                 if self.ephemeral {
-                    trace!(
-                        "{:?} is empty and ephemeral => trying to stop {:?}",
-                        self.id,
-                        self
-                    );
+                    trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
                     RoomManagerService::from_registry()
                         .send(crate::room_manager::command::CloseRoom(self.id.clone()))
                         .into_actor(self)

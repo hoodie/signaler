@@ -7,16 +7,10 @@ use log::{debug, error, info, trace, warn};
 use std::collections::HashMap;
 
 use crate::room::{
-    command::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom,
-    RoomId,
+    command::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId,
 };
 
 pub mod command;
-
-#[derive(Copy, Clone, Debug)]
-pub enum RoomManagerError {
-    NoSuchRoom,
-}
 
 /// Hands out Addresses to `Room`s  and creates them if necessary.
 #[derive(Default)]
@@ -49,19 +43,12 @@ impl RoomManagerService {
         }
     }
 
-    fn send_decline(
-        &mut self,
-        room_id: &str,
-        participant: RosterParticipant,
-        ctx: &mut Context<Self>,
-    ) {
+    fn send_decline(&mut self, room_id: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
         participant
             .addr
             .upgrade()
             .unwrap()
-            .send(RoomToSession::JoinDeclined {
-                room: room_id.into(),
-            })
+            .send(RoomToSession::JoinDeclined { room: room_id.into() })
             .into_actor(self)
             .then(|_, _, _| fut::ready(()))
             .spawn(ctx);

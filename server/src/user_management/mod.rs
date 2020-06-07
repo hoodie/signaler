@@ -28,9 +28,7 @@ pub struct UserManager<P> {
 
 impl<P> UserManager<P> {
     pub fn new(implementation: Box<dyn UserManaging<UserProfile = P>>) -> Self {
-        Self {
-            inner: implementation,
-        }
+        Self { inner: implementation }
     }
 }
 

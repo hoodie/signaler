@@ -69,6 +69,9 @@ impl PresenceHandler for SimplePresenceHandler {
     type Credentials = Credentials;
     type AuthToken = AuthToken;
 
+    // TODO: find existing session or create new
+    // TODO: connection state instead of session state?
+    // TODO: session id?
     fn associate_user(&mut self, cred: &Credentials, id: &SessionId) -> Option<message::SimpleAuthResponse> {
         self.clean_up();
 

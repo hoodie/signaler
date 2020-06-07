@@ -46,8 +46,6 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
 
         this.session.onWelcome.add(sessionDescription => {
             this.setState({ sessionDescription })
-            this.session.sendCommand({ type: 'listRooms' });
-            this.session.sendCommand({ type: 'listMyRooms' });
             const {username, password} = this.props.config || {};
             if (username) {
                 this.login(username, password)

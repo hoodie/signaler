@@ -1,6 +1,10 @@
 {
   "private": true,
-  "workspaces": ["client-lib", "webapp", "webapp-svelte"],
+  "workspaces": [
+    "client-lib",
+    "webapp",
+    "webapp-svelte"
+  ],
   "scripts": {
     "build:client": "yarn --cwd client-lib build",
     "build:webapp": "yarn --cwd webapp build",

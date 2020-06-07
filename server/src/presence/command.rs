@@ -23,13 +23,12 @@ impl Default for AuthToken {
     }
 }
 
-
 /// Message expected by PresenceService to add SessionId
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Option<message::SimpleAuthResponse>")]
 pub struct AuthenticationRequest {
     pub credentials: Credentials,
-    pub session_id: SessionId,
+    // TODO pub connection_id: Uuid,
 }
 
 /// implementation docs
@@ -40,9 +39,10 @@ impl Handler<AuthenticationRequest> for PresenceService<Credentials, AuthToken> 
         info!("received AuthenticationRequest");
         let AuthenticationRequest {
             credentials,
-            session_id,
+            // connection_id,
         } = request;
-        MessageResult(self.associate_user(&credentials, &session_id))
+        // FIXME: connection_id
+        MessageResult(self.associate_user(&credentials, &uuid::Uuid::new_v4()))
     }
 }
 

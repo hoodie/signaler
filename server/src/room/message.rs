@@ -8,31 +8,15 @@ use super::{DefaultRoom, RoomId};
 #[rtype(result = "()")]
 pub enum RoomToSession {
     Joined(RoomId, WeakAddr<DefaultRoom>),
-    ChatMessage {
-        room: RoomId,
-        message: ChatMessage,
-    },
+    ChatMessage { room: RoomId, message: ChatMessage },
 
-    History {
-        room: RoomId,
-        messages: Vec<ChatMessage>,
-    },
+    History { room: RoomId, messages: Vec<ChatMessage> },
 
-    RoomState {
-        room: RoomId,
-        roster: Vec<Participant>,
-    },
+    RoomState { room: RoomId, roster: Vec<Participant> },
 
-    RoomEvent {
-        room: RoomId,
-        event: RoomEvent,
-    },
+    RoomEvent { room: RoomId, event: RoomEvent },
 
-    JoinDeclined {
-        room: RoomId,
-    },
+    JoinDeclined { room: RoomId },
 
-    Left {
-        room: RoomId,
-    },
+    Left { room: RoomId },
 }

@@ -21,7 +21,6 @@ impl NaiveUserManager {
     }
 }
 
-
 impl UserManaging for NaiveUserManager {
     type UserProfile = UserProfile;
 
@@ -38,5 +37,4 @@ impl UserManaging for NaiveUserManager {
         self.user_database = StaticUserDatabase::load();
         trace!("usermanager updated {:?}", self.user_database);
     }
-    
 }
