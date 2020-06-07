@@ -15,7 +15,6 @@ use actix_web_actors::ws;
 
 use std::{env, path::PathBuf};
 
-mod connection;
 mod socket_connection;
 mod presence;
 mod room;
@@ -47,7 +46,6 @@ fn stop_on_panic() -> bool {
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     debug!("chat route: {:?}", req);
-    // ws::start(ClientSession::default(), &req, stream)
     ws::start(SocketConnection::default(), &req, stream)
 }
 
