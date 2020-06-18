@@ -41,17 +41,17 @@ impl SimplePresenceHandler {
         match credentials {
             Credentials::UsernamePassword { username, password } => {
                 if Some(password) == self.user_database.credentials.get(username) {
-                    info!("valid login trace {:?}", credentials);
+                    log::info!("valid login trace {:?}", credentials);
 
                     let profile = self.user_database.profiles.get(username);
 
                     if let Some(profile) = profile {
-                        trace!("found profile for {:?} -> {:#?}", username, profile);
+                        log::trace!("found profile for {:?} -> {:#?}", username, profile);
                     }
 
                     profile.cloned()
                 } else {
-                    debug!("not found {:?}", credentials);
+                    log::debug!("not found {:?}", credentials);
                     None
                 }
             }
@@ -81,7 +81,7 @@ impl PresenceHandler for SimplePresenceHandler {
                 created: Instant::now(),
                 session_id: *id,
             };
-            trace!("currently logged in {:?}", self.running_sessions);
+            log::trace!("currently logged in {:?}", self.running_sessions);
 
             self.running_sessions.insert(token, session_state); // TODO: prevent clashes
             Some(message::AuthResponse { token, profile })
@@ -94,7 +94,7 @@ impl PresenceHandler for SimplePresenceHandler {
         if let Some(session) = self.running_sessions.get(token) {
             Self::still_fresh(session.created)
         } else {
-            warn!("{:?} has expired", token);
+            log::warn!("{:?} has expired", token);
             false
         }
     }
@@ -109,7 +109,7 @@ impl PresenceHandler for SimplePresenceHandler {
     }
 
     fn reload_users(&mut self) {
-        trace!("Reload users");
+        log::trace!("Reload users");
         self.reload_db();
     }
 
@@ -120,9 +120,9 @@ impl PresenceHandler for SimplePresenceHandler {
     fn clean_up(&mut self) {
         let clean_up_timeout = Duration::from_secs(5);
         if self.last_update.elapsed() > clean_up_timeout {
-            debug!("no cleanup in {:?}", clean_up_timeout);
+            log::debug!("no cleanup in {:?}", clean_up_timeout);
             self.last_update = Instant::now();
-            debug!("cleaning up");
+            log::debug!("cleaning up");
             self.running_sessions = self
                 .running_sessions
                 .drain()

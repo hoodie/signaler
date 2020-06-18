@@ -25,7 +25,7 @@ impl Handler<JoinRoom> for RoomManagerService {
     type Result = ();
 
     fn handle(&mut self, request: JoinRoom, ctx: &mut Self::Context) -> Self::Result {
-        trace!("RoomManagerService received request to join {:?}", request.room);
+        log::trace!("RoomManagerService received request to join {:?}", request.room);
         let JoinRoom {
             room,
             participant,
@@ -41,9 +41,10 @@ impl Handler<JoinRoom> for RoomManagerService {
                         slf.join_room(&room, participant, ctx);
                     }
                     _ => {
-                        warn!(
+                        log::warn!(
                             "{} attempted to join {} with invalid authentication",
-                            participant.session_id, room
+                            participant.session_id,
+                            room
                         );
                         slf.send_decline(&room, participant, ctx);
                         // TODO: send error to client_session
@@ -77,7 +78,7 @@ impl Handler<CloseRoom> for RoomManagerService {
 
     fn handle(&mut self, room_id: CloseRoom, _ctx: &mut Self::Context) -> Self::Result {
         // let CloseRoom(room_id) = request;
-        trace!("received {:?}", room_id);
+        log::trace!("received {:?}", room_id);
         MessageResult(self.close_room(room_id.0))
     }
 }

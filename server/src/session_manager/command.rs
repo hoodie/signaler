@@ -3,8 +3,6 @@ use signaler_protocol::*;
 use super::*;
 use crate::socket_connection::SocketConnection;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct GetSession {

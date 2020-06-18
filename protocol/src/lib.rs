@@ -19,7 +19,6 @@ pub enum Credentials {
 
     /// Even simpler Authentication Credentials
     AdHoc { username: String },
-
     // TODO: Token { token: Uuid }
 }
 
@@ -190,7 +189,6 @@ impl SessionMessage {
 
 #[cfg(target_arch = "wasm32")]
 mod wasm_wrapper {
-    #![allow(unused_macros, unused_imports)]
     use serde_json;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen::JsCast;
@@ -215,15 +213,15 @@ mod wasm_wrapper {
         use SessionMessage::*;
         let msg: SessionMessage = raw.into_serde().unwrap();
         match msg {
-            Welcome { session } => debug!("welcome {:?}", session),
-            Authenticated => debug!(r"Authenticated \0/"),
-            Profile { profile } => debug!("profile: {:?}", profile),
-            RoomList { rooms } => debug!("RoomsList: {:?}", rooms),
-            MyRoomList { rooms } => debug!("MyRoomList: {:?}", rooms),
-            RoomParticipants { room, participants } => debug!("RoomParticipants of {:?}: {:?}", room, participants),
-            Message { message, room } => debug!( "Message in {room:?} {message:?}", room = room, message = message),
-            Any { payload } => debug!("Any: {:#?}", payload),
-            Error { message } => debug!("Error: {}", message),
+            Welcome { session } => log::debug!("welcome {:?}", session),
+            Authenticated => log::debug!(r"Authenticated \0/"),
+            Profile { profile } => log::debug!("profile: {:?}", profile),
+            RoomList { rooms } => log::debug!("RoomsList: {:?}", rooms),
+            MyRoomList { rooms } => log::debug!("MyRoomList: {:?}", rooms),
+            RoomParticipants { room, participants } => log::debug!("RoomParticipants of {:?}: {:?}", room, participants),
+            Message { message, room } => log::debug!( "Message in {room:?} {message:?}", room = room, message = message),
+            Any { payload } => log::debug!("Any: {:#?}", payload),
+            Error { message } => log::debug!("Error: {}", message),
         }
     }
 }

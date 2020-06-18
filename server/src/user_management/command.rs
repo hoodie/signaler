@@ -1,5 +1,4 @@
 use actix::prelude::*;
-use log::*;
 
 use super::*;
 
@@ -13,7 +12,7 @@ impl Handler<WhoIsRequest> for UserService {
     type Result = MessageResult<WhoIsRequest>;
 
     fn handle(&mut self, request: WhoIsRequest, _ctx: &mut Self::Context) -> Self::Result {
-        info!("received WhoIsRequest");
+        log::info!("received WhoIsRequest");
 
         let WhoIsRequest { user_id } = request;
 

@@ -6,9 +6,6 @@ use signaler_protocol as protocol;
 use crate::session::{ClientSession, SessionId};
 use crate::user_management::UserProfile;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
-
 use std::convert::TryFrom;
 
 #[derive(Debug)]
@@ -33,7 +30,7 @@ impl TryFrom<&RosterParticipant> for LiveParticipant {
                 addr,
             })
         } else {
-            error!("participant {} was dead, skipping", p.session_id);
+            log::error!("participant {} was dead, skipping", p.session_id);
             Err(())
         }
     }

@@ -20,7 +20,7 @@ pub struct SessionConnected {
 impl Handler<SessionConnected> for SocketConnection {
     type Result = ();
     fn handle(&mut self, SessionConnected { session }: SessionConnected, ctx: &mut Self::Context) -> Self::Result {
-        warn!("connection switching to session mode");
+        log::warn!("connection switching to session mode");
         self.session.replace(session);
         self.message_handler = Box::new(Self::handle_session_message);
         if let Some(session) = self.session.as_ref().and_then(|s| s.upgrade()) {
@@ -33,7 +33,7 @@ impl Handler<SessionConnected> for SocketConnection {
                 .spawn(ctx);
             Self::send_message(signaler_protocol::SessionMessage::Authenticated, ctx);
         } else {
-            warn!("received invalid session");
+            log::warn!("received invalid session");
         }
     }
 }
@@ -46,7 +46,7 @@ impl Handler<SessionMessage> for SocketConnection {
     type Result = ();
     fn handle(&mut self, msg: SessionMessage, ctx: &mut Self::Context) -> Self::Result {
         let SessionMessage(msg) = msg;
-        debug!("SessionMessage received {:#?}", msg);
+        log::debug!("SessionMessage received {:#?}", msg);
         ctx.text(serde_json::to_string(&msg).unwrap())
     }
 }

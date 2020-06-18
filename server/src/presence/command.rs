@@ -1,8 +1,5 @@
 use actix::prelude::*;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
-
 use super::*;
 
 /// Token returned after successful authentication
@@ -36,7 +33,7 @@ impl Handler<AuthenticationRequest> for PresenceService<Credentials, AuthToken> 
     type Result = MessageResult<AuthenticationRequest>;
 
     fn handle(&mut self, request: AuthenticationRequest, _ctx: &mut Self::Context) -> Self::Result {
-        info!("received AuthenticationRequest");
+        log::info!("received AuthenticationRequest");
         let AuthenticationRequest {
             credentials,
             // connection_id,

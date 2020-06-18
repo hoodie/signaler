@@ -1,8 +1,6 @@
 use actix::prelude::*;
 use actix::WeakAddr;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 use signaler_protocol::*;
 
 use super::ClientSession;
@@ -33,7 +31,7 @@ impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
                 .spawn(ctx);
             }
         } else {
-            warn!("{:?} was asked for profile, but didn't have one", self.session_id);
+            log::warn!("{:?} was asked for profile, but didn't have one", self.session_id);
         }
         MessageResult(())
     }
@@ -65,7 +63,7 @@ impl Handler<RegisterConnection> for ClientSession {
         RegisterConnection { connection }: RegisterConnection,
         _ctx: &mut Context<Self>,
     ) -> Self::Result {
-        debug!("registered connection");
+        log::debug!("registered connection");
         self.connection.replace(connection);
     }
 }
@@ -74,22 +72,23 @@ impl Handler<RoomToSession> for ClientSession {
     type Result = ();
 
     fn handle(&mut self, msg: RoomToSession, ctx: &mut Self::Context) -> Self::Result {
-        debug!("received message from Room");
+        log::debug!("received message from Room");
         match msg {
             RoomToSession::Joined(id, addr) => {
-                info!("successfully joined room {:?}", id);
+                log::info!("successfully joined room {:?}", id);
                 self.rooms.insert(id, addr);
                 self.list_my_rooms(ctx);
             }
 
             RoomToSession::Left { room } => {
-                info!("successfully left room {:?}", room);
+                log::info!("successfully left room {:?}", room);
                 if let Some(room) = self.rooms.remove(&room) {
-                    debug!("removed room {:?} from {:?}", room, self.session_id);
+                    log::debug!("removed room {:?} from {:?}", room, self.session_id);
                 } else {
-                    error!(
+                    log::error!(
                         "remove from room {:?}, but had no reference ({:?})",
-                        room, self.session_id
+                        room,
+                        self.session_id
                     );
                 }
                 self.list_my_rooms(ctx);
@@ -100,7 +99,7 @@ impl Handler<RoomToSession> for ClientSession {
             }
 
             RoomToSession::RoomState { room, roster } => {
-                debug!("forwarding participants for room: {:?}\n{:#?}", room, roster);
+                log::debug!("forwarding participants for room: {:?}\n{:#?}", room, roster);
                 self.send_message(
                     SessionMessage::RoomParticipants {
                         room,
@@ -111,7 +110,7 @@ impl Handler<RoomToSession> for ClientSession {
             }
 
             RoomToSession::RoomEvent { room, event } => {
-                debug!("forwarding event from room: {:?}\n{:#?}", room, event);
+                log::debug!("forwarding event from room: {:?}\n{:#?}", room, event);
                 self.send_message(SessionMessage::RoomEvent { room, event }, ctx)
             }
 

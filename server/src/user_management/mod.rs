@@ -1,8 +1,6 @@
 //! Communicates profice and Authentication Data
 
 use actix::prelude::*;
-#[allow(unused_imports)]
-use log::{debug, error, info, trace};
 
 use std::time::Duration;
 
@@ -38,7 +36,7 @@ impl<P> UserManaging for UserManager<P> {
         self.inner.who_is(user_id)
     }
     fn update(&mut self) {
-        trace!("UserManager updating");
+        log::trace!("UserManager updating");
         self.inner.update()
     }
 }
@@ -48,7 +46,7 @@ impl Actor for UserService {
 
     fn started(&mut self, ctx: &mut Context<Self>) {
         ctx.run_interval(Duration::from_millis(5_000), |slf, _| slf.update());
-        trace!("usermanager started");
+        log::trace!("usermanager started");
     }
 }
 

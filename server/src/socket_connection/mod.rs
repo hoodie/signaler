@@ -1,8 +1,6 @@
 use actix::{prelude::*, utils::IntervalFunc, WeakAddr};
 use actix_web_actors::ws::{self, WebsocketContext};
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 use uuid::Uuid;
 
 use std::time::Duration;
@@ -38,24 +36,24 @@ impl SocketConnection {
 
     /// parses raw string and passes it to `dispatch_incoming_message` or replies with error
     fn handle_connection_message(&self, raw_msg: &str, ctx: &mut WebsocketContext<Self>) {
-        info!("handle connection message: {:?}", raw_msg);
+        log::info!("handle connection message: {:?}", raw_msg);
         let parsed: Result<command::ConnectionCommand, _> = serde_json::from_str(raw_msg);
         if let Ok(msg) = parsed {
-            trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
+            log::trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
             match msg {
                 command::ConnectionCommand::Authenticate { credentials } => self.associate_session(credentials, ctx),
             }
         } else {
-            warn!("cannot parse: {}", raw_msg);
-            // debug!("suggestions:\n{}", SessionCommand::suggestions())
+            log::warn!("cannot parse: {}", raw_msg);
+            // log::debug!("suggestions:\n{}", SessionCommand::suggestions())
         }
     }
 
     fn handle_session_message(&self, raw_msg: &str, ctx: &mut WebsocketContext<Self>) {
-        info!("handle session message: {:?}", raw_msg);
+        log::info!("handle session message: {:?}", raw_msg);
         let parsed: Result<SessionCommand, _> = serde_json::from_str(raw_msg);
         if let Ok(msg) = parsed {
-            trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
+            log::trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
             if let Some(ref session) = self.session.as_ref().and_then(|a| a.upgrade()) {
                 let msg = crate::session::command::SessionCommand(msg);
                 session
@@ -65,8 +63,8 @@ impl SocketConnection {
                     .spawn(ctx);
             }
         } else {
-            warn!("cannot parse: {}", raw_msg);
-            // debug!("suggestions:\n{}", SessionCommand::suggestions())
+            log::warn!("cannot parse: {}", raw_msg);
+            // log::debug!("suggestions:\n{}", SessionCommand::suggestions())
         }
     }
 
@@ -107,7 +105,7 @@ impl Default for SocketConnection {
 impl Actor for SocketConnection {
     type Context = WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        info!("ClientConnection started {:?}", self.connection_id);
+        log::info!("ClientConnection started {:?}", self.connection_id);
 
         Self::send_message(
             SessionMessage::Welcome {
@@ -127,7 +125,7 @@ impl Actor for SocketConnection {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        debug!("ClientConnection stopped: {}", self.connection_id);
+        log::debug!("ClientConnection stopped: {}", self.connection_id);
     }
 }
 
@@ -135,21 +133,21 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SocketConnection 
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => {
-                warn!("PING -> PONG");
+                log::warn!("PING -> PONG");
                 ctx.pong(&msg)
             }
             Ok(ws::Message::Pong(_msg)) => {
-                // trace!("received PONG {:?}", msg);
+                // log::trace!("received PONG {:?}", msg);
             }
             Ok(ws::Message::Text(text)) => {
                 self.handle_incoming_message(&text, ctx);
             }
             Ok(ws::Message::Close(reason)) => {
-                info!("websocket was closed {:?}", reason);
+                log::info!("websocket was closed {:?}", reason);
                 ctx.stop();
             }
             Err(e) => {
-                warn!("websocket was closed because of error {:?}", e);
+                log::warn!("websocket was closed because of error {:?}", e);
                 ctx.stop();
             }
             _ => (), // Pong, Nop, Binary

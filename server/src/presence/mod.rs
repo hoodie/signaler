@@ -84,7 +84,7 @@ impl Actor for PresenceService<Credentials, AuthToken> {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.run_interval(Duration::from_millis(30_000), |slf, _| slf.reload_users());
-        debug!("presence started");
+        log::debug!("presence started");
     }
 }
 

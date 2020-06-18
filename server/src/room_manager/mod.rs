@@ -1,8 +1,6 @@
 //! RoomManager Actor etc
 
 use actix::{prelude::*, WeakAddr};
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 
 use std::collections::HashMap;
 
@@ -21,7 +19,7 @@ pub struct RoomManagerService {
 impl RoomManagerService {
     fn join_room(&mut self, name: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
         if let Some(room) = self.rooms.get(name) {
-            trace!("found room {:?}, just join", name);
+            log::trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
             room.send(AddParticipant { participant })
                 .into_actor(self)
@@ -29,7 +27,7 @@ impl RoomManagerService {
                 .spawn(ctx);
         } else {
             let room = self.create_room(name);
-            trace!(
+            log::trace!(
                 "no room found {:?}, create and then join {:#?}",
                 name,
                 self.list_rooms()
@@ -55,7 +53,7 @@ impl RoomManagerService {
     }
 
     fn create_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {
-        trace!("create room: {:?}", name);
+        log::trace!("create room: {:?}", name);
         let room = DefaultRoom::new(name.into()).start();
         let weak_room = room.downgrade();
         self.rooms.insert(name.into(), room);
@@ -63,7 +61,7 @@ impl RoomManagerService {
     }
 
     fn create_permanent_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {
-        trace!("create permanent room: {:?}", name);
+        log::trace!("create permanent room: {:?}", name);
         let room = DefaultRoom::permanent(name.into()).start();
         let weak_room = room.downgrade();
         self.rooms.insert(name.into(), room);
@@ -82,7 +80,7 @@ impl RoomManagerService {
 impl Actor for RoomManagerService {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
-        debug!("RoomManager started");
+        log::debug!("RoomManager started");
         self.create_permanent_room("default");
     }
 }

@@ -1,6 +1,4 @@
 use actix::prelude::*;
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 use signaler_protocol as protocol;
 
 use super::participant::{LiveParticipant, RosterParticipant};
@@ -24,7 +22,7 @@ impl Handler<AddParticipant> for DefaultRoom {
 
     fn handle(&mut self, command: AddParticipant, ctx: &mut Self::Context) {
         let AddParticipant { participant } = command;
-        trace!("Room {:?} adds {:?}", self.id, participant);
+        log::trace!("Room {:?} adds {:?}", self.id, participant);
         // TODO: prevent duplicates
         if let Some(addr) = participant.addr.upgrade() {
             addr.send(message::RoomToSession::Joined(
@@ -48,9 +46,9 @@ impl Handler<AddParticipant> for DefaultRoom {
 
             self.send_update_to_all_participants(ctx);
 
-            trace!("{:?} roster: {:?}", self.id, self.roster);
+            log::trace!("{:?} roster: {:?}", self.id, self.roster);
         } else {
-            error!("participant address is cannot be upgraded {:?}", participant);
+            log::error!("participant address is cannot be upgraded {:?}", participant);
         }
     }
 }
@@ -67,7 +65,7 @@ impl Handler<UpdateParticipant> for DefaultRoom {
 
     fn handle(&mut self, command: UpdateParticipant, ctx: &mut Self::Context) {
         let UpdateParticipant { profile, session_id } = command;
-        trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile);
+        log::trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile);
         // if let Some(addr) = participant.addr.upgrade() {
 
         if let Some(roster_entry) = self.roster.get_mut(&session_id) {
@@ -76,9 +74,9 @@ impl Handler<UpdateParticipant> for DefaultRoom {
 
         self.send_update_to_all_participants(ctx);
 
-        trace!("{:?} roster: {:?}", self.id, self.roster);
+        log::trace!("{:?} roster: {:?}", self.id, self.roster);
         // } else {
-        //     error!("participant address is cannot be upgraded {:?}", participant);
+        //     log::error!("participant address is cannot be upgraded {:?}", participant);
         // }
     }
 }
@@ -94,10 +92,10 @@ impl Handler<RemoveParticipant> for DefaultRoom {
 
     fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context) {
         let RemoveParticipant { session_id } = command;
-        debug!("receive RemoveParticipant");
+        log::debug!("receive RemoveParticipant");
         if let Some(participant) = self.roster.remove(&session_id) {
-            debug!("successfully removed {} from {:?}", session_id, self.id);
-            trace!("{:?} roster: {:?}", self.id, self.roster);
+            log::debug!("successfully removed {} from {:?}", session_id, self.id);
+            log::trace!("{:?} roster: {:?}", self.id, self.roster);
             if let Ok(participant) = LiveParticipant::try_from(&participant) {
                 self.send_to_participant(
                     message::RoomToSession::Left { room: self.id.clone() },
@@ -107,30 +105,30 @@ impl Handler<RemoveParticipant> for DefaultRoom {
             }
             if self.roster.values().count() == 0 {
                 if self.ephemeral {
-                    trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
+                    log::trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
                     RoomManagerService::from_registry()
                         .send(crate::room_manager::command::CloseRoom(self.id.clone()))
                         .into_actor(self)
                         .then(|success, _slf, ctx| {
                             match success {
                                 Ok(true) => {
-                                    trace!("room_manager says I'm fine to shut down");
+                                    log::trace!("room_manager says I'm fine to shut down");
                                     ctx.stop();
                                 }
-                                _ => warn!("room_manager says it wasn't able to delete me 🤷"),
+                                _ => log::warn!("room_manager says it wasn't able to delete me 🤷"),
                             }
 
                             fut::ready(())
                         })
                         .spawn(ctx)
                 } else {
-                    trace!("{:?} is empty but not ephemeral, staying around", self.id);
+                    log::trace!("{:?} is empty but not ephemeral, staying around", self.id);
                 }
             } else {
                 self.send_update_to_all_participants(ctx);
             }
         } else {
-            warn!("{} was not a participant in {:?}", session_id, self.id);
+            log::warn!("{} was not a participant in {:?}", session_id, self.id);
         }
     }
 }
@@ -157,14 +155,14 @@ impl Handler<Forward> for DefaultRoom {
     type Result = MessageResult<Forward>;
 
     fn handle(&mut self, fwd: Forward, ctx: &mut Self::Context) -> Self::Result {
-        info!("room {:?} received {:?}", self.id, fwd);
+        log::info!("room {:?} received {:?}", self.id, fwd);
 
         let Forward { message, .. } = fwd;
 
         self.history.push(message.clone());
 
         for participant in self.live_participants() {
-            trace!("forwarding message to {:?}", participant);
+            log::trace!("forwarding message to {:?}", participant);
 
             participant
                 .addr
@@ -174,7 +172,7 @@ impl Handler<Forward> for DefaultRoom {
                 })
                 .into_actor(self)
                 .then(|_, _slf, _| {
-                    trace!("chatmessages passed on");
+                    log::trace!("chatmessages passed on");
                     fut::ready(())
                 })
                 .spawn(ctx);

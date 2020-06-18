@@ -1,6 +1,3 @@
-#[allow(unused_imports)]
-use log::{debug, error, info};
-
 use crate::static_data::StaticUserDatabase;
 
 use super::*;
@@ -16,7 +13,7 @@ impl NaiveUserManager {
         let manager = NaiveUserManager {
             user_database: StaticUserDatabase::load(),
         };
-        debug!("new NaiveUserManager {:?}", manager);
+        log::debug!("new NaiveUserManager {:?}", manager);
         UserService::new(Box::new(manager))
     }
 }
@@ -26,15 +23,15 @@ impl UserManaging for NaiveUserManager {
 
     fn who_is(&self, user_id: &str) -> Option<UserProfile> {
         if let Some(profile) = self.user_database.profiles.get(user_id) {
-            info!("found profile {:?}", user_id);
+            log::info!("found profile {:?}", user_id);
             Some(profile.clone())
         } else {
-            error!("found user but not profile {:?}", user_id);
+            log::error!("found user but not profile {:?}", user_id);
             None
         }
     }
     fn update(&mut self) {
         self.user_database = StaticUserDatabase::load();
-        trace!("usermanager updated {:?}", self.user_database);
+        log::trace!("usermanager updated {:?}", self.user_database);
     }
 }

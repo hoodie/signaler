@@ -6,9 +6,6 @@
 
 use actix::{prelude::*, WeakAddr};
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
-
 use signaler_protocol::*;
 
 use uuid::Uuid;
@@ -16,7 +13,7 @@ use uuid::Uuid;
 use std::{collections::HashMap, fmt};
 
 use crate::{
-    presence::{command::AuthToken},
+    presence::command::AuthToken,
     room::{self, participant::RosterParticipant, DefaultRoom, RoomId},
     room_manager::{self, RoomManagerService},
     socket_connection::SocketConnection,
@@ -50,9 +47,9 @@ impl ClientSession {
     /// parses raw string and passes it to `dispatch_incoming_message` or replies with error
     /// react to client messages
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut Context<Self>) {
-        trace!("received {:?}", msg);
+        log::trace!("received {:?}", msg);
         match msg {
-            SessionCommand::Authenticate { .. } => warn!("unexpected authentication"),
+            SessionCommand::Authenticate { .. } => log::warn!("unexpected authentication"),
 
             SessionCommand::ListRooms => self.list_rooms(ctx),
 
@@ -73,14 +70,14 @@ impl ClientSession {
     /// send message to client
     fn send_message(&self, message: SessionMessage, ctx: &mut Context<Self>) {
         if let Some(connection) = self.connection.as_ref().and_then(WeakAddr::upgrade) {
-            debug!("send to connection {:?}", message);
+            log::debug!("send to connection {:?}", message);
             connection
                 .send(crate::socket_connection::command::SessionMessage(message))
                 .into_actor(self)
                 .then(|_, _, _| fut::ready(()))
                 .spawn(ctx);
         } else {
-            warn!("have no connection to send to");
+            log::warn!("have no connection to send to");
         }
     }
 
@@ -91,7 +88,7 @@ impl ClientSession {
             .send(msg)
             .into_actor(self)
             .then(|rooms, slf, ctx| {
-                debug!("list request answered: {:?}", rooms);
+                log::debug!("list request answered: {:?}", rooms);
                 match rooms {
                     Ok(rooms) => slf.send_message(SessionMessage::RoomList { rooms }, ctx),
                     Err(error) => slf.send_message(SessionMessage::err(format!("{:?}", error)), ctx),
@@ -103,7 +100,7 @@ impl ClientSession {
 
     fn list_my_rooms(&self, ctx: &mut Context<Self>) {
         let rooms = self.rooms.keys().cloned().collect::<Vec<String>>();
-        debug!("my list request answered: {:?}", rooms);
+        log::debug!("my list request answered: {:?}", rooms);
         self.send_message(SessionMessage::MyRoomList { rooms }, ctx);
     }
 
@@ -124,12 +121,12 @@ impl ClientSession {
                 .send(msg)
                 .into_actor(self)
                 .then(|_, _, _| {
-                    debug!("join request forwarded to room successfully");
+                    log::debug!("join request forwarded to room successfully");
                     fut::ready(())
                 })
                 .spawn(ctx);
         } else {
-            warn!("can't join room, no authentication token")
+            log::warn!("can't join room, no authentication token")
         }
     }
 
@@ -140,12 +137,12 @@ impl ClientSession {
             })
             .into_actor(self)
             .then(|_, _, _| {
-                debug!("leave request forwarded to room successfully");
+                log::debug!("leave request forwarded to room successfully");
                 fut::ready(())
             })
             .spawn(ctx);
         } else {
-            error!("no such room {:?}", room_id);
+            log::error!("no such room {:?}", room_id);
         }
     }
 
@@ -154,9 +151,10 @@ impl ClientSession {
     fn room_addr(&self, room_id: &str) -> Option<Addr<DefaultRoom>> {
         let addr = self.rooms.get(room_id).and_then(|room| room.upgrade());
         if addr.is_none() {
-            warn!(
+            log::warn!(
                 "room: {:?} was no longer reachable by client-session {:?}, removing",
-                room_id, self.session_id
+                room_id,
+                self.session_id
             );
             // self.rooms.remove(room_id); // TODO: do at Interval
         }
@@ -179,14 +177,14 @@ impl ClientSession {
             addr.send(msg)
                 .into_actor(self)
                 .then(|resp, slf, ctx| {
-                    debug!("message forwarded -> {:?}", resp);
+                    log::debug!("message forwarded -> {:?}", resp);
                     match resp {
                         Ok(Err(message)) => {
-                            debug!("message rejected {:?}", message);
+                            log::debug!("message rejected {:?}", message);
                             slf.send_message(SessionMessage::Error { message }, ctx)
                         }
                         Ok(mr) => {
-                            debug!("ok after all -> {:?}", mr);
+                            log::debug!("ok after all -> {:?}", mr);
                         }
                         Err(error) => slf.send_message(
                             SessionMessage::Error {
@@ -199,7 +197,7 @@ impl ClientSession {
                 })
                 .spawn(ctx);
         } else {
-            error!("no such room {:?}", room_id);
+            log::error!("no such room {:?}", room_id);
         }
     }
 
@@ -209,7 +207,7 @@ impl ClientSession {
             addr.send(room::command::RoomUpdate)
                 .into_actor(self)
                 .then(|resp, slf, ctx| {
-                    debug!("received response for ListParticipants request");
+                    log::debug!("received response for ListParticipants request");
                     match resp {
                         Ok(participants) => slf.send_message(
                             SessionMessage::RoomParticipants {
@@ -247,7 +245,7 @@ impl Default for ClientSession {
 impl Actor for ClientSession {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        info!("ClientSession started {:?}", self.session_id);
+        log::info!("ClientSession started {:?}", self.session_id);
         self.send_message(
             SessionMessage::Welcome {
                 session: SessionDescription {
@@ -265,7 +263,7 @@ impl Actor for ClientSession {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        debug!("ClientSession stopped: {}", self.session_id);
+        log::debug!("ClientSession stopped: {}", self.session_id);
     }
 }
 

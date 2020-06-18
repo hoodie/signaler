@@ -2,9 +2,6 @@
 
 use actix::prelude::*;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
-
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::time::Duration;
@@ -75,7 +72,7 @@ impl DefaultRoom {
                     addr,
                 })
             } else {
-                error!("participant {} was dead, skipping", participant.session_id);
+                log::error!("participant {} was dead, skipping", participant.session_id);
                 None
             }
         })
@@ -83,7 +80,7 @@ impl DefaultRoom {
 
     fn send_update_to_all_participants(&self, ctx: &mut Context<Self>) {
         for participant in self.live_participants() {
-            trace!("forwarding message to {:?}", participant);
+            log::trace!("forwarding message to {:?}", participant);
 
             participant
                 .addr
@@ -100,7 +97,7 @@ impl DefaultRoom {
         <M as Message>::Result: Send,
         ClientSession: Handler<M>,
     {
-        trace!("sending {:?} to {}", message, participant.session_id);
+        log::trace!("sending {:?} to {}", message, participant.session_id);
         participant
             .addr
             .send(message)
@@ -116,7 +113,7 @@ impl DefaultRoom {
             .drain()
             .inspect(|(_, participant)| {
                 if participant.addr.upgrade().is_none() {
-                    debug!("garbage collecting participant {:?}", participant.session_id);
+                    log::debug!("garbage collecting participant {:?}", participant.session_id);
                     send_update = true;
                 }
             })
@@ -124,7 +121,7 @@ impl DefaultRoom {
             .collect();
 
         if self.roster.is_empty() && self.ephemeral {
-            debug!("empty ephemeral room {:?} - stopping", self.id);
+            log::debug!("empty ephemeral room {:?} - stopping", self.id);
             ctx.stop();
         }
         if send_update {
@@ -150,10 +147,10 @@ impl Actor for DefaultRoom {
 
     fn started(&mut self, ctx: &mut Context<Self>) {
         ctx.run_interval(Duration::from_millis(5_000), Self::gc);
-        trace!("room {:?} started", self.id);
+        log::trace!("room {:?} started", self.id);
     }
 
     fn stopped(&mut self, _ctx: &mut Context<Self>) {
-        trace!("room {:?} stopped", self.id);
+        log::trace!("room {:?} stopped", self.id);
     }
 }

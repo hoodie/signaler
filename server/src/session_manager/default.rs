@@ -1,7 +1,4 @@
-// h
 use actix::{prelude::*, WeakAddr};
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 
 use crate::{
     presence::{
@@ -43,7 +40,7 @@ impl DefaultSessionManager {
         connection: WeakAddr<SocketConnection>,
         ctx: &mut Context<Self>,
     ) {
-        trace!("session starts authentication process");
+        log::trace!("session starts authentication process");
 
         let msg = AuthenticationRequest {
             credentials: creds.clone(),
@@ -53,7 +50,7 @@ impl DefaultSessionManager {
             .send(msg)
             .into_actor(self)
             .then(move |profile, slf, ctx| {
-                debug!("userProfile {:?}", profile);
+                log::debug!("userProfile {:?}", profile);
                 match profile {
                     // TODO: refactor Authentication and Profiles into separate things
                     Ok(Some(AuthResponse { token, profile })) => {
@@ -67,7 +64,7 @@ impl DefaultSessionManager {
                                 .then(|_, _, _| fut::ready(()))
                                 .spawn(ctx);
                         } else {
-                            warn!("session can be created but connection was dead")
+                            log::warn!("session can be created but connection was dead")
                         }
                     }
                     Ok(None) => {
@@ -91,7 +88,7 @@ impl DefaultSessionManager {
         // self.sessions = live_session;
 
         // for (id, _session) in &dead_sessions {
-        //     debug!("{} is dead", id)
+        //     log::debug!("{} is dead", id)
         //     // ctx.send
         // }
     }

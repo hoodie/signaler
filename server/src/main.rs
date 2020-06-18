@@ -1,8 +1,6 @@
 //! Signaler is a chat server that I use to explore actix for use in real time scenarios.
 
 use env_logger::{self, Env};
-#[allow(unused_imports)]
-use log::{debug, error, info, trace, warn};
 
 use actix_files as fs;
 use actix_web::HttpServer;
@@ -37,7 +35,7 @@ const BIND_TO: &str = "127.0.0.1:8080";
 
 fn stop_on_panic() -> bool {
     if env::var(STOP_ON_PANIC_VAR).is_ok() {
-        warn!("configured to stop on panic");
+        log::warn!("configured to stop on panic");
         true
     } else {
         false
@@ -45,12 +43,12 @@ fn stop_on_panic() -> bool {
 }
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    debug!("chat route: {:?}", req);
+    log::debug!("chat route: {:?}", req);
     ws::start(SocketConnection::default(), &req, stream)
 }
 
 async fn not_found(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
-    warn!(target: "WEB_INTERFACE", "not found");
+    log::warn!(target: "WEB_INTERFACE", "not found");
     Ok(fs::NamedFile::open("../static/404.html")?.set_status_code(StatusCode::NOT_FOUND))
 }
 
@@ -71,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
     };
-    info!("running in {}", home.display());
+    log::info!("running in {}", home.display());
 
     // let sys = actix::System::new("signaler").;
     let sys = actix::System::builder()
@@ -92,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
                 // redirects
                 .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
-                    trace!("{:?}", req);
+                    log::trace!("{:?}", req);
                     HttpResponse::Found()
                         .header(header::LOCATION, "app/index.html")
                         .finish()
@@ -108,11 +106,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
     };
 
-    info!("listening on http://{}", bind_to);
+    log::info!("listening on http://{}", bind_to);
     server().bind(bind_to)?.run();
 
     sys.run()?;
-    info!("shutting down I guess");
+    log::info!("shutting down I guess");
 
     Ok(())
 }
