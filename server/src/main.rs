@@ -10,11 +10,13 @@ use actix_web::{
     middleware, web, App, Error, HttpRequest, HttpResponse,
 };
 use actix_web_actors::ws;
+use dotenv::dotenv;
 
-use actix::WeakRecipient;
+// use actix::WeakRecipient;
 
 use std::{env, path::PathBuf};
 
+mod config;
 mod presence;
 mod room;
 mod session;
@@ -29,20 +31,7 @@ mod user_management;
 //use crate::connection::ClientConnection;
 use crate::session::*;
 use crate::socket_connection::SocketConnection;
-
-const LOG_VAR: &str = "SIGNALER_LOG";
-const STOP_ON_PANIC_VAR: &str = "SIGNALER_STOP_ON_PANIC";
-const BIND_VAR: &str = "SIGNALER_BIND";
-const BIND_TO: &str = "127.0.0.1:8080";
-
-fn stop_on_panic() -> bool {
-    if env::var(STOP_ON_PANIC_VAR).is_ok() {
-        log::warn!("configured to stop on panic");
-        true
-    } else {
-        false
-    }
-}
+use crate::config::Config;
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     log::debug!("chat route: {:?}", req);
@@ -60,11 +49,11 @@ async fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
-    if env::var(LOG_VAR).is_err() {
-        env::set_var(LOG_VAR, "signaler=debug,actix_web=info");
-    }
-    env_logger::init_from_env(Env::new().filter(LOG_VAR));
-    let bind_to = env::var(BIND_VAR).unwrap_or_else(|_| BIND_TO.into());
+    dotenv().unwrap();
+
+    let config = dbg!(Config::from_env().unwrap());
+
+    env_logger::init_from_env(Env::new().filter("LOG_CONFIG"));
 
     let home = if option_env!("DOCKERIZE").is_some() {
         std::env::current_dir().unwrap()
@@ -76,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let sys = actix::System::new("signaler").;
     let sys = actix::System::builder()
         .name("signaler")
-        .stop_on_panic(stop_on_panic())
+        .stop_on_panic(config.stop_on_panic)
         .build();
 
     let server = || {
@@ -108,6 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
     };
 
+    let bind_to = std::net::SocketAddr::new(config.server.host.parse().unwrap(), config.server.port);
     log::info!("listening on http://{}", bind_to);
     server().bind(bind_to)?.run();
 
