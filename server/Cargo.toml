@@ -22,3 +22,4 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 color-backtrace = "0.4"
 
 signaler-protocol = { path = "../protocol" }
+jsonwebtoken = "7.1.2"

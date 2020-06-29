@@ -17,6 +17,8 @@ use dotenv::dotenv;
 use std::{env, path::PathBuf};
 
 mod config;
+mod services;
+
 mod presence;
 mod room;
 mod session;
@@ -75,6 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .wrap(middleware::Logger::default())
                 // routes
                 .service(web::resource("/ws/").route(web::get().to(ws_route)))
+                .service(web::scope("/user").configure(services::authentication::routes::init))
                 .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
                 .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
                 // statics

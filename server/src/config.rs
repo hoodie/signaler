@@ -1,13 +1,20 @@
 use config::ConfigError;
 
 #[derive(Debug, serde::Deserialize)]
+pub struct AuthenticationConfig {
+    pub key: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
 pub struct ServerConfig {
     pub host: String,
     pub port: u16
 }
+
 #[derive(Debug, serde::Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
+    pub auth: AuthenticationConfig,
     pub stop_on_panic: bool,
     pub log_config: Option<String>,
 }
