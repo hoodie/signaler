@@ -1,4 +1,5 @@
 use actix::{prelude::*, WeakAddr};
+
 use std::time::Duration;
 
 mod default;

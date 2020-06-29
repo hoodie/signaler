@@ -11,6 +11,8 @@ use actix_web::{
 };
 use actix_web_actors::ws;
 
+use actix::WeakRecipient;
+
 use std::{env, path::PathBuf};
 
 mod presence;

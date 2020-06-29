@@ -1,13 +1,14 @@
 use actix::prelude::*;
-use signaler_protocol as protocol;
-
-use super::participant::{LiveParticipant, RosterParticipant};
-use super::{message, DefaultRoom};
-use crate::room_manager::RoomManagerService;
-use crate::session::SessionId;
-use crate::user_management::UserProfile;
 
 use std::convert::TryFrom;
+
+use super::{
+    message,
+    participant::{LiveParticipant, RosterParticipant},
+    DefaultRoom,
+};
+use crate::{room_manager::RoomManagerService, session::SessionId, user_management::UserProfile};
+use signaler_protocol as protocol;
 
 // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
 

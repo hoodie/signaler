@@ -1,12 +1,10 @@
 use actix::{prelude::*, utils::IntervalFunc, WeakAddr};
 use actix_web_actors::ws::{self, WebsocketContext};
-
 use uuid::Uuid;
 
 use std::time::Duration;
 
 use crate::{session::ClientSession, session_manager::SessionManagerService};
-
 use signaler_protocol::*;
 
 pub trait MessageHandler: Send + Sync + 'static {

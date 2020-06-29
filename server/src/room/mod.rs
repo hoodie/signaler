@@ -2,9 +2,7 @@
 
 use actix::prelude::*;
 
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::time::Duration;
+use std::{collections::HashMap, convert::TryFrom, time::Duration};
 
 use crate::session::{self, ClientSession, SessionId};
 use signaler_protocol as protocol;

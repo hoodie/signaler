@@ -5,9 +5,6 @@
 // TODO: how to timeout sessions?
 
 use actix::{prelude::*, WeakAddr};
-
-use signaler_protocol::*;
-
 use uuid::Uuid;
 
 use std::{collections::HashMap, fmt};
@@ -19,6 +16,7 @@ use crate::{
     socket_connection::SocketConnection,
     user_management::UserProfile,
 };
+use signaler_protocol::*;
 
 pub mod command;
 
