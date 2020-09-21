@@ -10,16 +10,9 @@ mod connection;
 const LOG_VAR: &str = "LOG";
 async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
     log::debug!("user connected{:#?}", ws);
-
-    let connection = crate::connection::Connection::new(ws);
+    let connection = connection::Connection::new(ws);
     let addr = xactor::Actor::start(connection).await.unwrap();
-    addr.send(connection::commands::SayWelcome).unwrap();
     addr.wait_for_stop().await
-
-    // let mut peer = Peer::new(ws, broker.addr());
-    // peer.register_at_broker();
-    // peer.send_welcome().await;
-    // peer.start().await;
 }
 
 fn main() {

@@ -108,7 +108,7 @@ impl Actor for SocketConnection {
         Self::send_message(
             SessionMessage::Welcome {
                 session: SessionDescription {
-                    session_id: self.connection_id,
+                    connection_id: self.connection_id,
                 },
             },
             ctx,

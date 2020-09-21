@@ -247,7 +247,7 @@ impl Actor for ClientSession {
         self.send_message(
             SessionMessage::Welcome {
                 session: SessionDescription {
-                    session_id: self.session_id,
+                    connection_id: self.session_id,
                 },
             },
             ctx,

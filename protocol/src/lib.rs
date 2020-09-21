@@ -79,10 +79,19 @@ pub enum RoomEvent {
     ParticipantLeft { name: String },
 }
 
+/// Command sent to the server
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum ConnectionCommand {
+    /// Request Authentication Token
+    Authenticate { credentials: Credentials },
+}
+
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionDescription {
-    pub session_id: SessionId,
+    pub connection_id: Uuid,
 }
 
 /// Command sent to the server
