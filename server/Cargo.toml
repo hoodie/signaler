@@ -27,3 +27,8 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 color-backtrace = "0.4"
 
 signaler-protocol = { path = "../protocol" }
+
+
+[[bin]]
+name = "server"
+path = "./src/main.rs"
