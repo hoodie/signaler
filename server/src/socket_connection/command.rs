@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 /// Command sent to the server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
-#[rustfmt::skip]
 pub enum ConnectionCommand {
     /// Request Authentication Token
     Authenticate { credentials: Credentials },
