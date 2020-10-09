@@ -1,4 +1,4 @@
-use actix::{prelude::*, WeakAddr};
+use actix::{prelude::*, WeakRecipient};
 
 use crate::{
     presence::{
@@ -7,7 +7,7 @@ use crate::{
         Credentials, SimplePresenceService,
     },
     session::ClientSession,
-    socket_connection::SocketConnection,
+    socket_connection::command::SessionConnected,
 };
 
 use std::collections::HashMap;
@@ -27,7 +27,7 @@ impl DefaultSessionManager {
     pub fn get_session(
         &mut self,
         creds: &Credentials,
-        connection: WeakAddr<SocketConnection>,
+        connection: WeakRecipient<SessionConnected>,
         ctx: &mut Context<Self>,
     ) {
         self.create_session(creds, connection, ctx)
@@ -37,7 +37,7 @@ impl DefaultSessionManager {
     pub fn create_session(
         &mut self,
         creds: &Credentials,
-        connection: WeakAddr<SocketConnection>,
+        connection: WeakRecipient<SessionConnected>,
         ctx: &mut Context<Self>,
     ) {
         log::trace!("session starts authentication process");

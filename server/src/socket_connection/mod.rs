@@ -7,15 +7,7 @@ use std::time::Duration;
 use crate::{session::ClientSession, session_manager::SessionManagerService};
 use signaler_protocol::*;
 
-pub trait MessageHandler: Send + Sync + 'static {
-    fn call(&self, slf: &SocketConnection, raw: &str, ctx: &mut WebsocketContext<SocketConnection>);
-}
-
 pub(crate) type DynMessageHandler = dyn (Fn(&SocketConnection, &str, &mut WebsocketContext<SocketConnection>));
-
-// fn box_handler(handler: impl MessageHandler) -> Box<DynMessageHandler> {
-//     Box::new(move |s, r, cx| handler.call(s, r, cx))
-// }
 
 pub mod command;
 
@@ -27,6 +19,7 @@ pub struct SocketConnection {
 }
 
 impl SocketConnection {
+    /// gets all the messages and dispatches to a specific handler, either `handle_connection_message`
     fn handle_incoming_message(&self, raw_msg: &str, ctx: &mut WebsocketContext<Self>) {
         let handler = &self.message_handler;
         handler(self, raw_msg, ctx);
@@ -65,7 +58,7 @@ impl SocketConnection {
     }
 
     fn associate_session(&self, credentials: Credentials, ctx: &mut WebsocketContext<Self>) {
-        let connection = ctx.address().downgrade();
+        let connection = ctx.address().downgrade().recipient();
 
         SessionManagerService::from_registry()
             .try_send(crate::session_manager::command::GetSession {

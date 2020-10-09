@@ -1,4 +1,4 @@
-use actix::{prelude::*, WeakAddr};
+use actix::prelude::*;
 
 use std::time::Duration;
 
