@@ -62,7 +62,7 @@ impl ClientSession {
     /// send message to client
     fn send_message(&self, message: SessionMessage, _ctx: &mut Context<Self>) {
         if let Some(connection) = self.connection.as_ref().and_then(WeakAddr::upgrade) {
-            log::debug!("send to connection {:?}", message);
+            log::trace!("send to connection {:?}", message);
             connection
                 .try_send(crate::socket_connection::command::SessionMessage(message))
                 .unwrap();

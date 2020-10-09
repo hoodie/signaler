@@ -46,7 +46,7 @@ impl Handler<SessionMessage> for SocketConnection {
     type Result = ();
     fn handle(&mut self, msg: SessionMessage, ctx: &mut Self::Context) -> Self::Result {
         let SessionMessage(msg) = msg;
-        log::debug!("SessionMessage received {:#?}", msg);
+        log::trace!("SessionMessage received {:#?}", msg);
         ctx.text(serde_json::to_string(&msg).unwrap())
     }
 }

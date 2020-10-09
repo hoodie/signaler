@@ -86,7 +86,7 @@ impl Handler<RemoveParticipant> for DefaultRoom {
 
     fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context) {
         let RemoveParticipant { session_id } = command;
-        log::debug!("receive RemoveParticipant");
+        log::trace!("receive RemoveParticipant");
         if let Some(participant) = self.roster.remove(&session_id) {
             log::debug!("successfully removed {} from {:?}", session_id, self.id);
             log::trace!("{:?} roster: {:?}", self.id, self.roster);
@@ -145,7 +145,7 @@ impl Handler<Forward> for DefaultRoom {
     type Result = MessageResult<Forward>;
 
     fn handle(&mut self, fwd: Forward, _ctx: &mut Self::Context) -> Self::Result {
-        log::info!("room {:?} received {:?}", self.id, fwd);
+        log::trace!("room {:?} received {:?}", self.id, fwd);
 
         let Forward { message, .. } = fwd;
 

@@ -34,7 +34,7 @@ impl SocketConnection {
 
     /// parses raw string and passes it to `dispatch_incoming_message` or replies with error
     fn handle_connection_message(&self, raw_msg: &str, ctx: &mut WebsocketContext<Self>) {
-        log::info!("handle connection message: {:?}", raw_msg);
+        log::debug!("handle connection message: {:?}", raw_msg);
         let parsed: Result<command::ConnectionCommand, _> = serde_json::from_str(raw_msg);
         if let Ok(msg) = parsed {
             log::trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
@@ -43,7 +43,6 @@ impl SocketConnection {
             }
         } else {
             log::warn!("cannot parse: {}", raw_msg);
-            // log::debug!("suggestions:\n{}", SessionCommand::suggestions())
         }
     }
 
@@ -62,7 +61,6 @@ impl SocketConnection {
             }
         } else {
             log::warn!("cannot parse: {}", raw_msg);
-            // log::debug!("suggestions:\n{}", SessionCommand::suggestions())
         }
     }
 
@@ -101,7 +99,7 @@ impl Default for SocketConnection {
 impl Actor for SocketConnection {
     type Context = WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        log::info!("ClientConnection started {:?}", self.connection_id);
+        log::trace!("ClientConnection started {:?}", self.connection_id);
 
         Self::send_message(
             SessionMessage::Welcome {
@@ -121,7 +119,7 @@ impl Actor for SocketConnection {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        log::debug!("ClientConnection stopped: {}", self.connection_id);
+        log::trace!("ClientConnection stopped: {}", self.connection_id);
     }
 }
 
