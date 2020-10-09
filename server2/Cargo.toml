@@ -1,31 +1,39 @@
 [package]
-name = "server2"
+name = "signaler2"
 version = "0.1.0"
 authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-smol = "1.2.0"
-warp = "0.2.5"
-xactor = "0.7.7"
+warp = "0.3"
+xactor = "0.7"
 
 log = "0.4"
-env_logger = "0.7"
+env_logger = "0.9"
 serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"]}
+serde = { version = "1.0", features = ["derive"] }
 dotenv = "0.15"
-config = "0.10"
-uuid = { version = "0.8", features = ["serde", "v4"] }
+config = "0.11"
 
-color-backtrace = "0.4"
-async-compat = "0.1"
+color-backtrace = "0.5"
+async-compat = "0.2"
 futures = "0.3"
 async-trait = "0.1"
 anyhow = "1.0"
 
 signaler-protocol = { path = "../protocol" }
+async-std = "1.10.0"
+
+[dependencies.uuid]
+version = "0.8"
+features = ["v4", "serde"]
+
+[dependencies.tokio]
+version = "1.0"
+features = ["full"]
+
 
 [[bin]]
 name = "server2"

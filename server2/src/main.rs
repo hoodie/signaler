@@ -1,50 +1,40 @@
 #![allow(unused_imports)]
-use async_compat::{Compat, CompatExt};
+use dotenv::dotenv;
 use env_logger::Env;
-use warp::{http::Uri, ws::WebSocket, Filter};
+use tokio::task;
+use xactor::Service;
 
 use std::env;
 
+mod config;
 mod connection;
+mod session;
+mod web_server;
 
-const LOG_VAR: &str = "LOG";
-async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
-    log::debug!("user connected{:#?}", ws);
-    let connection = connection::Connection::new(ws);
-    let addr = xactor::Actor::start(connection).await.unwrap();
-    addr.wait_for_stop().await
-}
+use crate::config::Config;
+use crate::web_server::WebServer;
 
-fn main() {
+#[async_std::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
+    dotenv().unwrap();
 
-    if env::var(LOG_VAR).is_err() {
-        env::set_var(LOG_VAR, "server2=trace,warp=info");
-    }
+    let config = dbg!(Config::from_env().unwrap());
 
-    env_logger::init_from_env(Env::new().filter(LOG_VAR));
+    env_logger::init_from_env(Env::new().filter("LOG_CONFIG2"));
 
-    let routes = {
-        let channel = warp::path("ws")
-            .and(warp::ws())
-            //.and(broker)
-            .map(|ws: warp::ws::Ws /*, broker: Broker*/| {
-                #[allow(clippy::redundant_closure)]
-                ws.on_upgrade(move |socket| peer_connected(socket /*, broker*/))
-            });
-        let app = warp::path("app").and(warp::fs::dir("../static/"));
-        let redirect_to_app = warp::any().map(|| warp::redirect(Uri::from_static("/app/")));
+    let session1 =
+        async_std::task::spawn(async { xactor::Supervisor::start(session::Session::default).await.unwrap() });
 
-        let hello = warp::path("hello").map(|| {
-            log::info!("✉️ hello world");
-            "Hello, World!"
-        });
-        app.or(hello).or(channel).or(redirect_to_app)
-    };
+    // let start_web_server = WebServer::from_registry().await?;
+    let web_server = xactor::Supervisor::start(WebServer::default).await?;
 
-    let main_socket = std::net::SocketAddr::from(([0, 0, 0, 0], 3030));
+    let _fo = futures::join!(
+        session1,
+        web_server.call(web_server::Listen {
+            socket: ([0, 0, 0, 0], config.server.port).into(),
+        })
+    );
 
-    smol::block_on(Compat::new(async {
-        warp::serve(routes).run(main_socket).await;
-    }));
+    Ok(())
 }
