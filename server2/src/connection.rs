@@ -1,5 +1,4 @@
 use futures::{
-    select,
     sink::SinkExt,
     stream::{SplitSink, SplitStream},
     StreamExt,
