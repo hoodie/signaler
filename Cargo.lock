@@ -2263,6 +2263,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-compat",
+ "async-std",
  "async-trait",
  "color-backtrace",
  "config 0.10.1",
