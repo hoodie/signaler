@@ -7,7 +7,7 @@
 use actix::{prelude::*, WeakAddr};
 use uuid::Uuid;
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, time::Duration};
 
 use crate::{
     presence::command::AuthToken,
@@ -32,6 +32,7 @@ pub struct ClientSession {
     profile: Option<UserProfile>,
     rooms: HashMap<RoomId, WeakAddr<DefaultRoom>>,
 }
+
 impl ClientSession {
     pub fn from_token_and_profile(token: AuthToken, profile: UserProfile) -> Self {
         ClientSession {
@@ -76,6 +77,13 @@ impl ClientSession {
                 .spawn(ctx);
         } else {
             log::warn!("have no connection to send to");
+        }
+    }
+
+    fn gc(&mut self, ctx: &mut Context<Self>) {
+        if self.connection.as_ref().and_then(WeakAddr::upgrade).is_none() {
+            log::info!("connection lost, closing session {}", self.session_id);
+            ctx.stop();
         }
     }
 
@@ -252,6 +260,7 @@ impl Actor for ClientSession {
             },
             ctx,
         );
+        ctx.run_interval(Duration::from_millis(5_000), Self::gc);
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {

@@ -133,6 +133,7 @@ impl DefaultRoom {
     }
 
     pub fn update_roster(&mut self, ctx: &mut Context<Self>) {
+        #![allow(clippy::needless_collect)]
         let participants = self.live_participants().collect::<Vec<_>>();
         for participant in participants.into_iter() {
             self.update_participant_profile(participant, ctx);
