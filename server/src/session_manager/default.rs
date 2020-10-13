@@ -49,7 +49,7 @@ impl DefaultSessionManager {
         SimplePresenceService::from_registry()
             .send(msg)
             .into_actor(self)
-            .then(move |profile, slf, ctx| {
+            .then(move |profile, slf, _ctx| {
                 log::debug!("userProfile {:?}", profile);
                 match profile {
                     // TODO: refactor Authentication and Profiles into separate things

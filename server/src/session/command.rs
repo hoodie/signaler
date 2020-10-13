@@ -19,7 +19,7 @@ pub struct ProvideProfile<T: Actor> {
 impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
     type Result = MessageResult<ProvideProfile<DefaultRoom>>;
 
-    fn handle(&mut self, p: ProvideProfile<DefaultRoom>, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, p: ProvideProfile<DefaultRoom>, _ctx: &mut Context<Self>) -> Self::Result {
         if let Some(profile) = self.profile.clone() {
             if let Some(addr) = p.room_addr.upgrade() {
                 addr.try_send(UpdateParticipant {

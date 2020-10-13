@@ -35,10 +35,10 @@ impl Handler<JoinRoom> for RoomManagerService {
         PresenceService::from_registry()
             .send(ValidateRequest { token })
             .into_actor(self)
-            .then(move |is_valid, slf, ctx| {
+            .then(move |is_valid, slf, _ctx| {
                 match is_valid {
                     Ok(true) => {
-                        slf.join_room(&room, participant, ctx);
+                        slf.join_room(&room, participant);
                     }
                     _ => {
                         log::warn!(
@@ -46,7 +46,7 @@ impl Handler<JoinRoom> for RoomManagerService {
                             participant.session_id,
                             room
                         );
-                        slf.send_decline(&room, participant, ctx);
+                        slf.send_decline(&room, participant);
                         // TODO: send error to client_session
                     }
                 }

@@ -29,7 +29,8 @@ impl Handler<AddParticipant> for DefaultRoom {
             addr.try_send(message::RoomToSession::Joined(
                 self.id.clone(),
                 ctx.address().downgrade(),
-            )).unwrap();
+            ))
+            .unwrap();
 
             // TODO: do this on client demand
             addr.try_send(message::RoomToSession::History {
@@ -40,7 +41,7 @@ impl Handler<AddParticipant> for DefaultRoom {
 
             self.roster.insert(participant.session_id, participant);
 
-            self.send_update_to_all_participants(ctx);
+            self.send_update_to_all_participants();
 
             log::trace!("{:?} roster: {:?}", self.id, self.roster);
         } else {
@@ -59,7 +60,7 @@ pub struct UpdateParticipant {
 impl Handler<UpdateParticipant> for DefaultRoom {
     type Result = ();
 
-    fn handle(&mut self, command: UpdateParticipant, ctx: &mut Self::Context) {
+    fn handle(&mut self, command: UpdateParticipant, _ctx: &mut Self::Context) {
         let UpdateParticipant { profile, session_id } = command;
         log::trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile);
         // if let Some(addr) = participant.addr.upgrade() {
@@ -68,12 +69,9 @@ impl Handler<UpdateParticipant> for DefaultRoom {
             roster_entry.profile = Some(profile);
         }
 
-        self.send_update_to_all_participants(ctx);
+        self.send_update_to_all_participants();
 
         log::trace!("{:?} roster: {:?}", self.id, self.roster);
-        // } else {
-        //     log::error!("participant address is cannot be upgraded {:?}", participant);
-        // }
     }
 }
 
@@ -93,11 +91,7 @@ impl Handler<RemoveParticipant> for DefaultRoom {
             log::debug!("successfully removed {} from {:?}", session_id, self.id);
             log::trace!("{:?} roster: {:?}", self.id, self.roster);
             if let Ok(participant) = LiveParticipant::try_from(&participant) {
-                self.send_to_participant(
-                    message::RoomToSession::Left { room: self.id.clone() },
-                    &participant,
-                    ctx,
-                );
+                self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant);
             }
             if self.roster.values().count() == 0 {
                 if self.ephemeral {
@@ -121,7 +115,7 @@ impl Handler<RemoveParticipant> for DefaultRoom {
                     log::trace!("{:?} is empty but not ephemeral, staying around", self.id);
                 }
             } else {
-                self.send_update_to_all_participants(ctx);
+                self.send_update_to_all_participants();
             }
         } else {
             log::warn!("{} was not a participant in {:?}", session_id, self.id);
@@ -150,7 +144,7 @@ pub struct Forward {
 impl Handler<Forward> for DefaultRoom {
     type Result = MessageResult<Forward>;
 
-    fn handle(&mut self, fwd: Forward, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, fwd: Forward, _ctx: &mut Self::Context) -> Self::Result {
         log::info!("room {:?} received {:?}", self.id, fwd);
 
         let Forward { message, .. } = fwd;
