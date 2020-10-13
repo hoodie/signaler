@@ -22,13 +22,11 @@ impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
     fn handle(&mut self, p: ProvideProfile<DefaultRoom>, ctx: &mut Context<Self>) -> Self::Result {
         if let Some(profile) = self.profile.clone() {
             if let Some(addr) = p.room_addr.upgrade() {
-                addr.send(UpdateParticipant {
+                addr.try_send(UpdateParticipant {
                     session_id: self.session_id,
                     profile,
                 })
-                .into_actor(self)
-                .then(|_, _, _| fut::ready(()))
-                .spawn(ctx);
+                .unwrap();
             }
         } else {
             log::warn!("{:?} was asked for profile, but didn't have one", self.session_id);

@@ -71,10 +71,8 @@ impl ClientSession {
         if let Some(connection) = self.connection.as_ref().and_then(WeakAddr::upgrade) {
             log::debug!("send to connection {:?}", message);
             connection
-                .send(crate::socket_connection::command::SessionMessage(message))
-                .into_actor(self)
-                .then(|_, _, _| fut::ready(()))
-                .spawn(ctx);
+                .try_send(crate::socket_connection::command::SessionMessage(message))
+                .unwrap();
         } else {
             log::warn!("have no connection to send to");
         }
@@ -124,13 +122,8 @@ impl ClientSession {
             };
 
             RoomManagerService::from_registry()
-                .send(msg)
-                .into_actor(self)
-                .then(|_, _, _| {
-                    log::debug!("join request forwarded to room successfully");
-                    fut::ready(())
-                })
-                .spawn(ctx);
+                .try_send(msg)
+                .unwrap();
         } else {
             log::warn!("can't join room, no authentication token")
         }
@@ -138,15 +131,10 @@ impl ClientSession {
 
     fn leave_room(&self, room_id: &str, ctx: &mut Context<Self>) {
         if let Some(addr) = self.room_addr(room_id) {
-            addr.send(room::command::RemoveParticipant {
+            addr.try_send(room::command::RemoveParticipant {
                 session_id: self.session_id,
             })
-            .into_actor(self)
-            .then(|_, _, _| {
-                log::debug!("leave request forwarded to room successfully");
-                fut::ready(())
-            })
-            .spawn(ctx);
+            .unwrap();
         } else {
             log::error!("no such room {:?}", room_id);
         }

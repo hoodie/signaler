@@ -21,10 +21,8 @@ impl RoomManagerService {
         if let Some(room) = self.rooms.get(name) {
             log::trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
-            room.send(AddParticipant { participant })
-                .into_actor(self)
-                .then(|_res, _slf, _ctx| fut::ready(()))
-                .spawn(ctx);
+            room.try_send(AddParticipant { participant })
+                .unwrap();
         } else {
             let room = self.create_room(name);
             log::trace!(
@@ -34,10 +32,8 @@ impl RoomManagerService {
             );
             room.upgrade()
                 .unwrap()
-                .send(AddParticipant { participant })
-                .into_actor(self)
-                .then(|_res, _slf, _ctx| fut::ready(()))
-                .spawn(ctx);
+                .try_send(AddParticipant { participant })
+                .unwrap();
         }
     }
 
@@ -46,10 +42,8 @@ impl RoomManagerService {
             .addr
             .upgrade()
             .unwrap()
-            .send(RoomToSession::JoinDeclined { room: room_id.into() })
-            .into_actor(self)
-            .then(|_, _, _| fut::ready(()))
-            .spawn(ctx);
+            .try_send(RoomToSession::JoinDeclined { room: room_id.into() })
+            .unwrap();
     }
 
     fn create_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {

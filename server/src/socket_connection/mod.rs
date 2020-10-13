@@ -70,13 +70,11 @@ impl SocketConnection {
         let connection = ctx.address().downgrade();
 
         SessionManagerService::from_registry()
-            .send(crate::session_manager::command::GetSession {
+            .try_send(crate::session_manager::command::GetSession {
                 credentials,
                 connection,
             })
-            .into_actor(self)
-            .then(|_, _, _| fut::ready(()))
-            .spawn(ctx);
+            .unwrap();
     }
 
     /// send message to client
