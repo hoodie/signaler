@@ -26,22 +26,17 @@ impl Handler<AddParticipant> for DefaultRoom {
         log::trace!("Room {:?} adds {:?}", self.id, participant);
         // TODO: prevent duplicates
         if let Some(addr) = participant.addr.upgrade() {
-            addr.send(message::RoomToSession::Joined(
+            addr.try_send(message::RoomToSession::Joined(
                 self.id.clone(),
                 ctx.address().downgrade(),
-            ))
-            .into_actor(self)
-            .then(|_, _, _| fut::ready(()))
-            .spawn(ctx);
+            )).unwrap();
 
             // TODO: do this on client demand
-            addr.send(message::RoomToSession::History {
+            addr.try_send(message::RoomToSession::History {
                 room: self.id.clone(),
                 messages: self.history.clone(),
             })
-            .into_actor(self)
-            .then(|_, _, _| fut::ready(()))
-            .spawn(ctx);
+            .unwrap();
 
             self.roster.insert(participant.session_id, participant);
 
@@ -167,16 +162,11 @@ impl Handler<Forward> for DefaultRoom {
 
             participant
                 .addr
-                .send(message::RoomToSession::ChatMessage {
+                .try_send(message::RoomToSession::ChatMessage {
                     message: message.clone(),
                     room: self.id.clone(),
                 })
-                .into_actor(self)
-                .then(|_, _slf, _| {
-                    log::trace!("chatmessages passed on");
-                    fut::ready(())
-                })
-                .spawn(ctx);
+                .unwrap();
         }
         MessageResult(Ok(()))
     }
