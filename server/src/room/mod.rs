@@ -76,28 +76,22 @@ impl DefaultRoom {
         })
     }
 
-    fn send_update_to_all_participants(&self, ctx: &mut Context<Self>) {
+    fn send_update_to_all_participants(&self) {
         for participant in self.live_participants() {
             log::trace!("forwarding message to {:?}", participant);
 
-            participant
-                .addr
-                .try_send(self.room_state())
-                .unwrap();
+            participant.addr.try_send(self.room_state()).unwrap();
         }
     }
 
-    fn send_to_participant<'a, M>(&'a self, message: M, participant: &'a LiveParticipant, ctx: &'a mut Context<Self>)
+    fn send_to_participant<'a, M>(&'a self, message: M, participant: &'a LiveParticipant)
     where
         M: Message + std::fmt::Debug + Send + 'static,
         <M as Message>::Result: Send,
         ClientSession: Handler<M>,
     {
         log::trace!("sending {:?} to {}", message, participant.session_id);
-        participant
-            .addr
-            .try_send(message)
-            .unwrap();
+        participant.addr.try_send(message).unwrap();
     }
 
     fn gc(&mut self, ctx: &mut Context<Self>) {
@@ -119,13 +113,13 @@ impl DefaultRoom {
             ctx.stop();
         }
         if send_update {
-            self.send_update_to_all_participants(ctx);
+            self.send_update_to_all_participants();
         }
     }
 
     fn update_participant_profile(&mut self, participant: LiveParticipant, ctx: &mut Context<Self>) {
         let room_addr = ctx.address().downgrade();
-        self.send_to_participant(session::command::ProvideProfile { room_addr }, &participant, ctx);
+        self.send_to_participant(session::command::ProvideProfile { room_addr }, &participant);
     }
 
     pub fn update_roster(&mut self, ctx: &mut Context<Self>) {

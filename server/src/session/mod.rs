@@ -49,25 +49,18 @@ impl ClientSession {
         log::trace!("received {:?}", msg);
         match msg {
             SessionCommand::Authenticate { .. } => log::warn!("unexpected authentication"),
-
             SessionCommand::ListRooms => self.list_rooms(ctx),
-
             SessionCommand::Join { room } => self.join(&room, ctx),
-
             SessionCommand::Leave { room } => self.leave_room(&room, ctx),
-
             SessionCommand::ListMyRooms => self.list_my_rooms(ctx),
-
             SessionCommand::ListParticipants { room } => self.request_room_update(&room, ctx),
-
             SessionCommand::Message { message, room } => self.forward_message(message, &room, ctx),
-
             SessionCommand::ShutDown => System::current().stop(),
         }
     }
 
     /// send message to client
-    fn send_message(&self, message: SessionMessage, ctx: &mut Context<Self>) {
+    fn send_message(&self, message: SessionMessage, _ctx: &mut Context<Self>) {
         if let Some(connection) = self.connection.as_ref().and_then(WeakAddr::upgrade) {
             log::debug!("send to connection {:?}", message);
             connection
@@ -121,15 +114,13 @@ impl ClientSession {
                 token,
             };
 
-            RoomManagerService::from_registry()
-                .try_send(msg)
-                .unwrap();
+            RoomManagerService::from_registry().try_send(msg).unwrap();
         } else {
             log::warn!("can't join room, no authentication token")
         }
     }
 
-    fn leave_room(&self, room_id: &str, ctx: &mut Context<Self>) {
+    fn leave_room(&self, room_id: &str, _ctx: &mut Context<Self>) {
         if let Some(addr) = self.room_addr(room_id) {
             addr.try_send(room::command::RemoveParticipant {
                 session_id: self.session_id,

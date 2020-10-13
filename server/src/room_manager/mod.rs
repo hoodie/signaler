@@ -17,12 +17,11 @@ pub struct RoomManagerService {
 }
 
 impl RoomManagerService {
-    fn join_room(&mut self, name: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
+    fn join_room(&mut self, name: &str, participant: RosterParticipant) {
         if let Some(room) = self.rooms.get(name) {
             log::trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
-            room.try_send(AddParticipant { participant })
-                .unwrap();
+            room.try_send(AddParticipant { participant }).unwrap();
         } else {
             let room = self.create_room(name);
             log::trace!(
@@ -37,7 +36,7 @@ impl RoomManagerService {
         }
     }
 
-    fn send_decline(&mut self, room_id: &str, participant: RosterParticipant, ctx: &mut Context<Self>) {
+    fn send_decline(&mut self, room_id: &str, participant: RosterParticipant) {
         participant
             .addr
             .upgrade()

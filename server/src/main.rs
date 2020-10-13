@@ -29,9 +29,9 @@ mod session_manager;
 mod user_management;
 
 //use crate::connection::ClientConnection;
+use crate::config::Config;
 use crate::session::*;
 use crate::socket_connection::SocketConnection;
-use crate::config::Config;
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     log::debug!("chat route: {:?}", req);
