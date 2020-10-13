@@ -82,10 +82,8 @@ impl DefaultRoom {
 
             participant
                 .addr
-                .send(self.room_state())
-                .into_actor(self)
-                .then(|_, _slf, _| fut::ready(()))
-                .spawn(ctx);
+                .try_send(self.room_state())
+                .unwrap();
         }
     }
 
@@ -98,10 +96,8 @@ impl DefaultRoom {
         log::trace!("sending {:?} to {}", message, participant.session_id);
         participant
             .addr
-            .send(message)
-            .into_actor(self)
-            .then(|_, _slf, _| fut::ready(()))
-            .spawn(ctx);
+            .try_send(message)
+            .unwrap();
     }
 
     fn gc(&mut self, ctx: &mut Context<Self>) {

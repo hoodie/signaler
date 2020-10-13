@@ -59,10 +59,8 @@ impl DefaultSessionManager {
                             let weak_session = session.downgrade();
                             slf.sessions.insert(SessionKey::Token(token), session);
                             connection
-                                .send(crate::socket_connection::command::SessionConnected { session: weak_session })
-                                .into_actor(slf)
-                                .then(|_, _, _| fut::ready(()))
-                                .spawn(ctx);
+                                .try_send(crate::socket_connection::command::SessionConnected { session: weak_session })
+                                .unwrap();
                         } else {
                             log::warn!("session can be created but connection was dead")
                         }
