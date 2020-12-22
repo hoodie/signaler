@@ -7,10 +7,17 @@ use actix_web::HttpServer;
 use actix_web::{
     guard,
     http::{header, StatusCode},
-    middleware, web, App, Error, HttpRequest, HttpResponse,
+    middleware, /*web,*/ App, Error, HttpRequest, HttpResponse,
 };
 use actix_web_actors::ws;
 use dotenv::dotenv;
+
+use paperclip::actix::{
+    // extension trait for actix_web::App and proc-macro attributes
+    OpenApiExt, Apiv2Schema, api_v2_operation,
+    // use this instead of actix_web::web
+    web::{self, Json},
+};
 
 // use actix::WeakRecipient;
 
@@ -33,16 +40,18 @@ use crate::config::Config;
 use crate::session::*;
 use crate::socket_connection::SocketConnection;
 
+#[api_v2_operation]
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     log::debug!("chat route: {:?}", req);
     ws::start(SocketConnection::default(), &req, stream)
 }
 
+#[api_v2_operation]
 async fn not_found(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     log::warn!(target: "WEB_INTERFACE", "not found");
     Ok(fs::NamedFile::open("../static/404.html")?.set_status_code(StatusCode::NOT_FOUND))
 }
-
+#[api_v2_operation]
 async fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     Ok(fs::NamedFile::open("../static/favicon.ico")?)
 }
@@ -73,10 +82,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             App::new()
                 // logger
                 .wrap(middleware::Logger::default())
+                .wrap_api()
                 // routes
                 .service(web::resource("/ws/").route(web::get().to(ws_route)))
-                .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
-                .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
+                // .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
+                // .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
                 // statics
                 .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
                 // redirects
@@ -94,6 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .to(HttpResponse::MethodNotAllowed),
                     ),
                 )
+                // .with_json_spec_at("/api/spec")
         })
     };
 
