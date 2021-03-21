@@ -29,9 +29,9 @@ mod session_manager;
 mod user_management;
 
 //use crate::connection::ClientConnection;
+use crate::config::Config;
 use crate::session::*;
 use crate::socket_connection::SocketConnection;
-use crate::config::Config;
 
 async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     log::debug!("chat route: {:?}", req);
@@ -62,46 +62,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     log::info!("running in {}", home.display());
 
-    // let sys = actix::System::new("signaler").;
-    let sys = actix::System::builder()
+    let mut sys = actix::System::builder()
         .name("signaler")
         .stop_on_panic(config.stop_on_panic)
         .build();
 
-    let server = || {
-        HttpServer::new(move || {
-            App::new()
-                // logger
-                .wrap(middleware::Logger::default())
-                // routes
-                .service(web::resource("/ws/").route(web::get().to(ws_route)))
-                .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
-                .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
-                // statics
-                .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
-                // redirects
-                .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
-                    log::trace!("{:?}", req);
-                    HttpResponse::Found()
-                        .header(header::LOCATION, "app/index.html")
-                        .finish()
-                })))
-                // fallback
-                .default_service(
-                    web::resource("").route(web::get().to(not_found)).route(
-                        web::route()
-                            .guard(guard::Not(guard::Get()))
-                            .to(HttpResponse::MethodNotAllowed),
-                    ),
-                )
-        })
-    };
+    let server = HttpServer::new(move || {
+        App::new()
+            // logger
+            .wrap(middleware::Logger::default())
+            // routes
+            .service(web::resource("/ws/").route(web::get().to(ws_route)))
+            .service(fs::Files::new("/app", home.join("../static")).index_file("index.html"))
+            .service(fs::Files::new("/app2", home.join("../webapp-svelte/public")).index_file("index.html"))
+            // statics
+            .service(web::resource("/favicon.ico").route(web::get().to(favicon)))
+            // redirects
+            .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
+                log::trace!("{:?}", req);
+                HttpResponse::Found()
+                    .header(header::LOCATION, "app/index.html")
+                    .finish()
+            })))
+            // fallback
+            .default_service(
+                web::resource("").route(web::get().to(not_found)).route(
+                    web::route()
+                        .guard(guard::Not(guard::Get()))
+                        .to(HttpResponse::MethodNotAllowed),
+                ),
+            )
+    });
 
     let bind_to = std::net::SocketAddr::new(config.server.host.parse().unwrap(), config.server.port);
     log::info!("listening on http://{}", bind_to);
-    server().bind(bind_to)?.run();
 
-    sys.run()?;
+    // server.bind(bind_to)?.run();
+    // sys.run()?;
+    sys.block_on(async move {
+        server.bind(bind_to).unwrap().run().await;
+    });
+
     log::info!("shutting down I guess");
 
     Ok(())

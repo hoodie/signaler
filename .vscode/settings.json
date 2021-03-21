@@ -6,5 +6,6 @@
         "*/node_modules/": true,
         "*/target/": true
     },
-    "deno.enable": false
+    "deno.enable": false,
+    "rust-analyzer.inlayHints.enable": true
 }
