@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // server.bind(bind_to)?.run();
     // sys.run()?;
     sys.block_on(async move {
-        server.bind(bind_to).unwrap().run().await;
+        server.bind(bind_to).unwrap().run().await.unwrap();
     });
 
     log::info!("shutting down I guess");
