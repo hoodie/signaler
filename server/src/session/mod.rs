@@ -4,18 +4,12 @@
 
 // TODO: how to timeout sessions?
 
-use actix::{prelude::*, WeakAddr};
+use actix::{WeakAddr, WeakRecipient, prelude::*};
 use uuid::Uuid;
 
 use std::{collections::HashMap, fmt, time::Duration};
 
-use crate::{
-    presence::command::AuthToken,
-    room::{self, participant::RosterParticipant, DefaultRoom, RoomId},
-    room_manager::{self, RoomManagerService},
-    socket_connection::SocketConnection,
-    user_management::UserProfile,
-};
+use crate::{presence::command::AuthToken, room::{self, participant::RosterParticipant, DefaultRoom, RoomId}, room_manager::{self, RoomManagerService}, socket_connection::SocketConnection, user_management::UserProfile, voice_room};
 use signaler_protocol::*;
 
 pub mod command;
@@ -31,6 +25,7 @@ pub struct ClientSession {
     token: Option<AuthToken>,
     profile: Option<UserProfile>,
     rooms: HashMap<RoomId, WeakAddr<DefaultRoom>>,
+    voice_rooms: HashMap<RoomId, WeakRecipient<voice_room::Command>>,
 }
 
 impl ClientSession {
@@ -223,6 +218,7 @@ impl Default for ClientSession {
             token: None,
             profile: None,
             rooms: Default::default(),
+            voice_rooms: Default::default(),
         }
     }
 }

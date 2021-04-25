@@ -21,6 +21,7 @@ mod presence;
 mod room;
 mod session;
 mod socket_connection;
+mod voice_room;
 
 mod static_data;
 

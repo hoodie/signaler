@@ -14,6 +14,7 @@ pub mod command;
 #[derive(Default)]
 pub struct RoomManagerService {
     pub rooms: HashMap<RoomId, Addr<DefaultRoom>>,
+    pub voice_rooms: HashMap<RoomId, Recipient<crate::voice_room::Command>>,
 }
 
 impl RoomManagerService {
