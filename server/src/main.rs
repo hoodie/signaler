@@ -47,7 +47,8 @@ async fn favicon(_req: HttpRequest) -> Result<fs::NamedFile, Error> {
     Ok(fs::NamedFile::open("../static/favicon.ico")?)
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[actix::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
     dotenv().unwrap();
 
@@ -61,11 +62,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
     };
     log::info!("running in {}", home.display());
-
-    let mut sys = actix::System::builder()
-        .name("signaler")
-        .stop_on_panic(config.stop_on_panic)
-        .build();
 
     let server = HttpServer::new(move || {
         App::new()
@@ -81,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(web::resource("/").route(web::get().to(|req: HttpRequest| {
                 log::trace!("{:?}", req);
                 HttpResponse::Found()
-                    .header(header::LOCATION, "app/index.html")
+                    .append_header((header::LOCATION, "app/index.html"))
                     .finish()
             })))
             // fallback
@@ -97,11 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bind_to = std::net::SocketAddr::new(config.server.host.parse().unwrap(), config.server.port);
     log::info!("listening on http://{}", bind_to);
 
-    // server.bind(bind_to)?.run();
-    // sys.run()?;
-    sys.block_on(async move {
-        server.bind(bind_to).unwrap().run().await.unwrap();
-    });
+    server.bind(bind_to).unwrap().run().await.unwrap();
 
     log::info!("shutting down I guess");
 
