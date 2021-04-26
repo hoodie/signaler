@@ -1,13 +1,14 @@
+use actix::WeakRecipient;
 use signaler_protocol::*;
 
 use super::*;
-use crate::socket_connection::SocketConnection;
+use crate::socket_connection::command::SessionConnected;
 
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct GetSession {
     pub credentials: Credentials,
-    pub connection: WeakAddr<SocketConnection>,
+    pub connection: WeakRecipient<SessionConnected>,
 }
 
 impl Handler<GetSession> for SessionManagerService {
