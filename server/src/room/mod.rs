@@ -62,6 +62,7 @@ impl DefaultRoom {
             .and_then(|p| LiveParticipant::try_from(p).ok())
     }
 
+    #[allow(clippy::clippy::needless_lifetimes)]
     fn live_participants<'a>(&'a self) -> impl Iterator<Item = LiveParticipant> + 'a {
         self.roster.values().filter_map(|participant| {
             if let Some(addr) = participant.addr.upgrade() {

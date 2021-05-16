@@ -36,17 +36,15 @@ pub struct UserProfile {
 pub struct ChatMessage {
     pub content: String,
     pub sender: SessionId,
-    pub sender_name: String,
     pub sent: chrono::DateTime<chrono::Utc>,
     pub uuid: Uuid,
 }
 
 impl ChatMessage {
-    pub fn new(content: String, sender: SessionId, sender_name: &str) -> Self {
+    pub fn new(content: String, sender: SessionId) -> Self {
         Self {
             content,
             sender,
-            sender_name: sender_name.into(),
             sent: chrono::Utc::now(),
             uuid: Uuid::new_v4(),
         }

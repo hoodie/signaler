@@ -163,7 +163,7 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
             // protocol::ChatRoomCommand::Leave { room } => {}
             protocol::ChatRoomCommand::Message { content } => {
                 match _ctx.address().try_send(Forward {
-                    message: ChatMessage::new(content, sender, "__DEPRECATE__"),
+                    message: ChatMessage::new(content, sender),
                     sender,
                 }) {
                     Ok(_) => MessageResult(Ok(ChatRoomCommandResult::Accepted)),
