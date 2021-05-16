@@ -93,8 +93,11 @@ pub enum SessionCommand {
     /// Join a particular room
     Join { room: RoomId },
 
-    /// Join a particular room
+    /// Leave a particular room
     Leave { room: RoomId },
+
+    /// Send a message to all participants of that room
+    ChatRoom { room: RoomId, command: ChatRoomCommand },
 
     /// Send a message to all participants of that room
     Message { message: String, room: RoomId },
@@ -112,6 +115,23 @@ pub enum SessionCommand {
 
     /// Request Authentication Token
     Authenticate { credentials: Credentials },
+}
+
+/// Command sent to the server
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+#[rustfmt::skip]
+pub enum ChatRoomCommand {
+    /// Join a particular room
+    Join ,
+
+    /// Leave a particular room
+    Leave ,
+
+    /// Send a message to all participants of that room
+    Message { content: String },
+
+    ListParticipants { room: RoomId },
 }
 
 impl SessionCommand {

@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use protocol::ChatMessage;
 
 use std::convert::TryFrom;
 
@@ -131,6 +132,47 @@ impl Handler<RoomUpdate> for DefaultRoom {
     type Result = MessageResult<RoomUpdate>;
     fn handle(&mut self, _command: RoomUpdate, _ctx: &mut Self::Context) -> Self::Result {
         MessageResult(self.get_roster())
+    }
+}
+
+#[derive(Debug, Message)]
+#[rtype(result = "Result<ChatRoomCommandResult, String>")]
+pub struct ChatRoomCommand {
+    pub command: protocol::ChatRoomCommand,
+    pub sender: SessionId,
+}
+
+#[derive(Debug)]
+pub enum ChatRoomCommandResult {
+    Accepted,
+    Rejected(String),
+    NotImplemented(String),
+}
+
+impl Handler<ChatRoomCommand> for DefaultRoom {
+    type Result = MessageResult<ChatRoomCommand>;
+
+    fn handle(&mut self, fwd: ChatRoomCommand, _ctx: &mut Self::Context) -> Self::Result {
+        log::trace!("room {:?} received {:?}", self.id, fwd);
+
+        let ChatRoomCommand { command, sender } = fwd;
+        log::trace!("received command from {:?}", sender);
+
+        match command {
+            // protocol::ChatRoomCommand::Join { room } => {}
+            // protocol::ChatRoomCommand::Leave { room } => {}
+            protocol::ChatRoomCommand::Message { content } => {
+                match _ctx.address().try_send(Forward {
+                    message: ChatMessage::new(content, sender, "__DEPRECATE__"),
+                    sender,
+                }) {
+                    Ok(_) => MessageResult(Ok(ChatRoomCommandResult::Accepted)),
+                    Err(_) => MessageResult(Ok(ChatRoomCommandResult::Rejected("message".into()))),
+                }
+            }
+            // protocol::ChatRoomCommand::ListParticipants { room } => {}
+            _ => MessageResult(Ok(ChatRoomCommandResult::NotImplemented("".into()))),
+        }
     }
 }
 

@@ -12,9 +12,9 @@ impl From<signaler_protocol::UserProfile> for UserProfile {
     }
 }
 
-impl Into<signaler_protocol::UserProfile> for UserProfile {
-    fn into(self) -> signaler_protocol::UserProfile {
-        self.0
+impl From<UserProfile> for signaler_protocol::UserProfile {
+    fn from(val: UserProfile) -> Self {
+        val.0
     }
 }
 

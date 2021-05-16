@@ -50,11 +50,14 @@ impl ClientSession {
         match msg {
             SessionCommand::Authenticate { .. } => log::warn!("unexpected authentication"),
             SessionCommand::ListRooms => self.list_rooms(ctx),
+            SessionCommand::ListMyRooms => self.list_my_rooms(ctx),
+
             SessionCommand::Join { room } => self.join(&room, ctx),
             SessionCommand::Leave { room } => self.leave_room(&room, ctx),
-            SessionCommand::ListMyRooms => self.list_my_rooms(ctx),
             SessionCommand::ListParticipants { room } => self.request_room_update(&room, ctx),
             SessionCommand::Message { message, room } => self.forward_message(message, &room, ctx),
+            SessionCommand::ChatRoom { room, command } => self.forward_room_command(command, &room, ctx),
+
             SessionCommand::ShutDown => System::current().stop(),
         }
     }
@@ -181,6 +184,22 @@ impl ClientSession {
                     fut::ready(())
                 })
                 .spawn(ctx);
+        } else {
+            log::error!("no such room {:?}", room_id);
+        }
+    }
+
+    fn forward_room_command(&self, command: ChatRoomCommand, room_id: &str, ctx: &mut Context<Self>) {
+        if let Some(addr) = self.room_addr(room_id) {
+            addr.send(room::command::ChatRoomCommand {
+                command,
+                sender: self.session_id,
+            })
+            .into_actor(self)
+            .then(|resp, _slf, _ctx| {
+                log::trace!("{:?}", resp);
+                fut::ready(())})
+            .spawn(ctx);
         } else {
             log::error!("no such room {:?}", room_id);
         }
