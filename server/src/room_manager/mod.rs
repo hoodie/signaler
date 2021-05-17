@@ -5,7 +5,7 @@ use actix::{prelude::*, WeakAddr};
 use std::collections::HashMap;
 
 use crate::room::{
-    command::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId,
+    command::RoomCommand::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId,
 };
 
 pub mod command;

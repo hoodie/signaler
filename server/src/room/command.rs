@@ -15,111 +15,128 @@ use signaler_protocol as protocol;
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct AddParticipant {
-    pub participant: RosterParticipant,
+pub enum RoomCommand {
+    AddParticipant {
+        participant: RosterParticipant,
+    },
+
+    UpdateParticipant {
+        profile: UserProfile,
+        session_id: SessionId,
+    },
+
+    RemoveParticipant {
+        session_id: SessionId,
+    },
+
+    Forward {
+        message: protocol::ChatMessage,
+        sender: SessionId,
+    },
 }
 
-impl Handler<AddParticipant> for DefaultRoom {
+impl Handler<RoomCommand> for DefaultRoom {
     type Result = ();
 
-    fn handle(&mut self, command: AddParticipant, ctx: &mut Self::Context) {
-        let AddParticipant { participant } = command;
-        log::trace!("Room {:?} adds {:?}", self.id, participant);
-        // TODO: prevent duplicates
-        if let Some(addr) = participant.addr.upgrade() {
-            addr.try_send(message::RoomToSession::Joined(
-                self.id.clone(),
-                ctx.address().downgrade(),
-            ))
-            .unwrap();
+    fn handle(&mut self, command: RoomCommand, ctx: &mut Self::Context) {
+        match command {
+            RoomCommand::AddParticipant { participant } => {
+                log::trace!("Room {:?} adds {:?}", self.id, participant);
+                // TODO: prevent duplicates
+                if let Some(addr) = participant.addr.upgrade() {
+                    if let Err(error) = addr.try_send(message::RoomToSession::Joined(
+                        self.id.clone(),
+                        ctx.address().downgrade(),
+                    )) {
+                        log::error!(
+                            "failed to confirm join to to client session {:?} {}",
+                            participant,
+                            error,
+                        )
+                    }
 
-            // TODO: do this on client demand
-            addr.try_send(message::RoomToSession::History {
-                room: self.id.clone(),
-                messages: self.history.clone(),
-            })
-            .unwrap();
+                    // TODO: do this on client demand
+                    if let Err(error) = addr.try_send(message::RoomToSession::History {
+                        room: self.id.clone(),
+                        messages: self.history.clone(),
+                    }) {
+                        log::error!("failed to send history to participant {}", error)
+                    }
 
-            self.roster.insert(participant.session_id, participant);
+                    self.roster.insert(participant.session_id, participant);
 
-            self.send_update_to_all_participants();
+                    self.send_update_to_all_participants();
 
-            log::trace!("{:?} roster: {:?}", self.id, self.roster);
-        } else {
-            log::error!("participant address is cannot be upgraded {:?}", participant);
-        }
-    }
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct UpdateParticipant {
-    pub profile: UserProfile,
-    pub session_id: SessionId,
-}
-
-impl Handler<UpdateParticipant> for DefaultRoom {
-    type Result = ();
-
-    fn handle(&mut self, command: UpdateParticipant, _ctx: &mut Self::Context) {
-        let UpdateParticipant { profile, session_id } = command;
-        log::trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile);
-        // if let Some(addr) = participant.addr.upgrade() {
-
-        if let Some(roster_entry) = self.roster.get_mut(&session_id) {
-            roster_entry.profile = Some(profile);
-        }
-
-        self.send_update_to_all_participants();
-
-        log::trace!("{:?} roster: {:?}", self.id, self.roster);
-    }
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct RemoveParticipant {
-    pub session_id: SessionId,
-}
-
-impl Handler<RemoveParticipant> for DefaultRoom {
-    type Result = ();
-
-    fn handle(&mut self, command: RemoveParticipant, ctx: &mut Self::Context) {
-        let RemoveParticipant { session_id } = command;
-        log::trace!("receive RemoveParticipant");
-        if let Some(participant) = self.roster.remove(&session_id) {
-            log::debug!("successfully removed {} from {:?}", session_id, self.id);
-            log::trace!("{:?} roster: {:?}", self.id, self.roster);
-            if let Ok(participant) = LiveParticipant::try_from(&participant) {
-                self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant);
-            }
-            if self.roster.values().count() == 0 {
-                if self.ephemeral {
-                    log::trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
-                    RoomManagerService::from_registry()
-                        .send(crate::room_manager::command::CloseRoom(self.id.clone()))
-                        .into_actor(self)
-                        .then(|success, _slf, ctx| {
-                            match success {
-                                Ok(true) => {
-                                    log::trace!("room_manager says I'm fine to shut down");
-                                    ctx.stop();
-                                }
-                                _ => log::warn!("room_manager says it wasn't able to delete me 🤷"),
-                            }
-
-                            fut::ready(())
-                        })
-                        .spawn(ctx)
+                    log::trace!("{:?} roster: {:?}", self.id, self.roster);
                 } else {
-                    log::trace!("{:?} is empty but not ephemeral, staying around", self.id);
+                    log::error!("participant address is cannot be upgraded {:?}", participant);
                 }
-            } else {
-                self.send_update_to_all_participants();
             }
-        } else {
-            log::warn!("{} was not a participant in {:?}", session_id, self.id);
+
+            RoomCommand::UpdateParticipant { profile, session_id } => {
+                log::trace!("Room {:?} updates {:?} with {:?}", self.id, session_id, profile);
+                // if let Some(addr) = participant.addr.upgrade() {
+
+                if let Some(roster_entry) = self.roster.get_mut(&session_id) {
+                    roster_entry.profile = Some(profile);
+                }
+
+                self.send_update_to_all_participants();
+
+                log::trace!("{:?} roster: {:?}", self.id, self.roster);
+            }
+
+            RoomCommand::RemoveParticipant { session_id } => {
+                log::trace!("receive RemoveParticipant");
+                if let Some(participant) = self.roster.remove(&session_id) {
+                    log::debug!("successfully removed {} from {:?}", session_id, self.id);
+                    log::trace!("{:?} roster: {:?}", self.id, self.roster);
+                    if let Ok(participant) = LiveParticipant::try_from(&participant) {
+                        self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant);
+                    }
+                    if self.roster.values().count() == 0 {
+                        if self.ephemeral {
+                            log::trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
+                            RoomManagerService::from_registry()
+                                .send(crate::room_manager::command::CloseRoom(self.id.clone()))
+                                .into_actor(self)
+                                .then(|success, _slf, ctx| {
+                                    match success {
+                                        Ok(true) => {
+                                            log::trace!("room_manager says I'm fine to shut down");
+                                            ctx.stop();
+                                        }
+                                        _ => log::warn!("room_manager says it wasn't able to delete me 🤷"),
+                                    }
+
+                                    fut::ready(())
+                                })
+                                .spawn(ctx)
+                        } else {
+                            log::trace!("{:?} is empty but not ephemeral, staying around", self.id);
+                        }
+                    } else {
+                        self.send_update_to_all_participants();
+                    }
+                } else {
+                    log::warn!("{} was not a participant in {:?}", session_id, self.id);
+                }
+            }
+
+            RoomCommand::Forward { message, .. } => {
+                self.history.push(message.clone());
+
+                for participant in self.live_participants() {
+                    log::trace!("forwarding message to {:?}", participant);
+
+                    if let Err(error) = participant.addr.try_send(message::RoomToSession::ChatMessage {
+                        message: message.clone(),
+                        room: self.id.clone(),
+                    }) {
+                        log::error!("failed to forward message to {:?} {}", participant, error)
+                    }
+                }
+            }
         }
     }
 }
@@ -162,7 +179,7 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
             // protocol::ChatRoomCommand::Join { room } => {}
             // protocol::ChatRoomCommand::Leave { room } => {}
             protocol::ChatRoomCommand::Message { content } => {
-                match _ctx.address().try_send(Forward {
+                match _ctx.address().try_send(RoomCommand::Forward {
                     message: ChatMessage::new(content, sender),
                     sender,
                 }) {
@@ -173,37 +190,5 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
             // protocol::ChatRoomCommand::ListParticipants { room } => {}
             _ => MessageResult(Ok(ChatRoomCommandResult::NotImplemented("".into()))),
         }
-    }
-}
-
-#[derive(Debug, Message)]
-#[rtype(result = "Result<(), String>")]
-pub struct Forward {
-    pub message: protocol::ChatMessage,
-    pub sender: SessionId,
-}
-
-impl Handler<Forward> for DefaultRoom {
-    type Result = MessageResult<Forward>;
-
-    fn handle(&mut self, fwd: Forward, _ctx: &mut Self::Context) -> Self::Result {
-        log::trace!("room {:?} received {:?}", self.id, fwd);
-
-        let Forward { message, .. } = fwd;
-
-        self.history.push(message.clone());
-
-        for participant in self.live_participants() {
-            log::trace!("forwarding message to {:?}", participant);
-
-            participant
-                .addr
-                .try_send(message::RoomToSession::ChatMessage {
-                    message: message.clone(),
-                    room: self.id.clone(),
-                })
-                .unwrap();
-        }
-        MessageResult(Ok(()))
     }
 }

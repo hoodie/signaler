@@ -125,7 +125,7 @@ impl ClientSession {
 
     fn leave_room(&self, room_id: &str, _ctx: &mut Context<Self>) {
         if let Some(addr) = self.room_addr(room_id) {
-            addr.try_send(room::command::RemoveParticipant {
+            addr.try_send(room::command::RoomCommand::RemoveParticipant {
                 session_id: self.session_id,
             })
             .unwrap();
@@ -150,7 +150,7 @@ impl ClientSession {
     }
 
     fn forward_message(&self, content: String, room_id: &str, ctx: &mut Context<Self>) {
-        let msg = room::command::Forward {
+        let msg = room::command::RoomCommand::Forward {
             message: ChatMessage::new(content, self.session_id),
             sender: self.session_id,
         };
@@ -161,10 +161,10 @@ impl ClientSession {
                 .then(|resp, slf, ctx| {
                     log::debug!("message forwarded -> {:?}", resp);
                     match resp {
-                        Ok(Err(message)) => {
-                            log::debug!("message rejected {:?}", message);
-                            slf.send_message(SessionMessage::Error { message }, ctx)
-                        }
+                        // Ok(Err(message)) => {
+                        //     log::debug!("message rejected {:?}", message);
+                        //     slf.send_message(SessionMessage::Error { message }, ctx)
+                        // }
                         Ok(mr) => {
                             log::debug!("ok after all -> {:?}", mr);
                         }
