@@ -1,5 +1,4 @@
 use actix::prelude::*;
-use protocol::ChatMessage;
 
 use std::convert::TryFrom;
 
@@ -32,6 +31,10 @@ pub enum RoomCommand {
     Forward {
         message: protocol::ChatMessage,
         sender: SessionId,
+    },
+
+    GetParticipants {
+        session_id: SessionId,
     },
 }
 
@@ -137,18 +140,16 @@ impl Handler<RoomCommand> for DefaultRoom {
                     }
                 }
             }
+
+            RoomCommand::GetParticipants { session_id } => {
+                if let Some(participant) = self.get_participant(&session_id) {
+                    let room = self.id.clone();
+                    let roster = self.get_roster();
+
+                    self.send_to_participant(super::message::RoomToSession::RoomState { room, roster }, &participant)
+                }
+            }
         }
-    }
-}
-
-#[derive(Message)]
-#[rtype(result = "Vec<protocol::Participant>")]
-pub struct RoomUpdate;
-
-impl Handler<RoomUpdate> for DefaultRoom {
-    type Result = MessageResult<RoomUpdate>;
-    fn handle(&mut self, _command: RoomUpdate, _ctx: &mut Self::Context) -> Self::Result {
-        MessageResult(self.get_roster())
     }
 }
 
@@ -156,7 +157,7 @@ impl Handler<RoomUpdate> for DefaultRoom {
 #[rtype(result = "Result<ChatRoomCommandResult, String>")]
 pub struct ChatRoomCommand {
     pub command: protocol::ChatRoomCommand,
-    pub sender: SessionId,
+    pub session_id: SessionId,
 }
 
 #[derive(Debug)]
@@ -172,7 +173,7 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
     fn handle(&mut self, fwd: ChatRoomCommand, _ctx: &mut Self::Context) -> Self::Result {
         log::trace!("room {:?} received {:?}", self.id, fwd);
 
-        let ChatRoomCommand { command, sender } = fwd;
+        let ChatRoomCommand { command, session_id: sender } = fwd;
         log::trace!("received command from {:?}", sender);
 
         match command {
@@ -180,7 +181,7 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
             // protocol::ChatRoomCommand::Leave { room } => {}
             protocol::ChatRoomCommand::Message { content } => {
                 match _ctx.address().try_send(RoomCommand::Forward {
-                    message: ChatMessage::new(content, sender),
+                    message: protocol::ChatMessage::new(content, sender),
                     sender,
                 }) {
                     Ok(_) => MessageResult(Ok(ChatRoomCommandResult::Accepted)),

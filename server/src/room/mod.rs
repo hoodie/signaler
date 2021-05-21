@@ -79,9 +79,7 @@ impl DefaultRoom {
 
     fn send_update_to_all_participants(&self) {
         for participant in self.live_participants() {
-            log::trace!("forwarding message to {:?}", participant);
-
-            participant.addr.try_send(self.room_state()).unwrap();
+            self.send_to_participant(self.room_state(), &participant);
         }
     }
 
@@ -92,7 +90,9 @@ impl DefaultRoom {
         ClientSession: Handler<M>,
     {
         log::trace!("sending {:?} to {}", message, participant.session_id);
-        participant.addr.try_send(message).unwrap();
+        if let Err(error) = participant.addr.try_send(message) {
+            log::error!("failed to send to participant {:?} {}", participant, error);
+        };
     }
 
     fn gc(&mut self, ctx: &mut Context<Self>) {

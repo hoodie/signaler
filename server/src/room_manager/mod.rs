@@ -21,7 +21,9 @@ impl RoomManagerService {
         if let Some(room) = self.rooms.get(name) {
             log::trace!("found room {:?}, just join", name);
             // TODO: AWAOT!
-            room.try_send(AddParticipant { participant }).unwrap();
+            if let Err(error) = room.try_send(AddParticipant { participant }) {
+                log::error!("failed to send AddParticipant to room {}", error)
+            }
         } else {
             let room = self.create_room(name);
             log::trace!(
@@ -29,20 +31,24 @@ impl RoomManagerService {
                 name,
                 self.list_rooms()
             );
-            room.upgrade()
-                .unwrap()
-                .try_send(AddParticipant { participant })
-                .unwrap();
+            if let Some(room_addr) = room.upgrade() {
+                if let Err(error) = room_addr.try_send(AddParticipant { participant }) {
+                    log::error!("failed to send command to room {:?} {}", name, error);
+                }
+            } else {
+                log::error!("room: {:?} was no longer reachable from RoomManager", name);
+            }
         }
     }
 
     fn send_decline(&mut self, room_id: &str, participant: RosterParticipant) {
-        participant
-            .addr
-            .upgrade()
-            .unwrap()
-            .try_send(RoomToSession::JoinDeclined { room: room_id.into() })
-            .unwrap();
+        if let Some(participant) = participant.addr.upgrade() {
+            if let Err(error) = participant.try_send(RoomToSession::JoinDeclined { room: room_id.into() }) {
+                log::error!("failed to send decline to particiapnt {:?}{}", participant, error);
+            }
+        } else {
+            log::error!("participant was no longer reachable from RoomManager {:?}", participant);
+        }
     }
 
     fn create_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {

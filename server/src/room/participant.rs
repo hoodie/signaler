@@ -1,8 +1,11 @@
-use actix::{WeakAddr, prelude::*};
+use actix::{prelude::*, WeakAddr};
 
 use signaler_protocol as protocol;
 
-use crate::{session::{ClientSession, SessionId}, user_management::UserProfile};
+use crate::{
+    session::{ClientSession, SessionId},
+    user_management::UserProfile,
+};
 
 use std::convert::TryFrom;
 

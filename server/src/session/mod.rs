@@ -47,18 +47,27 @@ impl ClientSession {
     /// react to client messages
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut Context<Self>) {
         log::trace!("received {:?}", msg);
+
+        use room::command::RoomCommand;
+        use SessionCommand::*;
+        let session_id = self.session_id;
+
         match msg {
-            SessionCommand::Authenticate { .. } => log::warn!("unexpected authentication"),
-            SessionCommand::ListRooms => self.list_rooms(ctx),
-            SessionCommand::ListMyRooms => self.list_my_rooms(ctx),
+            Authenticate { .. } => log::warn!("unexpected authentication"),
+            ListMyRooms => self.list_my_rooms(ctx),
 
-            SessionCommand::Join { room } => self.join(&room, ctx),
-            SessionCommand::Leave { room } => self.leave_room(&room, ctx),
-            SessionCommand::ListParticipants { room } => self.request_room_update(&room, ctx),
-            SessionCommand::Message { message, room } => self.forward_message(message, &room, ctx),
-            SessionCommand::ChatRoom { room, command } => self.forward_room_command(command, &room, ctx),
+            // to RoomManager
+            ListRooms => self.list_rooms(ctx),
+            Join { room } => self.join(&room, ctx),
 
-            SessionCommand::ShutDown => System::current().stop(),
+            Leave { room } => self.send_to_room(RoomCommand::RemoveParticipant { session_id }, &room),
+            ListParticipants { room } => self.send_to_room(RoomCommand::GetParticipants { session_id }, &room),
+
+            ChatRoom { room, command } => {
+                self.send_to_room(room::command::ChatRoomCommand { command, session_id }, &room)
+            }
+
+            ShutDown => System::current().stop(),
         }
     }
 
@@ -66,11 +75,35 @@ impl ClientSession {
     fn send_message(&self, message: SessionMessage, _ctx: &mut Context<Self>) {
         if let Some(connection) = self.connection.as_ref().and_then(WeakAddr::upgrade) {
             log::trace!("send to connection {:?}", message);
-            connection
-                .try_send(crate::socket_connection::command::SessionMessage(message))
-                .unwrap();
+            if let Err(error) = connection.try_send(crate::socket_connection::command::SessionMessage(message)) {
+                log::error!("failed to send message to socket_connection {}", error)
+            }
         } else {
             log::warn!("have no connection to send to");
+        }
+    }
+
+    fn room_addr(&self, room_id: &str) -> Option<Addr<DefaultRoom>> {
+        self.rooms.get(room_id).and_then(|room| room.upgrade())
+    }
+
+    // command to room
+    fn send_to_room<C>(&self, command: C, room_id: &str)
+    where
+        C: Message + Send + 'static,
+        <C as Message>::Result: Send,
+        room::DefaultRoom: Handler<C>,
+    {
+        if let Some(addr) = self.room_addr(room_id) {
+            if let Err(e) = addr.try_send(command) {
+                log::error!("failed to send command to room {:?} {}", room_id, e);
+            }
+        } else {
+            log::error!(
+                "room: {:?} was no longer reachable by client-session {:?}, removing",
+                room_id,
+                self.session_id
+            );
         }
     }
 
@@ -81,6 +114,29 @@ impl ClientSession {
         }
     }
 
+    // command to room manager
+    fn join(&self, room: &str, ctx: &mut Context<Self>) {
+        if let Some(token) = self.token {
+            let msg = room_manager::command::RoomManagerCommand::JoinRoom {
+                room: room.into(),
+                participant: RosterParticipant {
+                    session_id: self.session_id,
+                    addr: ctx.address().downgrade(),
+                    profile: self.profile.clone(),
+                },
+                // return_addr: ctx.address().recipient(),
+                token,
+            };
+
+            if let Err(error) = RoomManagerService::from_registry().try_send(msg) {
+                log::error!("can't join room, no authentication token {}", error)
+            }
+        } else {
+            log::warn!("can't join room, no authentication token")
+        }
+    }
+
+    // command to room manager
     fn list_rooms(&self, ctx: &mut Context<Self>) {
         let msg = room_manager::command::ListRooms;
 
@@ -98,133 +154,11 @@ impl ClientSession {
             .spawn(ctx);
     }
 
+    // self
     fn list_my_rooms(&self, ctx: &mut Context<Self>) {
         let rooms = self.rooms.keys().cloned().collect::<Vec<String>>();
         log::debug!("my list request answered: {:?}", rooms);
         self.send_message(SessionMessage::MyRoomList { rooms }, ctx);
-    }
-
-    fn join(&self, room: &str, ctx: &mut Context<Self>) {
-        if let Some(token) = self.token {
-            let msg = room_manager::command::JoinRoom {
-                room: room.into(),
-                participant: RosterParticipant {
-                    session_id: self.session_id,
-                    addr: ctx.address().downgrade(),
-                    profile: self.profile.clone(),
-                },
-                // return_addr: ctx.address().recipient(),
-                token,
-            };
-
-            RoomManagerService::from_registry().try_send(msg).unwrap();
-        } else {
-            log::warn!("can't join room, no authentication token")
-        }
-    }
-
-    fn leave_room(&self, room_id: &str, _ctx: &mut Context<Self>) {
-        if let Some(addr) = self.room_addr(room_id) {
-            addr.try_send(room::command::RoomCommand::RemoveParticipant {
-                session_id: self.session_id,
-            })
-            .unwrap();
-        } else {
-            log::error!("no such room {:?}", room_id);
-        }
-    }
-
-    fn leave_all_rooms(&mut self, _ctx: &mut Context<Self>) {}
-
-    fn room_addr(&self, room_id: &str) -> Option<Addr<DefaultRoom>> {
-        let addr = self.rooms.get(room_id).and_then(|room| room.upgrade());
-        if addr.is_none() {
-            log::warn!(
-                "room: {:?} was no longer reachable by client-session {:?}, removing",
-                room_id,
-                self.session_id
-            );
-            // self.rooms.remove(room_id); // TODO: do at Interval
-        }
-        addr
-    }
-
-    fn forward_message(&self, content: String, room_id: &str, ctx: &mut Context<Self>) {
-        let msg = room::command::RoomCommand::Forward {
-            message: ChatMessage::new(content, self.session_id),
-            sender: self.session_id,
-        };
-
-        if let Some(addr) = self.room_addr(room_id) {
-            addr.send(msg)
-                .into_actor(self)
-                .then(|resp, slf, ctx| {
-                    log::debug!("message forwarded -> {:?}", resp);
-                    match resp {
-                        // Ok(Err(message)) => {
-                        //     log::debug!("message rejected {:?}", message);
-                        //     slf.send_message(SessionMessage::Error { message }, ctx)
-                        // }
-                        Ok(mr) => {
-                            log::debug!("ok after all -> {:?}", mr);
-                        }
-                        Err(error) => slf.send_message(
-                            SessionMessage::Error {
-                                message: error.to_string(),
-                            },
-                            ctx,
-                        ),
-                    }
-                    fut::ready(())
-                })
-                .spawn(ctx);
-        } else {
-            log::error!("no such room {:?}", room_id);
-        }
-    }
-
-    fn forward_room_command(&self, command: ChatRoomCommand, room_id: &str, ctx: &mut Context<Self>) {
-        if let Some(addr) = self.room_addr(room_id) {
-            addr.send(room::command::ChatRoomCommand {
-                command,
-                sender: self.session_id,
-            })
-            .into_actor(self)
-            .then(|resp, _slf, _ctx| {
-                log::trace!("{:?}", resp);
-                fut::ready(())})
-            .spawn(ctx);
-        } else {
-            log::error!("no such room {:?}", room_id);
-        }
-    }
-
-    fn request_room_update(&self, room_id: &str, ctx: &mut Context<Self>) {
-        let room_name = room_id.to_owned();
-        if let Some(addr) = self.room_addr(room_id) {
-            addr.send(room::command::RoomUpdate)
-                .into_actor(self)
-                .then(|resp, slf, ctx| {
-                    log::debug!("received response for ListParticipants request");
-                    match resp {
-                        Ok(participants) => slf.send_message(
-                            SessionMessage::RoomParticipants {
-                                room: room_name,
-                                participants,
-                            },
-                            ctx,
-                        ),
-                        Err(error) => slf.send_message(
-                            SessionMessage::Error {
-                                message: error.to_string(),
-                            },
-                            ctx,
-                        ),
-                    }
-                    fut::ready(())
-                })
-                .spawn(ctx);
-        }
     }
 }
 
@@ -253,12 +187,6 @@ impl Actor for ClientSession {
             ctx,
         );
         ctx.run_interval(Duration::from_millis(5_000), Self::gc);
-    }
-
-    fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
-        self.leave_all_rooms(ctx);
-
-        Running::Stop
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {

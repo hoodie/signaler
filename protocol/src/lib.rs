@@ -97,9 +97,6 @@ pub enum SessionCommand {
     /// Send a message to all participants of that room
     ChatRoom { room: RoomId, command: ChatRoomCommand },
 
-    /// Send a message to all participants of that room
-    Message { message: String, room: RoomId },
-
     /// List all rooms
     ListRooms,
 
@@ -121,7 +118,7 @@ pub enum SessionCommand {
 #[rustfmt::skip]
 pub enum ChatRoomCommand {
     /// Join a particular room
-    Join ,
+    Join,
 
     /// Leave a particular room
     Leave ,
@@ -138,10 +135,6 @@ impl SessionCommand {
         let room = "roomName";
         serde_json::to_string_pretty(&[
             Join { room: room.into() },
-            Message {
-                message: "hello world".into(),
-                room: room.into(),
-            },
             Authenticate {
                 credentials: Credentials::UsernamePassword {
                     username: "username".into(),

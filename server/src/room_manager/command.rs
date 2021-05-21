@@ -15,22 +15,26 @@ use crate::{
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct JoinRoom {
-    pub room: String,
-    pub participant: RosterParticipant,
-    pub token: AuthToken,
+pub enum RoomManagerCommand {
+    JoinRoom {
+        room: String,
+        participant: RosterParticipant,
+        token: AuthToken,
+    },
 }
 
-impl Handler<JoinRoom> for RoomManagerService {
+impl Handler<RoomManagerCommand> for RoomManagerService {
     type Result = ();
 
-    fn handle(&mut self, request: JoinRoom, ctx: &mut Self::Context) -> Self::Result {
-        log::trace!("RoomManagerService received request to join {:?}", request.room);
-        let JoinRoom {
+    fn handle(&mut self, request: RoomManagerCommand, ctx: &mut Self::Context) -> Self::Result {
+        let RoomManagerCommand::JoinRoom {
             room,
             participant,
             token,
         } = request;
+
+        log::trace!("RoomManagerService received request to join {:?}", room);
+
         // TODO: check token
         PresenceService::from_registry()
             .send(ValidateRequest { token })
