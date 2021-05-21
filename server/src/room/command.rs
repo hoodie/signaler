@@ -173,7 +173,10 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
     fn handle(&mut self, fwd: ChatRoomCommand, _ctx: &mut Self::Context) -> Self::Result {
         log::trace!("room {:?} received {:?}", self.id, fwd);
 
-        let ChatRoomCommand { command, session_id: sender } = fwd;
+        let ChatRoomCommand {
+            command,
+            session_id: sender,
+        } = fwd;
         log::trace!("received command from {:?}", sender);
 
         match command {

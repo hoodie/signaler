@@ -4,7 +4,7 @@ use signaler_protocol::*;
 
 use super::ClientSession;
 use crate::{
-    room::{command::RoomCommand, message::RoomToSession, DefaultRoom},
+    room::{self, message::RoomToSession, DefaultRoom},
     socket_connection::SocketConnection,
 };
 
@@ -21,7 +21,7 @@ impl Handler<ProvideProfile<DefaultRoom>> for ClientSession {
     fn handle(&mut self, p: ProvideProfile<DefaultRoom>, _ctx: &mut Context<Self>) -> Self::Result {
         if let Some(profile) = self.profile.clone() {
             if let Some(addr) = p.room_addr.upgrade() {
-                if let Err(error) = addr.try_send(RoomCommand::UpdateParticipant {
+                if let Err(error) = addr.try_send(room::Command::UpdateParticipant {
                     session_id: self.session_id,
                     profile,
                 }) {

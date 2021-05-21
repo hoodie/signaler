@@ -4,9 +4,7 @@ use actix::{prelude::*, WeakAddr};
 
 use std::collections::HashMap;
 
-use crate::room::{
-    command::RoomCommand::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId,
-};
+use crate::room::{self, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId};
 
 pub mod command;
 
@@ -18,25 +16,13 @@ pub struct RoomManagerService {
 
 impl RoomManagerService {
     fn join_room(&mut self, name: &str, participant: RosterParticipant) {
-        if let Some(room) = self.rooms.get(name) {
-            log::trace!("found room {:?}, just join", name);
-            // TODO: AWAOT!
-            if let Err(error) = room.try_send(AddParticipant { participant }) {
-                log::error!("failed to send AddParticipant to room {}", error)
-            }
-        } else {
-            let room = self.create_room(name);
-            log::trace!(
-                "no room found {:?}, create and then join {:#?}",
-                name,
-                self.list_rooms()
-            );
-            if let Some(room_addr) = room.upgrade() {
-                if let Err(error) = room_addr.try_send(AddParticipant { participant }) {
-                    log::error!("failed to send command to room {:?} {}", name, error);
-                }
-            } else {
-                log::error!("room: {:?} was no longer reachable from RoomManager", name);
+        if let Some(room) = self.rooms.get(name).cloned().or_else(|| {
+            let room = self.create_room(name).upgrade();
+            log::trace!("no room found {:?}, creating", name);
+            room
+        }) {
+            if let Err(error) = room.try_send(room::Command::AddParticipant { participant }) {
+                log::error!("failed to add participant to room {}", error)
             }
         }
     }

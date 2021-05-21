@@ -9,9 +9,13 @@ use signaler_protocol as protocol;
 
 pub type RoomId = String;
 
-pub mod command;
+mod command;
+
 pub mod message;
 pub mod participant;
+
+pub use command::ChatRoomCommand;
+pub use command::RoomCommand as Command;
 
 use self::participant::{LiveParticipant, RosterParticipant};
 
@@ -62,7 +66,7 @@ impl DefaultRoom {
             .and_then(|p| LiveParticipant::try_from(p).ok())
     }
 
-    #[allow(clippy::clippy::needless_lifetimes)]
+    #[allow(clippy::needless_lifetimes)]
     fn live_participants<'a>(&'a self) -> impl Iterator<Item = LiveParticipant> + 'a {
         self.roster.values().filter_map(|participant| {
             if let Some(addr) = participant.addr.upgrade() {

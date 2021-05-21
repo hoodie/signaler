@@ -48,7 +48,6 @@ impl ClientSession {
     fn dispatch_incoming_message(&self, msg: SessionCommand, ctx: &mut Context<Self>) {
         log::trace!("received {:?}", msg);
 
-        use room::command::RoomCommand;
         use SessionCommand::*;
         let session_id = self.session_id;
 
@@ -60,12 +59,9 @@ impl ClientSession {
             ListRooms => self.list_rooms(ctx),
             Join { room } => self.join(&room, ctx),
 
-            Leave { room } => self.send_to_room(RoomCommand::RemoveParticipant { session_id }, &room),
-            ListParticipants { room } => self.send_to_room(RoomCommand::GetParticipants { session_id }, &room),
-
-            ChatRoom { room, command } => {
-                self.send_to_room(room::command::ChatRoomCommand { command, session_id }, &room)
-            }
+            Leave { room } => self.send_to_room(room::Command::RemoveParticipant { session_id }, &room),
+            ListParticipants { room } => self.send_to_room(room::Command::GetParticipants { session_id }, &room),
+            ChatRoom { room, command } => self.send_to_room(room::ChatRoomCommand { command, session_id }, &room),
 
             ShutDown => System::current().stop(),
         }
