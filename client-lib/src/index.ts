@@ -130,7 +130,7 @@ export class Session {
     }
 
     public sendMessage(message: string, room: string) {
-        this.sendCommand({ type: 'message', message, room });
+        this.sendCommand({ type: 'chatRoom', command: { type: 'message',  content: message } , room });
     }
 
     public createRoomHandle(room: string): RoomHandle {

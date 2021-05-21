@@ -103,8 +103,6 @@ pub enum SessionCommand {
     /// List rooms I'm member of
     ListMyRooms,
 
-    ListParticipants { room: RoomId },
-
     /// shutdown server 😈
     ShutDown,
 
@@ -117,16 +115,13 @@ pub enum SessionCommand {
 #[serde(rename_all = "camelCase", tag = "type")]
 #[rustfmt::skip]
 pub enum ChatRoomCommand {
-    /// Join a particular room
-    Join,
-
     /// Leave a particular room
-    Leave ,
+    Leave,
 
     /// Send a message to all participants of that room
     Message { content: String },
 
-    ListParticipants { room: RoomId },
+    ListParticipants,
 }
 
 impl SessionCommand {

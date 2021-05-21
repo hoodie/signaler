@@ -60,7 +60,6 @@ impl ClientSession {
             Join { room } => self.join(&room, ctx),
 
             Leave { room } => self.send_to_room(room::Command::RemoveParticipant { session_id }, &room),
-            ListParticipants { room } => self.send_to_room(room::Command::GetParticipants { session_id }, &room),
             ChatRoom { room, command } => self.send_to_room(room::ChatRoomCommand { command, session_id }, &room),
 
             ShutDown => System::current().stop(),
