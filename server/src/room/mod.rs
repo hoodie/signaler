@@ -4,7 +4,10 @@ use actix::prelude::*;
 
 use std::{collections::HashMap, convert::TryFrom, time::Duration};
 
-use crate::session::{self, ClientSession, SessionId};
+use crate::{
+    room_manager::RoomManagerService,
+    session::{self, ClientSession, SessionId},
+};
 use signaler_protocol as protocol;
 
 pub type RoomId = String;
@@ -119,6 +122,52 @@ impl DefaultRoom {
         }
         if send_update {
             self.send_update_to_all_participants();
+        }
+    }
+
+    fn remove_participant(&mut self, session_id: &SessionId, ctx: &mut Context<Self>) {
+        log::trace!("receive RemoveParticipant");
+        if let Some(participant) = self.roster.remove(&session_id) {
+            log::debug!("successfully removed {} from {:?}", session_id, self.id);
+            log::trace!("{:?} roster: {:?}", self.id, self.roster);
+            if let Ok(participant) = LiveParticipant::try_from(&participant) {
+                self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant);
+            }
+            if self.roster.values().count() == 0 {
+                if self.ephemeral {
+                    log::trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
+                    RoomManagerService::from_registry()
+                        .send(crate::room_manager::command::CloseRoom(self.id.clone()))
+                        .into_actor(self)
+                        .then(|success, _slf, ctx| {
+                            match success {
+                                Ok(true) => {
+                                    log::trace!("room_manager says I'm fine to shut down");
+                                    ctx.stop();
+                                }
+                                _ => log::warn!("room_manager says it wasn't able to delete me 🤷"),
+                            }
+
+                            fut::ready(())
+                        })
+                        .spawn(ctx)
+                } else {
+                    log::trace!("{:?} is empty but not ephemeral, staying around", self.id);
+                }
+            } else {
+                self.send_update_to_all_participants();
+            }
+        } else {
+            log::warn!("{} was not a participant in {:?}", session_id, self.id);
+        }
+    }
+
+    fn send_roster_to_participant(&mut self, session_id: &SessionId) {
+        if let Some(participant) = self.get_participant(&session_id) {
+            let room = self.id.clone();
+            let roster = self.get_roster();
+
+            self.send_to_participant(message::RoomToSession::RoomState { room, roster }, &participant)
         }
     }
 

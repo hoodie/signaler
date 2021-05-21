@@ -54,7 +54,10 @@ impl SocketConnection {
             }
         } else {
             log::warn!("cannot parse: {}", raw_msg);
-            let command = SessionCommand::ChatRoom{ room: "room_id".into(), command: ChatRoomCommand::Message {content: "hello world".into()}};
+            let command = SessionCommand::ChatRoom {
+                room: "room_id".into(),
+                command: ChatRoomCommand::Leave,
+            };
             log::trace!("please try {}", serde_json::to_string_pretty(&command).unwrap());
         }
     }

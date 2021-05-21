@@ -6,20 +6,29 @@ export type Credentials =
 
 // global
 export interface Join { type: 'join', room: string }
-export interface Leave { type: 'leave', room: string }
 export interface ListRooms { type: 'listRooms' }
 export interface Shutdown { type: 'shutDown' };
 
 // chat Room
 export interface Message { type: 'message', content: string }
 export interface ListMyRooms { type: 'listMyRooms' }
-export interface ChatRoomCommand {type: 'chatRoom', command: Message | ListMyRooms, room: string }
+export interface Leave { type: 'leave' }
+
+export type ChatRoomCommand = 
+    | Message
+    | ListMyRooms
+    | Leave;
+
+export interface ChatRoom {
+    type: 'chatRoom',
+    room: string,
+    command: ChatRoomCommand,
+}
 
 export type Command =
     | Authenticate
     | Join
-    | Leave
-    | ChatRoomCommand
+    | ChatRoom
     | ListRooms
     | ListMyRooms
     | Shutdown;

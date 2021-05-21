@@ -1,13 +1,11 @@
 use actix::prelude::*;
 
-use std::convert::TryFrom;
-
 use super::{
     message,
-    participant::{LiveParticipant, RosterParticipant},
+    participant::RosterParticipant,
     DefaultRoom,
 };
-use crate::{room_manager::RoomManagerService, session::SessionId, user_management::UserProfile};
+use crate::{session::SessionId, user_management::UserProfile};
 use signaler_protocol as protocol;
 
 // use crate::presence::{ AuthToken, PresenceService, ValidateRequest };
@@ -89,42 +87,7 @@ impl Handler<RoomCommand> for DefaultRoom {
                 log::trace!("{:?} roster: {:?}", self.id, self.roster);
             }
 
-            RoomCommand::RemoveParticipant { session_id } => {
-                log::trace!("receive RemoveParticipant");
-                if let Some(participant) = self.roster.remove(&session_id) {
-                    log::debug!("successfully removed {} from {:?}", session_id, self.id);
-                    log::trace!("{:?} roster: {:?}", self.id, self.roster);
-                    if let Ok(participant) = LiveParticipant::try_from(&participant) {
-                        self.send_to_participant(message::RoomToSession::Left { room: self.id.clone() }, &participant);
-                    }
-                    if self.roster.values().count() == 0 {
-                        if self.ephemeral {
-                            log::trace!("{:?} is empty and ephemeral => trying to stop {:?}", self.id, self);
-                            RoomManagerService::from_registry()
-                                .send(crate::room_manager::command::CloseRoom(self.id.clone()))
-                                .into_actor(self)
-                                .then(|success, _slf, ctx| {
-                                    match success {
-                                        Ok(true) => {
-                                            log::trace!("room_manager says I'm fine to shut down");
-                                            ctx.stop();
-                                        }
-                                        _ => log::warn!("room_manager says it wasn't able to delete me 🤷"),
-                                    }
-
-                                    fut::ready(())
-                                })
-                                .spawn(ctx)
-                        } else {
-                            log::trace!("{:?} is empty but not ephemeral, staying around", self.id);
-                        }
-                    } else {
-                        self.send_update_to_all_participants();
-                    }
-                } else {
-                    log::warn!("{} was not a participant in {:?}", session_id, self.id);
-                }
-            }
+            RoomCommand::RemoveParticipant { session_id } => self.remove_participant(&session_id, ctx),
 
             RoomCommand::Forward { message, .. } => {
                 self.history.push(message.clone());
@@ -141,14 +104,7 @@ impl Handler<RoomCommand> for DefaultRoom {
                 }
             }
 
-            RoomCommand::GetParticipants { session_id } => {
-                if let Some(participant) = self.get_participant(&session_id) {
-                    let room = self.id.clone();
-                    let roster = self.get_roster();
-
-                    self.send_to_participant(super::message::RoomToSession::RoomState { room, roster }, &participant)
-                }
-            }
+            RoomCommand::GetParticipants { session_id } => self.send_roster_to_participant(&session_id)
         }
     }
 }
@@ -170,29 +126,30 @@ pub enum ChatRoomCommandResult {
 impl Handler<ChatRoomCommand> for DefaultRoom {
     type Result = MessageResult<ChatRoomCommand>;
 
-    fn handle(&mut self, fwd: ChatRoomCommand, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, fwd: ChatRoomCommand, ctx: &mut Self::Context) -> Self::Result {
         log::trace!("room {:?} received {:?}", self.id, fwd);
 
-        let ChatRoomCommand {
-            command,
-            session_id: sender,
-        } = fwd;
-        log::trace!("received command from {:?}", sender);
+        let ChatRoomCommand { command, session_id } = fwd;
+        log::trace!("received command from {:?}", session_id);
 
         match command {
-            // protocol::ChatRoomCommand::Join { room } => {}
-            // protocol::ChatRoomCommand::Leave { room } => {}
             protocol::ChatRoomCommand::Message { content } => {
-                match _ctx.address().try_send(RoomCommand::Forward {
-                    message: protocol::ChatMessage::new(content, sender),
-                    sender,
+                match ctx.address().try_send(RoomCommand::Forward {
+                    message: protocol::ChatMessage::new(content, session_id),
+                    sender: session_id,
                 }) {
                     Ok(_) => MessageResult(Ok(ChatRoomCommandResult::Accepted)),
                     Err(_) => MessageResult(Ok(ChatRoomCommandResult::Rejected("message".into()))),
                 }
             }
-            // protocol::ChatRoomCommand::ListParticipants { room } => {}
-            _ => MessageResult(Ok(ChatRoomCommandResult::NotImplemented("".into()))),
+            protocol::ChatRoomCommand::Leave => {
+                self.remove_participant(&session_id, ctx);
+                MessageResult(Ok(ChatRoomCommandResult::Accepted))
+            }
+            protocol::ChatRoomCommand::ListParticipants => {
+                self.send_roster_to_participant(&session_id);
+                MessageResult(Ok(ChatRoomCommandResult::Accepted))
+            }
         }
     }
 }
