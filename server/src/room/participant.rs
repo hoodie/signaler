@@ -1,10 +1,11 @@
-use actix::prelude::*;
-use actix::WeakAddr;
+use actix::{prelude::*, WeakAddr};
 
 use signaler_protocol as protocol;
 
-use crate::session::{ClientSession, SessionId};
-use crate::user_management::UserProfile;
+use crate::{
+    session::{ClientSession, SessionId},
+    user_management::UserProfile,
+};
 
 use std::convert::TryFrom;
 
@@ -36,15 +37,15 @@ impl TryFrom<&RosterParticipant> for LiveParticipant {
     }
 }
 
-impl Into<protocol::Participant> for &RosterParticipant {
-    fn into(self) -> protocol::Participant {
+impl From<&RosterParticipant> for protocol::Participant {
+    fn from(val: &RosterParticipant) -> Self {
         protocol::Participant {
-            full_name: self
+            full_name: val
                 .profile
                 .as_ref()
                 .map(|p| p.full_name.to_string())
                 .unwrap_or_else(|| String::from("unidentified")),
-            session_id: self.session_id,
+            session_id: val.session_id,
         }
     }
 }

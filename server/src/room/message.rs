@@ -8,6 +8,7 @@ use super::{DefaultRoom, RoomId};
 #[rtype(result = "()")]
 pub enum RoomToSession {
     Joined(RoomId, WeakAddr<DefaultRoom>),
+
     ChatMessage { room: RoomId, message: ChatMessage },
 
     History { room: RoomId, messages: Vec<ChatMessage> },

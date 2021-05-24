@@ -1,22 +1,34 @@
 export interface Authenticate { type: 'authenticate', credentials: Credentials }
 
 export type Credentials = 
-    |{ type: 'adHoc', username: string; }
-    |{ type: 'usernamePassword', username: string; password: string; }
+    | { type: 'adHoc', username: string; }
+    | { type: 'usernamePassword', username: string; password: string; }
 
+// global
 export interface Join { type: 'join', room: string }
-export interface Leave { type: 'leave', room: string }
-export interface Message { type: 'message', message: string , room: string }
 export interface ListRooms { type: 'listRooms' }
-export interface ListMyRooms { type: 'listMyRooms' }
 export interface Shutdown { type: 'shutDown' };
 
+// chat Room
+export interface Message { type: 'message', content: string }
+export interface ListMyRooms { type: 'listMyRooms' }
+export interface Leave { type: 'leave' }
+
+export type ChatRoomCommand = 
+    | Message
+    | ListMyRooms
+    | Leave;
+
+export interface ChatRoom {
+    type: 'chatRoom',
+    room: string,
+    command: ChatRoomCommand,
+}
 
 export type Command =
     | Authenticate
     | Join
-    | Leave
-    | Message
+    | ChatRoom
     | ListRooms
     | ListMyRooms
     | Shutdown;

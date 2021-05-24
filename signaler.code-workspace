@@ -22,5 +22,7 @@
 			"path": "docker"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"rust-analyzer.inlayHints.enable": false
+	}
 }

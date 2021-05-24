@@ -134,7 +134,11 @@ export class SessionView extends React.Component<SessionViewProps, SessionViewSt
                             <div>
                                 <MessageList
                                     messages={this.state.receivedMessagesByRoom[this.state.roomToSendTo] || []}
-                                    me={this.state.sessionDescription.sessionId}/>
+                                    me={this.state.sessionDescription.sessionId}
+                                    participants={
+                        (this.state.participantsByRoom[this.state.roomToSendTo] || [])
+                                    }
+                                    />
                                 <span ref={e => this.lastMessage = !e ? undefined : e} ></span>
                             </div>
                         </div>

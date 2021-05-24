@@ -2,6 +2,7 @@ import { Signal, ReadableSignal, Listener } from 'micro-signals';
 
 import { Command, UserProfile, RoomParticipants } from './protocol';
 import { serverEvent, ServerEvent } from './protocol';
+import { ChatRoom, ChatRoomCommand } from './protocol/command';
 import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol/index'; // weird webpack bug
 
 export { ChatMessage, SessionDescription };
@@ -13,6 +14,7 @@ export class Session {
     private connection?: WebSocket;
 
     public sessionId?: string;
+    public rooms: {[room: string]: RoomHandle} = {};
 
     private _onWelcome = new Signal<SessionDescription>();
     public readonly onWelcome = this._onWelcome.readOnly();
@@ -98,6 +100,10 @@ export class Session {
         this.connection?.send(JSON.stringify(cmd));
     }
 
+    public sendRoomCommand(command: ChatRoomCommand, room: string) {
+        this.sendCommand({ type:'chatRoom', command, room })
+    }
+
     public adHoc(username: string): Promise<void> {
         const authenticated = this.onAuthenticated.promisify();
         const type = 'adHoc';
@@ -118,7 +124,8 @@ export class Session {
     }
 
     public leave(room: string) {
-        this.sendCommand({ type: 'leave', room });
+        this.sendRoomCommand({ type: 'leave'}, room );
+        delete this.rooms[room]
     }
 
     public listRooms() {
@@ -130,11 +137,14 @@ export class Session {
     }
 
     public sendMessage(message: string, room: string) {
-        this.sendCommand({ type: 'message', message, room });
+        // this.sendCommand({ type: 'chatRoom', command: { type: 'message',  content: message } , room });
+        this.sendRoomCommand({ type: 'message',  content: message } , room);
     }
 
     public createRoomHandle(room: string): RoomHandle {
-        return createRoomHandle(this, room);
+        let handle = createRoomHandle(this, room);
+        this.rooms[room] = handle;
+        return handle;
     }
 
 }
@@ -147,6 +157,7 @@ interface RoomHandle {
 function createRoomHandle(session: Session, room: string): RoomHandle {
     const onMessage = session.onMessage.filter(msg => msg.room === room).map(msg => msg.message);
     const send = (msg: string) => session.sendMessage(msg, room);
+    const command = (command: ChatRoomCommand) => session.sendRoomCommand(command, room);
 
     return {
         onMessage, send

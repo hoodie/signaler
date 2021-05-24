@@ -4,9 +4,7 @@ use actix::{prelude::*, WeakAddr};
 
 use std::collections::HashMap;
 
-use crate::room::{
-    command::AddParticipant, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId,
-};
+use crate::room::{self, message::RoomToSession, participant::RosterParticipant, DefaultRoom, RoomId};
 
 pub mod command;
 
@@ -18,31 +16,25 @@ pub struct RoomManagerService {
 
 impl RoomManagerService {
     fn join_room(&mut self, name: &str, participant: RosterParticipant) {
-        if let Some(room) = self.rooms.get(name) {
-            log::trace!("found room {:?}, just join", name);
-            // TODO: AWAOT!
-            room.try_send(AddParticipant { participant }).unwrap();
-        } else {
-            let room = self.create_room(name);
-            log::trace!(
-                "no room found {:?}, create and then join {:#?}",
-                name,
-                self.list_rooms()
-            );
-            room.upgrade()
-                .unwrap()
-                .try_send(AddParticipant { participant })
-                .unwrap();
+        if let Some(room) = self.rooms.get(name).cloned().or_else(|| {
+            let room = self.create_room(name).upgrade();
+            log::trace!("no room found {:?}, creating", name);
+            room
+        }) {
+            if let Err(error) = room.try_send(room::Command::AddParticipant { participant }) {
+                log::error!("failed to add participant to room {}", error)
+            }
         }
     }
 
     fn send_decline(&mut self, room_id: &str, participant: RosterParticipant) {
-        participant
-            .addr
-            .upgrade()
-            .unwrap()
-            .try_send(RoomToSession::JoinDeclined { room: room_id.into() })
-            .unwrap();
+        if let Some(participant) = participant.addr.upgrade() {
+            if let Err(error) = participant.try_send(RoomToSession::JoinDeclined { room: room_id.into() }) {
+                log::error!("failed to send decline to particiapnt {:?}{}", participant, error);
+            }
+        } else {
+            log::error!("participant was no longer reachable from RoomManager {:?}", participant);
+        }
     }
 
     fn create_room(&mut self, name: &str) -> WeakAddr<DefaultRoom> {

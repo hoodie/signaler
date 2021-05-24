@@ -36,17 +36,15 @@ pub struct UserProfile {
 pub struct ChatMessage {
     pub content: String,
     pub sender: SessionId,
-    pub sender_name: String,
     pub sent: chrono::DateTime<chrono::Utc>,
     pub uuid: Uuid,
 }
 
 impl ChatMessage {
-    pub fn new(content: String, sender: SessionId, sender_name: &str) -> Self {
+    pub fn new(content: String, sender: SessionId) -> Self {
         Self {
             content,
             sender,
-            sender_name: sender_name.into(),
             sent: chrono::Utc::now(),
             uuid: Uuid::new_v4(),
         }
@@ -93,19 +91,14 @@ pub enum SessionCommand {
     /// Join a particular room
     Join { room: RoomId },
 
-    /// Join a particular room
-    Leave { room: RoomId },
-
     /// Send a message to all participants of that room
-    Message { message: String, room: RoomId },
+    ChatRoom { room: RoomId, command: ChatRoomCommand },
 
     /// List all rooms
     ListRooms,
 
     /// List rooms I'm member of
     ListMyRooms,
-
-    ListParticipants { room: RoomId },
 
     /// shutdown server 😈
     ShutDown,
@@ -114,16 +107,26 @@ pub enum SessionCommand {
     Authenticate { credentials: Credentials },
 }
 
+/// Command sent to the server
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+#[rustfmt::skip]
+pub enum ChatRoomCommand {
+    /// Leave a particular room
+    Leave,
+
+    /// Send a message to all participants of that room
+    Message { content: String },
+
+    ListParticipants,
+}
+
 impl SessionCommand {
     pub fn suggestions() -> String {
         use SessionCommand::*;
         let room = "roomName";
         serde_json::to_string_pretty(&[
             Join { room: room.into() },
-            Message {
-                message: "hello world".into(),
-                room: room.into(),
-            },
             Authenticate {
                 credentials: Credentials::UsernamePassword {
                     username: "username".into(),
