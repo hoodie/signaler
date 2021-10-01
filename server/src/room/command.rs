@@ -1,10 +1,6 @@
 use actix::prelude::*;
 
-use super::{
-    message,
-    participant::RosterParticipant,
-    DefaultRoom,
-};
+use super::{message, participant::RosterParticipant, DefaultRoom};
 use crate::{session::SessionId, user_management::UserProfile};
 use signaler_protocol as protocol;
 
@@ -104,7 +100,7 @@ impl Handler<RoomCommand> for DefaultRoom {
                 }
             }
 
-            RoomCommand::GetParticipants { session_id } => self.send_roster_to_participant(&session_id)
+            RoomCommand::GetParticipants { session_id } => self.send_roster_to_participant(&session_id),
         }
     }
 }

@@ -127,7 +127,7 @@ impl DefaultRoom {
 
     fn remove_participant(&mut self, session_id: &SessionId, ctx: &mut Context<Self>) {
         log::trace!("receive RemoveParticipant");
-        if let Some(participant) = self.roster.remove(&session_id) {
+        if let Some(participant) = self.roster.remove(session_id) {
             log::debug!("successfully removed {} from {:?}", session_id, self.id);
             log::trace!("{:?} roster: {:?}", self.id, self.roster);
             if let Ok(participant) = LiveParticipant::try_from(&participant) {
@@ -163,7 +163,7 @@ impl DefaultRoom {
     }
 
     fn send_roster_to_participant(&mut self, session_id: &SessionId) {
-        if let Some(participant) = self.get_participant(&session_id) {
+        if let Some(participant) = self.get_participant(session_id) {
             let room = self.id.clone();
             let roster = self.get_roster();
 
