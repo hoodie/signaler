@@ -82,11 +82,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             })))
             // fallback
             .default_service(
-                web::resource("").route(web::get().to(not_found)).route(
-                    web::route()
-                        .guard(guard::Not(guard::Get()))
-                        .to(HttpResponse::MethodNotAllowed),
-                ),
+                web::route()
+                    .guard(guard::Not(guard::Get()))
+                    .to(not_found)
+                    //.to(HttpResponse::MethodNotAllowed),
             )
     });
 
