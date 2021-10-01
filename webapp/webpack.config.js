@@ -16,9 +16,9 @@ module.exports = {
         rules: [
             {
                 test: /\.(ts|tsx)$/,
-                loader: 'awesome-typescript-loader',
+                loader: 'ts-loader',
                 options: {
-                    configfilename: 'tsconfig.json'
+                    configFile: 'tsconfig.json'
                 }
             }
         ],
