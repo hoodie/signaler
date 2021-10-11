@@ -1,8 +1,9 @@
 use signaler_protocol::{
     ChatMessage, ChatRoomCommand, Credentials, Participant, RoomEvent, RoomId, SessionCommand, SessionDescription,
-    SessionId, SessionMessage, UserProfile,
+    SessionMessage, UserProfile,
 };
-use typescript_definitions::{TypeScriptify, TypeScriptifyTrait};
+use typescript_definitions::TypeScriptifyTrait;
+
 fn main() {
     println!("{}", RoomId::type_script_ify());
     // println!("{}", SessionId::type_script_ify());

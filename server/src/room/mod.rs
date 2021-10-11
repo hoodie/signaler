@@ -9,8 +9,7 @@ use crate::{
     session::{self, ClientSession, SessionId},
 };
 use signaler_protocol as protocol;
-
-pub type RoomId = String;
+pub use signaler_protocol::RoomId;
 
 mod command;
 

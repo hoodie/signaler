@@ -17,7 +17,7 @@ use crate::{
 #[rtype(result = "()")]
 pub enum RoomManagerCommand {
     JoinRoom {
-        room: String,
+        room: RoomId,
         participant: RosterParticipant,
         token: AuthToken,
     },

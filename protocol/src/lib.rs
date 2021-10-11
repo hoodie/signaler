@@ -3,7 +3,7 @@
 //! these are messages the http client can send via a [ClientSession](../session/struct.ClientSession.html)
 
 use serde::{Deserialize, Serialize};
-use typescript_definitions::{TypeScriptify, TypeScriptifyTrait};
+use typescript_definitions::TypeScriptify;
 use uuid::Uuid;
 
 #[cfg(target_arch = "wasm32")]
@@ -18,12 +18,26 @@ impl From<Uuid> for SessionId {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Serialize, Deserialize, TypeScriptify)]
 pub struct RoomId(String);
 
 impl<T: Into<String>> From<T> for RoomId {
     fn from(inner: T) -> Self {
         Self(inner.into())
+    }
+}
+
+impl std::fmt::Display for RoomId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::ops::Deref for RoomId {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

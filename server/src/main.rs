@@ -81,9 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .finish()
             })))
             // fallback
-            .default_service(
-                web::route().guard(guard::Not(guard::Get())).to(not_found),
-            )
+            .default_service(web::route().guard(guard::Not(guard::Get())).to(not_found))
     });
 
     let bind_to = std::net::SocketAddr::new(config.server.host.parse().unwrap(), config.server.port);

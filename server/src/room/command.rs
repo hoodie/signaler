@@ -131,7 +131,7 @@ impl Handler<ChatRoomCommand> for DefaultRoom {
         match command {
             protocol::ChatRoomCommand::Message { content } => {
                 match ctx.address().try_send(RoomCommand::Forward {
-                    message: protocol::ChatMessage::new(content, session_id),
+                    message: protocol::ChatMessage::new(content, session_id.into()),
                     sender: session_id,
                 }) {
                     Ok(_) => MessageResult(Ok(ChatRoomCommandResult::Accepted)),

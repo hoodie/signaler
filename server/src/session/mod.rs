@@ -57,7 +57,7 @@ impl ClientSession {
 
             // to RoomManager
             ListRooms => self.list_rooms(ctx),
-            Join { room } => self.join(&room, ctx),
+            Join { room } => self.join(room.as_ref(), ctx),
 
             ChatRoom { room, command } => self.send_to_room(room::ChatRoomCommand { command, session_id }, &room),
 
@@ -77,12 +77,12 @@ impl ClientSession {
         }
     }
 
-    fn room_addr(&self, room_id: &str) -> Option<Addr<DefaultRoom>> {
+    fn room_addr(&self, room_id: &RoomId) -> Option<Addr<DefaultRoom>> {
         self.rooms.get(room_id).and_then(|room| room.upgrade())
     }
 
     // command to room
-    fn send_to_room<C>(&self, command: C, room_id: &str)
+    fn send_to_room<C>(&self, command: C, room_id: &RoomId)
     where
         C: Message + Send + 'static,
         <C as Message>::Result: Send,
@@ -150,7 +150,7 @@ impl ClientSession {
 
     // self
     fn list_my_rooms(&self, ctx: &mut Context<Self>) {
-        let rooms = self.rooms.keys().cloned().collect::<Vec<String>>();
+        let rooms = self.rooms.keys().map(ToString::to_string).collect::<Vec<String>>();
         log::debug!("my list request answered: {:?}", rooms);
         self.send_message(SessionMessage::MyRoomList { rooms }, ctx);
     }
@@ -175,7 +175,7 @@ impl Actor for ClientSession {
         self.send_message(
             SessionMessage::Welcome {
                 session: SessionDescription {
-                    session_id: self.session_id,
+                    session_id: self.session_id.into(),
                 },
             },
             ctx,
