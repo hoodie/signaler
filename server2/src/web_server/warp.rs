@@ -1,6 +1,5 @@
-use futures::Future as _;
 use warp::{http::Uri, ws::WebSocket, Filter};
-use xactor::{Actor, Context, Handler, Service, StreamHandler};
+use xactor::{Actor, Context, Handler};
 
 use std::net::SocketAddr;
 
@@ -54,6 +53,7 @@ impl WebServer {
 
         async_compat::Compat::new(async {
             log::info!("starting web server on {:?}", socket);
+            log::trace!("hi there 🦀");
             warp::serve(routes).run(socket).await;
             log::info!("web server has terminated");
         })

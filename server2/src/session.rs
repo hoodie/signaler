@@ -1,8 +1,8 @@
 use uuid::Uuid;
-use xactor::{Actor, Context, Handler};
+use xactor::{Actor, Handler};
 
 pub struct Session {
-    session_id: Uuid,
+    pub session_id: Uuid,
 }
 
 impl Default for Session {

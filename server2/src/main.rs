@@ -1,10 +1,5 @@
-#![allow(unused_imports)]
 use dotenv::dotenv;
 use env_logger::Env;
-use tokio::task;
-use xactor::Service;
-
-use std::env;
 
 mod config;
 mod connection;
@@ -21,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = dbg!(Config::from_env().unwrap());
 
-    env_logger::init_from_env(Env::new().filter("LOG_CONFIG2"));
+    env_logger::init_from_env(Env::new().filter("LOG_CONFIG"));
 
     let session1 =
         async_std::task::spawn(async { xactor::Supervisor::start(session::Session::default).await.unwrap() });

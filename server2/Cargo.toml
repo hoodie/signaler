@@ -32,9 +32,8 @@ features = ["v4", "serde"]
 
 [dependencies.tokio]
 version = "1.0"
-features = ["full"]
 
 
 [[bin]]
-name = "server2"
+name = "signaler2"
 path = "./src/main.rs"
