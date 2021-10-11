@@ -40,9 +40,7 @@ impl Actor for WebServer {
                 log::info!("✉️ hello world");
                 "Hello, World!"
             });
-            app.or(hello)
-                .or(channel)
-                .or(redirect_to_app)
+            app.or(hello).or(channel).or(redirect_to_app)
         };
 
         Compat::new(async {

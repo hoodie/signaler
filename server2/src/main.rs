@@ -1,25 +1,26 @@
 #![allow(unused_imports)]
 use async_compat::{Compat, CompatExt};
 use async_std::future::Future;
+use dotenv::dotenv;
 use env_logger::Env;
 
 use async_std::prelude::*;
 use std::env;
 
+mod config;
 mod connection;
 mod session;
-mod warp_server;
 mod tide_server;
+mod warp_server;
 
-const LOG_VAR: &str = "LOG";
+use crate::config::Config;
 
 #[async_std::main]
 async fn main() {
     color_backtrace::install();
+    dotenv().unwrap();
 
-    if env::var(LOG_VAR).is_err() {
-        env::set_var(LOG_VAR, "server2=trace,warp=info");
-    }
+    let config = dbg!(Config::from_env().unwrap());
 
     env_logger::init_from_env(Env::new().filter(LOG_VAR));
 
@@ -32,7 +33,7 @@ async fn main() {
     });
 
     let tide_server = async_std::task::spawn(async {
-                log::trace!("tide");
+        log::trace!("tide");
         use tide_websockets::{Message, WebSocket};
         let mut app = tide::new();
 
