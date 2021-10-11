@@ -45,7 +45,7 @@ impl From<&RosterParticipant> for protocol::Participant {
                 .as_ref()
                 .map(|p| p.full_name.to_string())
                 .unwrap_or_else(|| String::from("unidentified")),
-            session_id: val.session_id,
+            session_id: val.session_id.into(),
         }
     }
 }

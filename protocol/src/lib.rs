@@ -3,15 +3,51 @@
 //! these are messages the http client can send via a [ClientSession](../session/struct.ClientSession.html)
 
 use serde::{Deserialize, Serialize};
+use typescript_definitions::TypeScriptify;
 use uuid::Uuid;
 
 #[cfg(target_arch = "wasm32")]
 extern crate wasm_bindgen;
 
-pub type SessionId = Uuid;
-pub type RoomId = String;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SessionId(Uuid);
+
+impl From<Uuid> for SessionId {
+    fn from(inner: Uuid) -> Self {
+        Self(inner)
+    }
+}
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Serialize, Deserialize, TypeScriptify)]
+pub struct RoomId(String);
+
+impl<T: Into<String>> From<T> for RoomId {
+    fn from(inner: T) -> Self {
+        Self(inner.into())
+    }
+}
+
+impl std::fmt::Display for RoomId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::ops::Deref for RoomId {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+// impl TypeScriptifyTrait for SessionId {
+//     fn type_script_ify() -> std::borrow::Cow<'static, str> {
+//         "\n".into()
+//     }
+// }
+
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum Credentials {
     /// Simple Authentication Credentials
@@ -22,7 +58,7 @@ pub enum Credentials {
     // TODO: Token { token: Uuid }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase")]
 pub struct UserProfile {
     pub full_name: String,
@@ -31,7 +67,7 @@ pub struct UserProfile {
 /// Actual chat Message
 ///
 /// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatMessage {
     pub content: String,
@@ -54,7 +90,7 @@ impl ChatMessage {
 /// SessionId and Full Name
 ///
 /// is send via `SessionCommand::Message` and received via `SessionMessage::Message`
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase")]
 pub struct Participant {
     pub full_name: String,
@@ -70,21 +106,21 @@ impl From<(UserProfile, SessionId)> for Participant {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase")]
 pub enum RoomEvent {
     ParticipantJoined { name: String },
     ParticipantLeft { name: String },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionDescription {
     pub session_id: SessionId,
 }
 
 /// Command sent to the server
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[rustfmt::skip]
 pub enum SessionCommand {
@@ -108,7 +144,7 @@ pub enum SessionCommand {
 }
 
 /// Command sent to the server
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[rustfmt::skip]
 pub enum ChatRoomCommand {
@@ -148,7 +184,7 @@ pub trait SessionCommandDispatcher {
 }
 
 /// Message received from the server
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[rustfmt::skip]
 pub enum SessionMessage {

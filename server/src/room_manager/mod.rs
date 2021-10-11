@@ -15,10 +15,10 @@ pub struct RoomManagerService {
 }
 
 impl RoomManagerService {
-    fn join_room(&mut self, name: &str, participant: RosterParticipant) {
-        if let Some(room) = self.rooms.get(name).cloned().or_else(|| {
-            let room = self.create_room(name).upgrade();
-            log::trace!("no room found {:?}, creating", name);
+    fn join_room(&mut self, room: &RoomId, participant: RosterParticipant) {
+        if let Some(room) = self.rooms.get(room).cloned().or_else(|| {
+            let room = self.create_room(room).upgrade();
+            log::trace!("no room found {:?}, creating", room);
             room
         }) {
             if let Err(error) = room.try_send(room::Command::AddParticipant { participant }) {
@@ -54,7 +54,7 @@ impl RoomManagerService {
     }
 
     fn list_rooms(&self) -> Vec<String> {
-        self.rooms.keys().cloned().collect()
+        self.rooms.keys().map(ToString::to_string).collect()
     }
 
     fn close_room(&mut self, room_id: RoomId) -> bool {
