@@ -22,7 +22,7 @@ async fn main() {
 
     let config = dbg!(Config::from_env().unwrap());
 
-    env_logger::init_from_env(Env::new().filter(LOG_VAR));
+    env_logger::init_from_env(Env::new().filter("RUST_LOG"));
 
     let warp_server = async_std::task::spawn(async {
         let main_socket = std::net::SocketAddr::from(([0, 0, 0, 0], 3030));
