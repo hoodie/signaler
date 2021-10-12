@@ -32,9 +32,11 @@ pub(crate) type DynMessageHandler = dyn (Fn(&Connection, &str, &mut Context<Conn
 
 impl Connection {
     pub fn new(ws: WebSocket) -> Self {
+        let connection_id = Uuid::new_v4();
+        log::info!("new connection established {}", connection_id);
         let (ws_sender, ws_receiver) = ws.split();
         Connection {
-            connection_id: Uuid::new_v4(),
+            connection_id,
             ws_receiver: Some(ws_receiver),
             ws_sender,
             message_handler: Box::new(Self::handle_connection_message),

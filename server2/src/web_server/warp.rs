@@ -42,7 +42,10 @@ impl WebServer {
                     ws.on_upgrade(move |socket| peer_connected(socket /*, broker*/))
                 });
             let app = warp::path("app").and(warp::fs::dir("../static/"));
-            let redirect_to_app = warp::any().map(|| warp::redirect(Uri::from_static("/app/")));
+            let redirect_to_app = warp::any().map(|| {
+                log::trace!("redirecting");
+                warp::redirect(Uri::from_static("/app/"))
+            });
 
             let hello = warp::path("hello").map(|| {
                 log::info!("✉️ hello world");
