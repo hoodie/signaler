@@ -24,7 +24,18 @@ async-trait = "0.1"
 anyhow = "1.0"
 
 signaler-protocol = { path = "../protocol" }
-async-std = "1.10.0"
+async-std = "1.10"
+tracing = "0.1"
+headers = "0.3"
+tracing-subscriber = "0.2.25"
+
+[dependencies.tower-http]
+version = "0.1"
+features = ["fs", "trace", "compression"]
+
+[dependencies.axum]
+version = "0.2"
+features = ["ws", "headers"]
 
 [dependencies.uuid]
 version = "0.8"
@@ -32,7 +43,7 @@ features = ["v4", "serde"]
 
 [dependencies.tokio]
 version = "1.0"
-
+features = ["full"]
 
 [[bin]]
 name = "signaler2"
