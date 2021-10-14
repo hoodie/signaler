@@ -1,3 +1,4 @@
+use async_std::path::PathBuf;
 use warp::{http::Uri, ws::WebSocket, Filter};
 use xactor::{Actor, Context, Handler};
 
@@ -15,6 +16,10 @@ pub struct WebServer;
 
 #[async_trait::async_trait]
 impl Actor for WebServer {
+    async fn started(&mut self, _ctx: &mut xactor::Context<Self>) -> xactor::Result<()> {
+        log::info!("started web server");
+        Ok(())
+    }
     async fn stopped(&mut self, _ctx: &mut xactor::Context<Self>) {
         log::info!("shutting down web server");
     }
@@ -24,7 +29,6 @@ impl Actor for WebServer {
 #[async_trait::async_trait]
 impl Handler<super::Listen> for WebServer {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: super::Listen) {
-        log::trace!("received {:?}", msg);
         if let Err(error) = self.start(msg.socket).await {
             log::error!("{}", error);
         }
@@ -32,7 +36,10 @@ impl Handler<super::Listen> for WebServer {
 }
 
 impl WebServer {
-    async fn start(&mut self, socket: SocketAddr) -> xactor::Result<()> {
+    async fn start(&mut self, addr: SocketAddr) -> xactor::Result<()> {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let static_dir = || root.join("./static/");
+
         let routes = {
             let channel = warp::path("ws")
                 .and(warp::ws())
@@ -41,7 +48,8 @@ impl WebServer {
                     #[allow(clippy::redundant_closure)]
                     ws.on_upgrade(move |socket| peer_connected(socket /*, broker*/))
                 });
-            let app = warp::path("app").and(warp::fs::dir("../static/"));
+
+            let app = warp::path("app").and(warp::fs::dir(static_dir()));
             let redirect_to_app = warp::any().map(|| {
                 log::trace!("redirecting");
                 warp::redirect(Uri::from_static("/app/"))
@@ -55,9 +63,17 @@ impl WebServer {
         };
 
         async_compat::Compat::new(async {
-            log::info!("starting web server on {:?}", socket);
-            log::trace!("hi there 🦀");
-            warp::serve(routes).run(socket).await;
+            log::info!("serving content from {}", static_dir().display());
+            log::debug!("checking {} for availability", addr);
+
+            let dummy_listener = std::net::TcpListener::bind(addr);
+            match dummy_listener {
+                Err(error) => log::error!("cannot bind {} because {}", addr, error),
+                Ok(dummy_listener) => {
+                    std::mem::drop(dummy_listener);
+                    warp::serve(routes).run(addr).await;
+                }
+            }
             log::info!("web server has terminated");
         })
         .await;

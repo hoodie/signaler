@@ -5,12 +5,18 @@ use futures::{
 };
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
-use xactor::Context;
+use xactor::{Context, Service, WeakAddr};
 
-use signaler_protocol::{ConnectionCommand, Credentials, SessionDescription, SessionMessage};
+use signaler_protocol::{ConnectionCommand, Credentials, SessionCommand, SessionDescription, SessionMessage};
+
+use crate::{
+    session::{self, Session},
+    session_manager::{self, SessionManager},
+};
 
 mod actor;
-mod command;
+pub mod command;
+mod error;
 mod stream_handler;
 
 type WsSender = SplitSink<WebSocket, Message>;
@@ -25,10 +31,8 @@ pub struct Connection {
     /// TODO: find a way to pass in the receiver without having to store it like this
     ws_receiver: Option<WsReceiver>,
 
-    message_handler: Box<DynMessageHandler>,
+    session: Option<WeakAddr<Session>>,
 }
-
-pub(crate) type DynMessageHandler = dyn (Fn(&Connection, &str, &mut Context<Connection>)) + Send;
 
 impl Connection {
     pub fn new(ws: WebSocket) -> Self {
@@ -39,7 +43,7 @@ impl Connection {
             connection_id,
             ws_receiver: Some(ws_receiver),
             ws_sender,
-            message_handler: Box::new(Self::handle_connection_message),
+            session: None,
         }
     }
 
@@ -62,27 +66,34 @@ impl Connection {
         .await;
     }
 
-    fn handle_incoming_message(&self, raw_msg: &str, ctx: &mut Context<Self>) {
-        let handler = &self.message_handler;
-        handler(self, raw_msg, ctx);
-    }
-
-    fn handle_connection_message(&self, raw_msg: &str, ctx: &mut Context<Self>) {
-        log::trace!("accepting connection message");
-        // parse as
-        let parsed: Result<ConnectionCommand, _> = serde_json::from_str(raw_msg);
-        if let Ok(msg) = parsed {
-            log::trace!("parsed ok\n{}\n{:?}", raw_msg, msg);
-            match msg {
-                ConnectionCommand::Authenticate { credentials } => self.associate_session(credentials, ctx),
-            }
+    async fn handle_incoming_message(&mut self, raw_msg: &str, ctx: &mut Context<Self>) -> Result<(), error::Error> {
+        if let Some(session) = self.session.as_ref() {
+            let session = session.upgrade().ok_or(error::Error::SessionGone)?;
+            let command = serde_json::from_str::<SessionCommand>(raw_msg)?;
+            session.send(session::command::Command::from(command))?;
         } else {
-            log::warn!("cannot parse: {}", raw_msg);
-            // log::debug!("suggestions:\n{}", SessionCommand::suggestions())
+            self.handle_connection_message(raw_msg, ctx).await?;
         }
+        Ok(())
     }
 
-    // TODO: fn handle_session_message(&self, raw_msg: &str, ctx: &mut Context<Self>) {}
+    async fn handle_connection_message(&mut self, raw_msg: &str, ctx: &mut Context<Self>) -> Result<(), error::Error> {
+        let msg = serde_json::from_str::<ConnectionCommand>(raw_msg)?;
+        log::trace!("parsed ok\n{:?}", msg);
+        match msg {
+            ConnectionCommand::Authenticate { credentials } => self.associate_session(credentials, ctx).await,
+        }
+        Ok(())
+    }
 
-    fn associate_session(&self, _credentials: Credentials, _ctx: &mut Context<Self>) {}
+    async fn associate_session(&mut self, credentials: Credentials, ctx: &mut Context<Self>) {
+        let sm = SessionManager::from_registry().await.unwrap();
+        sm.send(session_manager::command::Command::AssociateConnection {
+            credentials,
+            connection: ctx.address().sender(),
+        })
+        .unwrap();
+        self.send(signaler_protocol::SessionMessage::Authenticated.into_json())
+            .await
+    }
 }

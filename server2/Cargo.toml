@@ -1,5 +1,5 @@
 [package]
-name = "signaler2"
+name = "server2"
 version = "0.1.0"
 authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
 edition = "2021"
@@ -22,6 +22,7 @@ async-compat = "0.2"
 futures = "0.3"
 async-trait = "0.1"
 anyhow = "1.0"
+thiserror = "1.0"
 
 signaler-protocol = { path = "../protocol" }
 async-std = "1.10.0"
@@ -35,5 +36,5 @@ version = "1.0"
 
 
 [[bin]]
-name = "signaler2"
+name = "server2"
 path = "./src/main.rs"

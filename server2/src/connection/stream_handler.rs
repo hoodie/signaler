@@ -13,8 +13,12 @@ impl StreamHandler<WsStreamMessage> for Connection {
                     log::debug!("websocket disconnected");
                     ctx.stop(None);
                 } else if let Ok(content) = msg.to_str() {
-                    log::info!("received {:?}", content);
-                    self.handle_incoming_message(content, ctx);
+                    log::trace!("received {:?}", content);
+                    if let Err(error) = self.handle_incoming_message(content, ctx).await {
+                        log::error!("connection_id{} {}", self.connection_id, error);
+                    } else {
+                        log::trace!("connection_id{} accepted the command", self.connection_id);
+                    }
                 } else {
                     log::error!("received invalid message {:?}", msg);
                     ctx.stop(Some(anyhow::anyhow!("unparsable message")));
