@@ -31,7 +31,9 @@ function initApp() {
 }
 
 function initCli() {
-    (window as any)["session"] = new Session(`ws://${location.host}/ws/`);
+    const session = new Session(`ws://${location.host}/ws/`);
+    (window as any)["session"] = session;
+    console.info('use `session`', session);
 }
 
 (window as any)["initApp"] = initApp;

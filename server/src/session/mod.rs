@@ -175,7 +175,7 @@ impl Actor for ClientSession {
         self.send_message(
             SessionMessage::Welcome {
                 session: SessionDescription {
-                    session_id: self.session_id.into(),
+                    session_id: self.session_id,
                 },
             },
             ctx,

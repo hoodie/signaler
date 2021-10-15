@@ -14,7 +14,7 @@ export class Session {
     private connection?: WebSocket;
 
     public sessionId?: string;
-    public rooms: {[room: string]: RoomHandle} = {};
+    public rooms: { [room: string]: RoomHandle } = {};
 
     private _onWelcome = new Signal<SessionDescription>();
     public readonly onWelcome = this._onWelcome.readOnly();
@@ -25,7 +25,7 @@ export class Session {
     public readonly onRoomList = new Signal<string[]>();
     public readonly onMyRoomList = new Signal<string[]>();
     public readonly onRoomParticipants = new Signal<RoomParticipants>();
-    public readonly onMessage = new Signal<{room: string, message: ChatMessage}>();
+    public readonly onMessage = new Signal<{ room: string, message: ChatMessage }>();
     public readonly onError = new Signal<string>();
 
     public readonly onConnectionClose = new Signal<CloseEvent>();
@@ -33,18 +33,21 @@ export class Session {
 
     constructor(private url: string) {
         this.onReceive.add(m => console.debug('⬅️ received', m));
+        this._onWelcome.add(({ sessionId }) => this.sessionId = sessionId
+        )
     }
 
-    public connect(): Promise<SessionDescription> {
+    // old signaler 1 protocol
+    public connect(sessionId?: string): Promise<SessionDescription> {
         if (this.connection) return Promise.reject(new Error("already connected"));
 
-        console.debug({isWelcomeEvent});
+        console.debug({ isWelcomeEvent });
         const connected = this.onReceive.filter(isWelcomeEvent).map(welcome => welcome.session).promisify();
 
         this.connection = new WebSocket(this.url);
 
         this.connection.onmessage = (rawMsg: MessageEvent) => {
-            console.debug({rawMsg})
+            console.debug({ rawMsg })
             try {
                 this.handle(JSON.parse(rawMsg.data));
             } catch (error) {
@@ -55,7 +58,20 @@ export class Session {
         this.connection.onclose = (ev: CloseEvent) => this.onConnectionClose.dispatch(ev);
         this.connection.onerror = (ev: Event) => this.onConnectionError.dispatch(ev);
 
+        if (sessionId) {
+            this.sendCommand({ type: 'reconnect', sessionId });
+        }
+
         return connected;
+    }
+
+    public reconnect() {
+        if (this.sessionId) {
+            this.connect(this.sessionId);
+        } else {
+            throw Error("no sessionId to reconnect with");
+        }
+
     }
 
     public disconnect() {
@@ -101,20 +117,20 @@ export class Session {
     }
 
     public sendRoomCommand(command: ChatRoomCommand, room: string) {
-        this.sendCommand({ type:'chatRoom', command, room })
+        this.sendCommand({ type: 'chatRoom', command, room })
     }
 
     public adHoc(username: string): Promise<void> {
         const authenticated = this.onAuthenticated.promisify();
         const type = 'adHoc';
-        this.sendCommand({ type: 'authenticate', credentials: {type, username } });
+        this.sendCommand({ type: 'authenticate', credentials: { type, username } });
         return Promise.race([authenticated, timeout(1000)]);
     }
 
     public authenticate(username: string, password: string): Promise<void> {
         const authenticated = this.onAuthenticated.promisify();
         const type = 'usernamePassword';
-        this.sendCommand({ type: 'authenticate', credentials: {type, username, password } });
+        this.sendCommand({ type: 'authenticate', credentials: { type, username, password } });
         return Promise.race([authenticated, timeout(1000)]);
     }
 
@@ -124,7 +140,7 @@ export class Session {
     }
 
     public leave(room: string) {
-        this.sendRoomCommand({ type: 'leave'}, room );
+        this.sendRoomCommand({ type: 'leave' }, room);
         delete this.rooms[room]
     }
 
@@ -138,7 +154,7 @@ export class Session {
 
     public sendMessage(message: string, room: string) {
         // this.sendCommand({ type: 'chatRoom', command: { type: 'message',  content: message } , room });
-        this.sendRoomCommand({ type: 'message',  content: message } , room);
+        this.sendRoomCommand({ type: 'message', content: message }, room);
     }
 
     public createRoomHandle(room: string): RoomHandle {
