@@ -18,14 +18,15 @@ dotenv = "0.15"
 config = "0.11"
 
 color-backtrace = "0.5"
-async-compat = "0.2"
 futures = "0.3"
 async-trait = "0.1"
 anyhow = "1.0"
 thiserror = "1.0"
 
 signaler-protocol = { path = "../protocol" }
-async-std = "1.10.0"
+[dependencies.async-std]
+version = "1.10.0"
+features = ["tokio1"]
 
 [dependencies.uuid]
 version = "0.8"

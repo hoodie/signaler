@@ -38,7 +38,7 @@ impl Handler<super::Listen> for WebServer {
 impl WebServer {
     async fn start(&mut self, addr: SocketAddr) -> xactor::Result<()> {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let static_dir = || root.join("./static/");
+        let static_dir = || root.join("../static/");
 
         let routes = {
             let channel = warp::path("ws")
@@ -50,6 +50,7 @@ impl WebServer {
                 });
 
             let app = warp::path("app").and(warp::fs::dir(static_dir()));
+
             let redirect_to_app = warp::any().map(|| {
                 log::trace!("redirecting");
                 warp::redirect(Uri::from_static("/app/"))
@@ -62,21 +63,18 @@ impl WebServer {
             app.or(hello).or(channel).or(redirect_to_app)
         };
 
-        async_compat::Compat::new(async {
-            log::info!("serving content from {}", static_dir().display());
-            log::debug!("checking {} for availability", addr);
+        log::info!("serving content from {}", static_dir().display());
+        log::debug!("checking {} for availability", addr);
 
-            let dummy_listener = std::net::TcpListener::bind(addr);
-            match dummy_listener {
-                Err(error) => log::error!("cannot bind {} because {}", addr, error),
-                Ok(dummy_listener) => {
-                    std::mem::drop(dummy_listener);
-                    warp::serve(routes).run(addr).await;
-                }
+        let dummy_listener = std::net::TcpListener::bind(addr);
+        match dummy_listener {
+            Err(error) => log::error!("cannot bind {} because {}", addr, error),
+            Ok(dummy_listener) => {
+                std::mem::drop(dummy_listener);
+                warp::serve(routes).run(addr).await;
             }
-            log::info!("web server has terminated");
-        })
-        .await;
+        }
+        log::info!("web server has terminated");
         Ok(())
     }
 }
