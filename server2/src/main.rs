@@ -1,5 +1,5 @@
 use dotenv::dotenv;
-use env_logger::Env;
+use tracing::log;
 
 mod config;
 mod connection;
@@ -17,7 +17,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = Config::from_env().unwrap();
 
-    env_logger::init_from_env(Env::new().filter("LOG_CONFIG"));
+    tracing_subscriber::fmt()
+        // .pretty()
+        .with_thread_names(true)
+        // enable everything
+        .with_max_level(tracing::Level::TRACE)
+        .with_env_filter(tracing_subscriber::EnvFilter::from_env("LOG_CONFIG"))
+        // sets this to be the default, global collector for this application.
+        .init();
 
     log::debug!("log config {:?}", config.log_config);
 

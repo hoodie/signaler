@@ -3,6 +3,7 @@ use futures::{
     stream::{SplitSink, SplitStream},
     StreamExt,
 };
+use tracing::log;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
 use xactor::{Context, Service, WeakAddr};
@@ -79,7 +80,7 @@ impl Connection {
 
     async fn handle_connection_message(&mut self, raw_msg: &str, ctx: &mut Context<Self>) -> Result<(), error::Error> {
         let msg = serde_json::from_str::<ConnectionCommand>(raw_msg)?;
-        log::trace!("parsed ok\n{:?}", msg);
+        log::trace!("parsed ok {:?}", msg);
         match msg {
             ConnectionCommand::Authenticate { credentials } => self.associate_session(credentials, ctx).await,
         }
