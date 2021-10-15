@@ -1,9 +1,12 @@
-use std::path::PathBuf;
 use tracing::log;
+
+use prometheus::{Encoder, Registry, TextEncoder};
 use warp::{http::Uri, ws::WebSocket, Filter};
+use warp_prometheus::Metrics;
+
 use xactor::{Actor, Context, Handler};
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, path::PathBuf};
 
 pub async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
     log::debug!("user connected{:#?}", ws);
@@ -41,8 +44,12 @@ impl WebServer {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let static_dir = || root.join("../static/");
 
+        let registry = Registry::new();
+        let path_labels = ["app", "ws", "metrics"];
+        let metrics = Metrics::new(&registry, &path_labels.into_iter().map(Into::into).collect());
+
         let routes = {
-            let channel = warp::path("ws")
+            let ws_route = warp::path("ws")
                 .and(warp::ws())
                 //.and(broker)
                 .map(|ws: warp::ws::Ws /*, broker: Broker*/| {
@@ -50,18 +57,23 @@ impl WebServer {
                     ws.on_upgrade(move |socket| peer_connected(socket /*, broker*/))
                 });
 
-            let app = warp::path("app").and(warp::fs::dir(static_dir()));
+            let app_route = warp::path("app").and(warp::fs::dir(static_dir()));
+
+            let metrics_route = warp::path("metrics").map(move || {
+                let mut buffer = vec![];
+                let encoder = TextEncoder::new();
+                let metric_families = registry.gather();
+                encoder.encode(&metric_families, &mut buffer).unwrap();
+                let out: String = String::from_utf8_lossy(&buffer).into();
+                out
+            });
 
             let redirect_to_app = warp::any().map(|| {
                 log::trace!("redirecting");
                 warp::redirect(Uri::from_static("/app/"))
             });
 
-            let hello = warp::path("hello").map(|| {
-                log::info!("✉️ hello world");
-                "Hello, World!"
-            });
-            app.or(hello).or(channel).or(redirect_to_app)
+            app_route.or(ws_route).or(metrics_route).or(redirect_to_app)
         };
 
         log::info!("serving content from {}", static_dir().display());
@@ -72,7 +84,13 @@ impl WebServer {
             Err(error) => log::error!("cannot bind {} because {}", addr, error),
             Ok(dummy_listener) => {
                 std::mem::drop(dummy_listener);
-                warp::serve(routes).run(addr).await;
+                warp::serve(
+                    routes
+                        .with(warp::log("warp log"))
+                        .with(warp::log::custom(move |log| metrics.http_metrics(log))),
+                )
+                .run(addr)
+                .await;
             }
         }
         log::info!("web server has terminated");

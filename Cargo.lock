@@ -1735,6 +1735,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "prometheus"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5986aa8d62380092d2f50f8b1cdba9cb9b6731ffd4b25b51fd126b6c3e05b99c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot",
+ "protobuf",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf"
+version = "2.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23129d50f2c9355ced935fce8a08bd706ee2e7ce2b3b33bf61dace0e379ac63a"
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2052,6 +2073,7 @@ dependencies = [
  "config",
  "dotenv",
  "futures",
+ "prometheus",
  "serde 1.0.130",
  "serde_json",
  "signaler-protocol",
@@ -2061,6 +2083,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "warp",
+ "warp-prometheus",
  "xactor",
 ]
 
@@ -2731,6 +2754,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "warp-prometheus"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb00d11bbc584f0fadec1f5e4a6b413f4f5130c934b3fe0c06c74cd4d5b1dd40"
+dependencies = [
+ "lazy_static",
+ "log",
+ "prometheus",
+ "warp",
+]
+
+[[package]]
 name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2863,8 +2898,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "xactor"
 version = "0.7.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a5297548253bd91993bedcc70ae166e64b3fab5ded1965055b2a450777870ff"
+source = "git+https://github.com/hoodie/xactor?branch=main#b1cee07c6b7219cbe3b56d037841e5fe3cf2ee32"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2879,8 +2913,7 @@ dependencies = [
 [[package]]
 name = "xactor-derive"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce65a6e78fedf06f36b8e7b3154175226fad605971f535062339c05f5caecbed"
+source = "git+https://github.com/hoodie/xactor?branch=main#b1cee07c6b7219cbe3b56d037841e5fe3cf2ee32"
 dependencies = [
  "proc-macro2 1.0.29",
  "quote 1.0.10",
