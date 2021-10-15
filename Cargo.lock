@@ -1736,9 +1736,9 @@ dependencies = [
 
 [[package]]
 name = "prometheus"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5986aa8d62380092d2f50f8b1cdba9cb9b6731ffd4b25b51fd126b6c3e05b99c"
+checksum = "b7f64969ffd5dd8f39bd57a68ac53c163a095ed9d0fb707146da1b27025a3504"
 dependencies = [
  "cfg-if 1.0.0",
  "fnv",
@@ -2756,10 +2756,8 @@ dependencies = [
 [[package]]
 name = "warp-prometheus"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb00d11bbc584f0fadec1f5e4a6b413f4f5130c934b3fe0c06c74cd4d5b1dd40"
+source = "git+https://github.com/hoodie/warp-prometheus?branch=main#5b82f50f23b7674d8328c2be37a5dff8c9f41077"
 dependencies = [
- "lazy_static",
  "log",
  "prometheus",
  "warp",
