@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt};
 
+use prometheus::IntGauge;
 use signaler_protocol::Credentials;
 use xactor::{Actor, Addr, Sender};
 
@@ -11,6 +12,7 @@ pub mod command;
 #[derive(Default)]
 pub struct SessionManager {
     sessions: HashMap<SessionId, Addr<Session>>,
+    open_sessions: Option<IntGauge>,
 }
 
 impl fmt::Debug for SessionManager {

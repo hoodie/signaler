@@ -26,6 +26,7 @@ thiserror = "1.0"
 
 warp-prometheus = { git = "https://github.com/hoodie/warp-prometheus", branch = "main"}
 prometheus = "0.13"
+
 [dependencies.async-std]
 version = "1.10.0"
 features = ["tokio1"]

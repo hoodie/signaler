@@ -1,12 +1,14 @@
 use tracing::log;
 
-use prometheus::{Encoder, Registry, TextEncoder};
+use prometheus::{Encoder, TextEncoder};
 use warp::{http::Uri, ws::WebSocket, Filter};
 use warp_prometheus::Metrics;
 
-use xactor::{Actor, Context, Handler};
+use xactor::{Actor, Context, Handler, Service};
 
 use std::{net::SocketAddr, path::PathBuf};
+
+use crate::metrics::MetricsService;
 
 pub async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
     log::debug!("user connected{:#?}", ws);
@@ -28,7 +30,7 @@ impl Actor for WebServer {
         log::info!("shutting down web server");
     }
 }
-// impl Service for WebServer {} // TODO: services aren't even supervised
+impl Service for WebServer {} // TODO: services aren't even supervised
 
 #[async_trait::async_trait]
 impl Handler<super::Listen> for WebServer {
@@ -44,7 +46,7 @@ impl WebServer {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let static_dir = || root.join("../static/");
 
-        let registry = Registry::new();
+        let registry = MetricsService::get_registry().await?;
         let path_labels = ["app", "ws", "metrics"];
         let metrics = Metrics::new(&registry, &path_labels.into_iter().map(Into::into).collect());
 

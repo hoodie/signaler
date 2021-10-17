@@ -1,8 +1,10 @@
 use dotenv::dotenv;
 use tracing::log;
+use xactor::Service;
 
 mod config;
 mod connection;
+mod metrics;
 mod session;
 mod session_manager;
 mod web_server;
@@ -28,21 +30,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::debug!("log config {:?}", config.log_config);
 
-    let session_manager = async_std::task::spawn(async {
-        xactor::Supervisor::start(session_manager::SessionManager::default)
-            .await
-            .unwrap()
-    });
-
-    // let start_web_server = WebServer::from_registry().await?;
-    let web_server = xactor::Supervisor::start(WebServer::default).await?;
-
-    let _fo = futures::join!(
-        session_manager,
-        web_server.call(web_server::Listen {
+    WebServer::from_registry()
+        .await?
+        .call(web_server::Listen {
             socket: ([0, 0, 0, 0], config.server.port).into(),
         })
-    );
+        .await?;
 
     Ok(())
 }
