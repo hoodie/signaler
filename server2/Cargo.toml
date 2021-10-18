@@ -24,7 +24,7 @@ async-trait = "0.1"
 anyhow = "1.0"
 thiserror = "1.0"
 
-warp-prometheus = { git = "https://github.com/hoodie/warp-prometheus", branch = "main"}
+warp-prometheus = "0.5"
 prometheus = "0.13"
 
 [dependencies.async-std]

@@ -16,7 +16,7 @@ pub struct SessionManager {
 }
 
 impl fmt::Debug for SessionManager {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SessionManager")
             .field("sessions", &self.sessions.keys())
             .finish()
