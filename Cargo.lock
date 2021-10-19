@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "actix-macros"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8c999eaf5f8414142b5bb60e43dcb27ccd12c2c15e4133e470f3c5060472532"
+checksum = "465a6172cf69b960917811022d8f29bc0b7fa1398bc4f78b3c466673db1213b6"
 dependencies = [
  "quote 1.0.10",
  "syn 1.0.80",
@@ -172,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "actix-tls"
-version = "3.0.0-beta.5"
+version = "3.0.0-beta.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65b7bb60840962ef0332f7ea01a57d73a24d2cb663708511ff800250bbfef569"
+checksum = "0bd80ba563d12cb7ca41845b0ca2cc7d9e9e15eb7ae9566980789e32170984d5"
 dependencies = [
  "actix-codec",
  "actix-rt",
@@ -616,9 +616,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.7.1"
+version = "3.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9df67f7bf9ef8498769f994239c45613ef0c5899415fb58e9add412d2c1a538"
+checksum = "8f1e260c3a9040a7c19a12468758f4c16f31a81a1fe087482be9570ec864bb6c"
 
 [[package]]
 name = "byte-tools"
@@ -2897,7 +2897,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "xactor"
 version = "0.7.11"
-source = "git+https://github.com/hoodie/xactor?branch=main#b1cee07c6b7219cbe3b56d037841e5fe3cf2ee32"
+source = "git+https://github.com/hoodie/xactor?branch=main#b67b9061257b3047a1aac60f0e9d75c00a77f0b5"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2912,7 +2912,7 @@ dependencies = [
 [[package]]
 name = "xactor-derive"
 version = "0.7.1"
-source = "git+https://github.com/hoodie/xactor?branch=main#b1cee07c6b7219cbe3b56d037841e5fe3cf2ee32"
+source = "git+https://github.com/hoodie/xactor?branch=main#b67b9061257b3047a1aac60f0e9d75c00a77f0b5"
 dependencies = [
  "proc-macro2 1.0.30",
  "quote 1.0.10",

@@ -1,9 +1,6 @@
 use signaler_protocol as protocol;
 
 #[xactor::message]
-pub struct Foo;
-
-#[xactor::message]
 #[derive(Debug)]
 pub struct Command(protocol::SessionCommand);
 

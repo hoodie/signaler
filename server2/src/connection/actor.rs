@@ -3,6 +3,7 @@ use tracing::log;
 use xactor::{Actor, Context, Handler};
 
 use super::Connection;
+use crate::session::message::FromSession;
 use crate::session_manager::command::SessionAssociated;
 
 #[async_trait::async_trait]
@@ -29,5 +30,12 @@ impl Handler<SessionAssociated> for Connection {
     async fn handle(&mut self, _ctx: &mut Context<Self>, cmd: SessionAssociated) {
         log::trace!("associated session");
         self.session = Some(cmd.session)
+    }
+}
+
+#[async_trait]
+impl Handler<FromSession> for Connection {
+    async fn handle(&mut self, _ctx: &mut Context<Self>, msg: FromSession) {
+        log::debug!("received FromSession {:?}", msg);
     }
 }

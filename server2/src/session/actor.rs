@@ -13,13 +13,6 @@ impl Actor for Session {
 }
 
 #[async_trait::async_trait]
-impl Handler<Foo> for Session {
-    async fn handle(&mut self, _ctx: &mut xactor::Context<Self>, _msg: Foo) {
-        log::info!("received a Foo");
-    }
-}
-
-#[async_trait::async_trait]
 impl Handler<Command> for Session {
     async fn handle(&mut self, _ctx: &mut xactor::Context<Self>, cmd: Command) {
         log::trace!("received command {:?}", cmd);
