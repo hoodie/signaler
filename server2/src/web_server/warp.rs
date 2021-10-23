@@ -48,7 +48,8 @@ impl WebServer {
 
         let registry = MetricsService::get_registry().await?;
         let path_labels = ["app", "ws", "metrics"];
-        let metrics = Metrics::new(&registry, &path_labels.into_iter().map(Into::into).collect());
+
+        let _metrics = Metrics::new(&registry, &path_labels.into_iter().map(Into::into).collect());
 
         let routes = {
             let ws_route = warp::path("ws")
@@ -88,8 +89,8 @@ impl WebServer {
                 std::mem::drop(dummy_listener);
                 warp::serve(
                     routes
-                        .with(warp::log("warp log"))
-                        .with(warp::log::custom(move |log| metrics.http_metrics(log))),
+                        .with(warp::log::custom(|info| log::trace!("{} {} {} {:?}", info.method(), info.path(), info.status(), info.remote_addr())))
+                        //.with(warp::log::custom(move |log| metrics.http_metrics(log))),
                 )
                 .run(addr)
                 .await;
