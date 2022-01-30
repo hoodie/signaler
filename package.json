@@ -1,10 +1,16 @@
 {
   "private": true,
-  "workspaces": [
-    "client-lib",
-    "webapp",
-    "webapp-svelte"
-  ],
+  "workspaces": {
+    "packages": [
+      "client-lib",
+      "webapp",
+      "webapp-svelte"
+    ],
+    "nohoist": [
+      "@types/react",
+      "@types/react-dom"
+    ]
+  },
   "scripts": {
     "build:client": "yarn --cwd client-lib build",
     "build:webapp": "yarn --cwd webapp build",
