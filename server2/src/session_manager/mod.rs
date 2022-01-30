@@ -2,9 +2,13 @@ use std::{collections::HashMap, fmt};
 
 use prometheus::IntGauge;
 use signaler_protocol::Credentials;
-use xactor::{Actor, Addr, Sender};
+use tracing::log;
+use xactor::{Actor, Addr, Context, WeakAddr};
 
-use crate::session::{Session, SessionId};
+use crate::{
+    connection::Connection,
+    session::{Session, SessionId},
+};
 
 mod actor;
 pub mod command;
@@ -27,16 +31,37 @@ impl SessionManager {
     pub async fn create_session(
         &mut self,
         _credentials: &Credentials,
-        connection: Sender<command::SessionAssociated>,
+        // connection: Sender<command::SessionAssociated>,
+        connection: WeakAddr<Connection>,
     ) -> Result<(), anyhow::Error> {
-        let session = Session::default();
-        let session_id = session.session_id;
-        let session_addr = session.start().await?;
-        let session_weak = session_addr.downgrade();
-        self.sessions.insert(session_id, session_addr);
+        if let Some(connection) = connection.upgrade() {
+            let session = Session::with_connection(connection.sender());
+            let session_id = session.session_id;
+            let session_addr = session.start().await?;
+            let session_weak = session_addr.downgrade();
+            self.sessions.insert(session_id, session_addr);
 
-        connection.send(command::SessionAssociated { session: session_weak })?;
+            connection.send(command::SessionAssociated { session: session_weak })?;
+        } else {
+            anyhow::bail!("connection is already dead")
+        }
 
         Ok(())
+    }
+
+    fn gc(&mut self, _ctx: &mut Context<Self>) {
+        log::trace!("gc");
+        self.sessions.retain(|id, session| {
+            if session.stopped() {
+                log::trace!("session {} has stopped", id);
+                if let Some(gauge) = self.open_sessions.as_ref() {
+                    gauge.dec();
+                    log::trace!("decreasing sessions count {:?}", gauge.get());
+                }
+                false
+            } else {
+                true
+            }
+        });
     }
 }

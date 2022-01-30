@@ -1,12 +1,12 @@
 use signaler_protocol::Credentials;
-use xactor::{message, Sender, WeakAddr};
+use xactor::{message, WeakAddr};
 
-use crate::session::Session;
+use crate::{connection::Connection, session::Session};
 
 #[message]
 pub enum Command {
     AssociateConnection {
-        connection: Sender<SessionAssociated>,
+        connection: WeakAddr<Connection>,
         credentials: Credentials,
     },
 }
@@ -15,3 +15,7 @@ pub enum Command {
 pub struct SessionAssociated {
     pub session: WeakAddr<Session>,
 }
+
+#[message]
+#[derive(Clone, Copy, Debug)]
+pub struct Gc;

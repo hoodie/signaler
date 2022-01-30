@@ -43,7 +43,7 @@ impl MetricsService {
         let gauge = match IntGauge::with_opts(Opts::new(name, help)) {
             Ok(gauge) => gauge,
             Err(err) => {
-                log::error!("cannot instantitate gauge {:?} {}", (name, help), err);
+                log::error!("cannot instantiate gauge {:?} {}", (name, help), err);
                 return None;
             }
         };

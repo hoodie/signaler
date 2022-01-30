@@ -88,9 +88,15 @@ impl WebServer {
             Ok(dummy_listener) => {
                 std::mem::drop(dummy_listener);
                 warp::serve(
-                    routes
-                        .with(warp::log::custom(|info| log::trace!("{} {} {} {:?}", info.method(), info.path(), info.status(), info.remote_addr())))
-                        //.with(warp::log::custom(move |log| metrics.http_metrics(log))),
+                    routes.with(warp::log::custom(|info| {
+                        log::trace!(
+                            "{} {} {} {:?}",
+                            info.method(),
+                            info.path(),
+                            info.status(),
+                            info.remote_addr()
+                        )
+                    })), //.with(warp::log::custom(move |log| metrics.http_metrics(log))),
                 )
                 .run(addr)
                 .await;

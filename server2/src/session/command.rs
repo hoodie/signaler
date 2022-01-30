@@ -1,9 +1,7 @@
 use signaler_protocol as protocol;
+use xactor::message;
 
-#[xactor::message]
-pub struct Foo;
-
-#[xactor::message]
+#[message]
 #[derive(Debug)]
 pub struct Command(protocol::SessionCommand);
 
@@ -12,3 +10,7 @@ impl From<protocol::SessionCommand> for Command {
         Self(sc)
     }
 }
+
+#[message]
+#[derive(Clone, Copy, Debug)]
+pub struct Gc;

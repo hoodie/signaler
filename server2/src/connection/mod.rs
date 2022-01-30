@@ -88,10 +88,11 @@ impl Connection {
     }
 
     async fn associate_session(&mut self, credentials: Credentials, ctx: &mut Context<Self>) {
+        log::trace!("trying to get a session");
         let sm = SessionManager::from_registry().await.unwrap();
         sm.send(session_manager::command::Command::AssociateConnection {
             credentials,
-            connection: ctx.address().sender(),
+            connection: ctx.address().downgrade(),
         })
         .unwrap();
         self.send(signaler_protocol::SessionMessage::Authenticated.into_json())

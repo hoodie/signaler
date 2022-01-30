@@ -1,4 +1,6 @@
+use futures::SinkExt;
 use tracing::log;
+use warp::ws::Message;
 use xactor::{Context, StreamHandler};
 
 use super::Connection;
@@ -19,6 +21,10 @@ impl StreamHandler<WsStreamMessage> for Connection {
                         log::error!("connection_id{} {}", self.connection_id, error);
                     } else {
                         log::trace!("connection_id{} accepted the command", self.connection_id);
+                    }
+                } else if msg.is_ping() {
+                    if let Err(error) = self.ws_sender.send(Message::pong(msg.as_bytes())).await {
+                        log::error!("failed to send pong {}", error);
                     }
                 } else {
                     log::error!("received invalid message {:?}", msg);
