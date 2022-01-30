@@ -50,7 +50,7 @@ impl SessionManager {
     }
 
     fn gc(&mut self, _ctx: &mut Context<Self>) {
-        log::trace!("gc");
+        // log::trace!("gc");
         self.sessions.retain(|id, session| {
             if session.stopped() {
                 log::trace!("session {} has stopped", id);

@@ -2116,7 +2116,6 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "xactor"
 version = "0.7.11"
-source = "git+https://github.com/hoodie/xactor?branch=main#497a87443e2f88c3d7550fd6a4b8e53461f90aa6"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2132,7 +2131,6 @@ dependencies = [
 [[package]]
 name = "xactor-derive"
 version = "0.7.1"
-source = "git+https://github.com/hoodie/xactor?branch=main#497a87443e2f88c3d7550fd6a4b8e53461f90aa6"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",

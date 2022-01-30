@@ -8,7 +8,8 @@ edition = "2021"
 
 [dependencies]
 warp = "0.3"
-xactor = { git = "https://github.com/hoodie/xactor", branch = "main"}
+#xactor = { git = "https://github.com/hoodie/xactor", branch = "main"}
+xactor = { path = "../../hub/xactor"}
 signaler-protocol = { path = "../protocol" }
 
 tracing = "0.1"

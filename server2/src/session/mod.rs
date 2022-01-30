@@ -1,8 +1,14 @@
 use std::time::Instant;
 
+use signaler_protocol::RoomId;
 use tracing::log;
 use uuid::Uuid;
-use xactor::Context;
+use xactor::{Context, Service};
+
+use crate::{
+    room::participant::RoomParticipant,
+    room_manager::{self, RoomManager},
+};
 
 mod actor;
 pub mod command;
@@ -43,8 +49,28 @@ impl Session {
         }
     }
 
+    pub async fn join(&self, room_id: RoomId, ctx: &mut Context<Self>) {
+        log::debug!("join {room_id}");
+        let msg = room_manager::Command::JoinRoom {
+            room_id,
+            participant: RoomParticipant {
+                session_id: self.session_id,
+                addr: ctx.address().downgrade(),
+                profile: self.session_id.to_string(), // self.profile.clone(),
+            },
+            // return_addr: ctx.address().recipient(),
+        };
+
+        let rm = RoomManager::from_registry().await.unwrap();
+        if let Err(error) = rm.send(msg) {
+            log::error!("can't join room {error}")
+        }
+    }
+}
+
+impl Session {
     fn gc(&mut self, ctx: &mut Context<Self>) {
-        log::trace!("gc");
+        // log::trace!("gc");
         if let Some(can_upgrade) = self.connection.as_ref().map(|c| c.can_upgrade()) {
             if !can_upgrade {
                 log::trace!("connection is gone");

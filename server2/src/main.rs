@@ -5,6 +5,8 @@ use xactor::Service;
 mod config;
 mod connection;
 mod metrics;
+mod room;
+mod room_manager;
 mod session;
 mod session_manager;
 mod web_server;

@@ -3,7 +3,7 @@ use xactor::message;
 
 #[message]
 #[derive(Debug)]
-pub struct Command(protocol::SessionCommand);
+pub struct Command(pub protocol::SessionCommand);
 
 impl From<protocol::SessionCommand> for Command {
     fn from(sc: protocol::SessionCommand) -> Self {

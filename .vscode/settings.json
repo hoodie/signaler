@@ -7,5 +7,6 @@
         "*/target/": true
     },
     "deno.enable": false,
-    "rust-analyzer.inlayHints.enable": true
+    "rust-analyzer.inlayHints.enable": true,
+    "C_Cpp.errorSquiggles": "Enabled"
 }
