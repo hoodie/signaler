@@ -8,13 +8,13 @@ yarn := "yarn --no-color --emoji false --no-progress"
 default:
   just --list
 
-# server2 directory
+# server directory
 build-server: build-webapp
-  cd server2 && cargo build
+  cd server && cargo build
 
-# server2 directory
+# server directory
 run-server:
-  cd server2 && cargo run
+  cd server && cargo run
 
 # client lib
 build-client:

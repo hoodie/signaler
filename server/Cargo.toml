@@ -1,5 +1,5 @@
 [package]
-name = "server2"
+name = "server"
 version = "0.1.0"
 authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
 edition = "2021"
@@ -41,5 +41,5 @@ version = "1.0"
 
 
 [[bin]]
-name = "server2"
+name = "server"
 path = "./src/main.rs"
