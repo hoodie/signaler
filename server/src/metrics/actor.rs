@@ -1,18 +1,18 @@
 use async_trait::async_trait;
 use prometheus::{IntGauge, Registry};
 use tracing::log;
-use xactor::{Actor, Context, Handler, Service};
+use hannibal::{Actor, Context, Handler, Service};
 
 use super::{command::*, MetricsService};
 
 #[async_trait]
 impl Actor for MetricsService {
-    async fn started(&mut self, _ctx: &mut xactor::Context<Self>) -> xactor::Result<()> {
+    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting MetricsService");
 
         Ok(())
     }
-    async fn stopped(&mut self, _ctx: &mut xactor::Context<Self>) {
+    async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
         log::trace!("shutting down MetricsService");
     }
 }

@@ -2,7 +2,7 @@ use signaler_protocol::RoomId;
 
 use crate::room::participant::RoomParticipant;
 
-#[xactor::message]
+#[hannibal::message]
 #[derive(Debug)]
 pub enum Command {
     JoinRoom {
@@ -11,6 +11,6 @@ pub enum Command {
     },
 }
 
-#[xactor::message]
+#[hannibal::message]
 #[derive(Clone, Copy, Debug)]
 pub struct Gc;

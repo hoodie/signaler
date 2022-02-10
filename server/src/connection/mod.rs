@@ -6,7 +6,7 @@ use futures::{
 use tracing::log;
 use uuid::Uuid;
 use warp::ws::{Message, WebSocket};
-use xactor::{Context, Service, WeakAddr};
+use hannibal::{Context, Service, WeakAddr};
 
 use signaler_protocol::{ConnectionCommand, Credentials, SessionCommand, SessionDescription, SessionMessage};
 
@@ -69,9 +69,9 @@ impl Connection {
 
     async fn handle_incoming_message(&mut self, raw_msg: &str, ctx: &mut Context<Self>) -> Result<(), error::Error> {
         if let Some(session) = self.session.as_ref() {
-            let session = session.upgrade().ok_or(error::Error::SessionGone)?;
             let command = serde_json::from_str::<SessionCommand>(raw_msg)?;
-            session.send(session::command::Command::from(command))?;
+            session.upgrade().ok_or(error::Error::SessionGone)?
+            .send(session::command::Command::from(command))?;
         } else {
             self.handle_connection_message(raw_msg, ctx).await?;
         }

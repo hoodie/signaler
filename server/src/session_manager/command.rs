@@ -1,5 +1,5 @@
 use signaler_protocol::Credentials;
-use xactor::{message, WeakAddr};
+use hannibal::{message, WeakAddr};
 
 use crate::{connection::Connection, session::Session};
 

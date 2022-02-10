@@ -1,6 +1,7 @@
 use signaler_protocol as protocol;
-use xactor::message;
+use hannibal::message;
 
+/// TODO: this is probably unnecessary
 #[message]
 #[derive(Debug)]
 pub struct Command(pub protocol::SessionCommand);

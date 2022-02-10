@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use tracing::log;
-use xactor::Service;
+use hannibal::Service;
 
 mod config;
 mod connection;

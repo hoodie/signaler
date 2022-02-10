@@ -1,4 +1,4 @@
-use xactor::WeakAddr;
+use hannibal::WeakAddr;
 
 use crate::session::{Session, SessionId};
 

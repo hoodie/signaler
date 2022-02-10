@@ -4,7 +4,7 @@ use prometheus::{Encoder, TextEncoder};
 use warp::{http::Uri, ws::WebSocket, Filter};
 use warp_prometheus::Metrics;
 
-use xactor::{Actor, Context, Handler, Service};
+use hannibal::{Actor, Context, Handler, Service};
 
 use std::{net::SocketAddr, path::PathBuf};
 
@@ -13,7 +13,7 @@ use crate::metrics::MetricsService;
 pub async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
     log::debug!("user connected{:#?}", ws);
     let connection = crate::connection::Connection::new(ws);
-    let addr = xactor::Actor::start(connection).await.unwrap();
+    let addr = hannibal::Actor::start(connection).await.unwrap();
     addr.wait_for_stop().await
 }
 
@@ -22,11 +22,11 @@ pub struct WebServer;
 
 #[async_trait::async_trait]
 impl Actor for WebServer {
-    async fn started(&mut self, _ctx: &mut xactor::Context<Self>) -> xactor::Result<()> {
+    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::info!("started web server");
         Ok(())
     }
-    async fn stopped(&mut self, _ctx: &mut xactor::Context<Self>) {
+    async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
         log::info!("shutting down web server");
     }
 }
@@ -42,7 +42,7 @@ impl Handler<super::Listen> for WebServer {
 }
 
 impl WebServer {
-    async fn start(&mut self, addr: SocketAddr) -> xactor::Result<()> {
+    async fn start(&mut self, addr: SocketAddr) -> hannibal::Result<()> {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let static_dir = || root.join("../static/");
 

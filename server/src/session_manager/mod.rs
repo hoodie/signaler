@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt};
 use prometheus::IntGauge;
 use signaler_protocol::Credentials;
 use tracing::log;
-use xactor::{Actor, Addr, Context, WeakAddr};
+use hannibal::{Actor, Addr, Context, WeakAddr};
 
 use crate::{
     connection::Connection,

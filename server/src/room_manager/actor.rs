@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use tracing::log;
-use xactor::{Actor, Handler};
+use hannibal::{Actor, Handler};
 
 use crate::metrics::MetricsService;
 
@@ -10,7 +10,7 @@ use super::{command::*, RoomManager};
 
 #[async_trait]
 impl Actor for RoomManager {
-    async fn started(&mut self, ctx: &mut xactor::Context<Self>) -> xactor::Result<()> {
+    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting");
         if let Some(gauge) = MetricsService::get_gauge("open_rooms", "open rooms").await? {
             log::debug!("instantiated room gauge");
@@ -20,14 +20,14 @@ impl Actor for RoomManager {
 
         Ok(())
     }
-    async fn stopped(&mut self, _ctx: &mut xactor::Context<Self>) {
+    async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
         log::trace!("shutting down");
     }
 }
 
 #[async_trait::async_trait]
 impl Handler<Command> for RoomManager {
-    async fn handle(&mut self, _ctx: &mut xactor::Context<Self>, cmd: Command) {
+    async fn handle(&mut self, _ctx: &mut hannibal::Context<Self>, cmd: Command) {
         log::trace!("received command {:?}", cmd);
         match cmd {
             Command::JoinRoom { room_id, participant } => self.join_room(&room_id, participant).await,
@@ -37,9 +37,9 @@ impl Handler<Command> for RoomManager {
 
 #[async_trait::async_trait]
 impl Handler<Gc> for RoomManager {
-    async fn handle(&mut self, ctx: &mut xactor::Context<Self>, _: Gc) {
+    async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, _: Gc) {
         self.gc(ctx);
     }
 }
 
-impl xactor::Service for RoomManager {}
+impl hannibal::Service for RoomManager {}

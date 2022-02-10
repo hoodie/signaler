@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use prometheus::IntGauge;
 use tracing::log;
-use xactor::{Actor, Addr, Context, WeakAddr};
+use hannibal::{Actor, Addr, Context, WeakAddr};
 
 use crate::room::{self, participant::RoomParticipant, Room, RoomId};
 
 mod actor;
-mod command;
+pub mod command;
 
 pub use command::Command;
 
@@ -48,25 +48,13 @@ impl RoomManager {
         weak_room
     }
 
-    async fn create_permanent_room(&mut self, name: &str) -> WeakAddr<Room> {
-        log::debug!("create permanent room: {:?}", name);
-        let room = Room::permanent(name.into()).start().await.unwrap();
-        let weak_room = room.downgrade();
-        self.rooms.insert(name.into(), room);
-        if let Some(gauge) = self.open_rooms.as_ref() {
-            gauge.inc();
-            log::trace!("increasing rooms count {:?}", gauge.get());
-        }
-        weak_room
-    }
+    // fn list_rooms(&self) -> Vec<String> {
+    //     self.rooms.keys().map(ToString::to_string).collect()
+    // }
 
-    fn list_rooms(&self) -> Vec<String> {
-        self.rooms.keys().map(ToString::to_string).collect()
-    }
-
-    fn close_room(&mut self, room_id: RoomId) -> bool {
-        self.rooms.remove(&room_id).is_some()
-    }
+    // fn close_room(&mut self, room_id: RoomId) -> bool {
+    //     self.rooms.remove(&room_id).is_some()
+    // }
 }
 
 impl RoomManager {

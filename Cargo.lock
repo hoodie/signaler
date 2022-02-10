@@ -669,6 +669,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "hannibal"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce63b4a508cc936ecda5c913dfad3aa82b22efece66f0aa09ee796c7adb33093"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "async-trait",
+ "fnv",
+ "futures",
+ "hannibal-derive",
+ "once_cell",
+ "slab",
+ "tokio",
+]
+
+[[package]]
+name = "hannibal-derive"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f90c92081938ffbca281364358451ab1af682f776bd9d45774539f8b5e419313"
+dependencies = [
+ "proc-macro2 1.0.36",
+ "quote 1.0.15",
+ "syn 1.0.86",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1220,9 +1248,9 @@ dependencies = [
 
 [[package]]
 name = "protobuf"
-version = "2.25.2"
+version = "2.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47c327e191621a2158159df97cdbc2e7074bb4e940275e35abf38eb3d2595754"
+checksum = "9d613b4fd96c0182e187734b4f8fc5cbc8c940bbf781819f7a52d42dc5922d25"
 
 [[package]]
 name = "quick-error"
@@ -1446,10 +1474,12 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
+ "chrono",
  "color-backtrace",
  "config",
  "dotenv",
  "futures",
+ "hannibal",
  "prometheus",
  "serde 1.0.136",
  "serde_json",
@@ -1461,7 +1491,6 @@ dependencies = [
  "uuid",
  "warp",
  "warp-prometheus",
- "xactor",
 ]
 
 [[package]]
@@ -1626,12 +1655,11 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.1.44"
+version = "0.1.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
+checksum = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
 dependencies = [
  "libc",
- "wasi",
  "winapi",
 ]
 
@@ -1662,7 +1690,19 @@ dependencies = [
  "mio",
  "num_cpus",
  "pin-project-lite",
+ "tokio-macros",
  "winapi",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b557f72f448c511a979e2564e55d74e6c4432fc96ff4f6241bc6bded342643b7"
+dependencies = [
+ "proc-macro2 1.0.36",
+ "quote 1.0.15",
+ "syn 1.0.86",
 ]
 
 [[package]]
@@ -1991,9 +2031,9 @@ dependencies = [
 
 [[package]]
 name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
+version = "0.10.2+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
+checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "wasm-bindgen"
@@ -2112,30 +2152,6 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "xactor"
-version = "0.7.11"
-dependencies = [
- "anyhow",
- "async-std",
- "async-trait",
- "fnv",
- "futures",
- "once_cell",
- "slab",
- "tokio",
- "xactor-derive",
-]
-
-[[package]]
-name = "xactor-derive"
-version = "0.7.1"
-dependencies = [
- "proc-macro2 1.0.36",
- "quote 1.0.15",
- "syn 1.0.86",
-]
 
 [[package]]
 name = "yaml-rust"

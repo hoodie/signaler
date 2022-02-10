@@ -1,14 +1,18 @@
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 
+use hannibal::{Context, Service, WeakAddr};
+use signaler_protocol as protocol;
 use signaler_protocol::RoomId;
 use tracing::log;
 use uuid::Uuid;
-use xactor::{Context, Service};
 
+use crate::room::command::ChatRoomCommand;
 use crate::{
-    room::participant::RoomParticipant,
+    room::{participant::RoomParticipant, Room},
     room_manager::{self, RoomManager},
 };
+
+use self::message::FromSession;
 
 mod actor;
 pub mod command;
@@ -18,8 +22,9 @@ pub type SessionId = Uuid;
 
 pub struct Session {
     pub session_id: SessionId,
-    pub connection: Option<xactor::Sender<message::FromSession>>,
+    pub connection: Option<hannibal::Sender<message::FromSession>>,
     pub last_seen_connected: Instant,
+    pub rooms: HashMap<RoomId, WeakAddr<Room>>,
 }
 
 impl std::fmt::Debug for Session {
@@ -37,15 +42,34 @@ impl Default for Session {
             session_id: Uuid::new_v4(),
             connection: None,
             last_seen_connected: Instant::now(),
+            rooms: Default::default(),
         }
     }
 }
 
 impl Session {
-    pub fn with_connection(connection: xactor::Sender<message::FromSession>) -> Self {
+    pub fn with_connection(connection: hannibal::Sender<message::FromSession>) -> Self {
         Session {
             connection: Some(connection),
             ..Default::default()
+        }
+    }
+
+    pub async fn dispatch_command(&mut self, cmd: protocol::SessionCommand, ctx: &mut Context<Self>) {
+        log::trace!("dispatching {cmd:#?}");
+        match cmd {
+            protocol::SessionCommand::Join { room } => self.join(room, ctx).await,
+            protocol::SessionCommand::ChatRoom { room, command } => self.send_to_room(
+                room,
+                ChatRoomCommand {
+                    command,
+                    session_id: self.session_id,
+                },
+            ),
+            protocol::SessionCommand::ListRooms => todo!(),
+            protocol::SessionCommand::ListMyRooms => todo!(),
+            protocol::SessionCommand::ShutDown => todo!(),
+            protocol::SessionCommand::Authenticate { .. } => todo!(),
         }
     }
 
@@ -66,8 +90,33 @@ impl Session {
             log::error!("can't join room {error}")
         }
     }
+
+    pub fn send_to_connection(&self, message: FromSession) {
+        if let Some(ref connection) = self.connection {
+            if connection.can_upgrade() {
+                if let Err(e) = connection.send(message) {
+                    log::warn!("failed to send to connection {}", e);
+                }
+            } else {
+                log::warn!("connection can't upgrade");
+            }
+        } else {
+            log::warn!("have no connection");
+        }
+    }
+
+    pub fn send_to_room<C>(&self, room_id: RoomId, command: C)
+    where
+        C: hannibal::Message<Result = ()> + Send + 'static,
+        crate::room::Room: hannibal::Handler<C>,
+    {
+        if let Some(room) = self.rooms.get(&room_id).and_then(WeakAddr::upgrade) {
+            room.send(command).unwrap();
+        }
+    }
 }
 
+/// garbage collection
 impl Session {
     fn gc(&mut self, ctx: &mut Context<Self>) {
         // log::trace!("gc");

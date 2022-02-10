@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use tracing::log;
-use xactor::{Actor, Context, Handler};
+use hannibal::{Actor, Context, Handler};
 
 use crate::metrics::MetricsService;
 
@@ -10,7 +10,7 @@ use super::{command::*, SessionManager};
 
 #[async_trait]
 impl Actor for SessionManager {
-    async fn started(&mut self, ctx: &mut xactor::Context<Self>) -> xactor::Result<()> {
+    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting SessionManager");
         if let Some(gauge) = MetricsService::get_gauge("open_sessions", "open session").await? {
             log::debug!("instantiated session gauge");
@@ -20,7 +20,7 @@ impl Actor for SessionManager {
 
         Ok(())
     }
-    async fn stopped(&mut self, _ctx: &mut xactor::Context<Self>) {
+    async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
         log::trace!("shutting down SessionManager");
     }
 }
@@ -46,9 +46,9 @@ impl Handler<Command> for SessionManager {
 
 #[async_trait::async_trait]
 impl Handler<Gc> for SessionManager {
-    async fn handle(&mut self, ctx: &mut xactor::Context<Self>, _: Gc) {
+    async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, _: Gc) {
         self.gc(ctx);
     }
 }
 
-impl xactor::Service for SessionManager {}
+impl hannibal::Service for SessionManager {}

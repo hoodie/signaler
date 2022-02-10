@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 pub use self::warp::*;
 
-#[xactor::message]
+#[hannibal::message]
 #[derive(Debug)]
 pub struct Listen {
     pub socket: SocketAddr,

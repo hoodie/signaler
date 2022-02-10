@@ -1,15 +1,15 @@
 use prometheus::{IntGauge, Opts, Registry};
 use tracing::log;
-use xactor::Service;
+use hannibal::Service;
 
 mod actor;
 pub mod command {
     use prometheus::{IntGauge, Registry};
 
-    #[xactor::message(result = "Registry")]
+    #[hannibal::message(result = "Registry")]
     pub struct GetRegistry;
 
-    #[xactor::message(result = "Option<IntGauge>")]
+    #[hannibal::message(result = "Option<IntGauge>")]
     pub struct AddGauge {
         pub name: String,
         pub help: String,
@@ -22,12 +22,12 @@ pub struct MetricsService {
 }
 
 impl MetricsService {
-    pub async fn get_registry() -> xactor::Result<Registry> {
+    pub async fn get_registry() -> hannibal::Result<Registry> {
         let registry = Self::from_registry().await?.call(self::command::GetRegistry).await?;
         Ok(registry)
     }
 
-    pub async fn get_gauge(name: &str, help: &str) -> xactor::Result<Option<IntGauge>> {
+    pub async fn get_gauge(name: &str, help: &str) -> hannibal::Result<Option<IntGauge>> {
         let gauge = Self::from_registry()
             .await?
             .call(self::command::AddGauge {
