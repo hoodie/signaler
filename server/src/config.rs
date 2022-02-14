@@ -4,7 +4,21 @@ use config::ConfigError;
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    pub flavor: ServerFlavor,
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub enum ServerFlavor {
+    Warp,
+    Axum,
+}
+
+impl Default for ServerFlavor {
+    fn default() -> Self {
+        ServerFlavor::Axum
+    }
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
