@@ -1,17 +1,17 @@
+use hannibal::WeakAddr;
 use signaler_protocol::SessionMessage;
+
+use super::Session;
 
 #[hannibal::message]
 #[derive(Debug)]
-pub struct FromSession(SessionMessage);
+pub enum FromSession {
+    SessionMessage(SessionMessage),
+    SessionAssociated { session: WeakAddr<Session> },
+}
 
 impl From<SessionMessage> for FromSession {
     fn from(inner: SessionMessage) -> Self {
-        Self(inner)
-    }
-}
-
-impl From<FromSession> for SessionMessage {
-    fn from(val: FromSession) -> Self {
-        val.0
+        Self::SessionMessage(inner)
     }
 }

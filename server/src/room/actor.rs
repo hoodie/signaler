@@ -42,12 +42,16 @@ impl Handler<ChatRoomCommand> for Room {
             }
             protocol::ChatRoomCommand::Message { content } => {
                 log::trace!("forwarding message {content:?}");
-                self.forward_to_participants(ChatMessage{
-                    content,
-                    sender: cmd.session_id.into(),
-                    sent: chrono::Utc::now(),
-                    uuid: Uuid::new_v4() }, ctx)
-            },
+                self.forward_to_participants(
+                    ChatMessage {
+                        content,
+                        sender: cmd.session_id.into(),
+                        sent: chrono::Utc::now(),
+                        uuid: Uuid::new_v4(),
+                    },
+                    ctx,
+                )
+            }
             protocol::ChatRoomCommand::ListParticipants => todo!(),
         }
     }

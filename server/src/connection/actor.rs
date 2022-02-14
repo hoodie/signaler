@@ -1,11 +1,9 @@
 use async_trait::async_trait;
 use hannibal::{Actor, Context, Handler};
-use signaler_protocol::SessionMessage;
 use tracing::log;
 
 use super::Connection;
 use crate::session::message::FromSession;
-use crate::session_manager::command::SessionAssociated;
 
 #[async_trait::async_trait]
 impl Actor for Connection {
@@ -27,20 +25,19 @@ impl Actor for Connection {
 }
 
 #[async_trait]
-impl Handler<SessionAssociated> for Connection {
-    async fn handle(&mut self, _ctx: &mut Context<Self>, cmd: SessionAssociated) {
-        log::trace!("associated session");
-        self.session = Some(cmd.session)
-    }
-}
-
-#[async_trait]
 impl Handler<FromSession> for Connection {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: FromSession) {
         log::debug!("received FromSession {:?}", &msg);
-        let session_msg: SessionMessage = msg.into();
-        let payload = serde_json::to_string(&session_msg).unwrap();
-        
-        self.send(&payload).await;
+        match msg {
+            FromSession::SessionMessage(session_msg) => {
+                let payload = serde_json::to_string(&session_msg).unwrap();
+
+                self.send(&payload).await;
+            }
+            FromSession::SessionAssociated { session } => {
+                log::trace!("associated session");
+                self.session = Some(session)
+            }
+        }
     }
 }

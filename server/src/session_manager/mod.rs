@@ -1,13 +1,13 @@
 use std::{collections::HashMap, fmt};
 
+use hannibal::{Actor, Addr, Context, WeakAddr};
 use prometheus::IntGauge;
 use signaler_protocol::Credentials;
 use tracing::log;
-use hannibal::{Actor, Addr, Context, WeakAddr};
 
 use crate::{
     connection::Connection,
-    session::{Session, SessionId},
+    session::{self, Session, SessionId},
 };
 
 mod actor;
@@ -41,7 +41,7 @@ impl SessionManager {
             let session_weak = session_addr.downgrade();
             self.sessions.insert(session_id, session_addr);
 
-            connection.send(command::SessionAssociated { session: session_weak })?;
+            connection.send(session::message::FromSession::SessionAssociated { session: session_weak })?;
         } else {
             anyhow::bail!("connection is already dead")
         }

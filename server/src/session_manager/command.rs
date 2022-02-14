@@ -1,7 +1,7 @@
-use signaler_protocol::Credentials;
 use hannibal::{message, WeakAddr};
+use signaler_protocol::Credentials;
 
-use crate::{connection::Connection, session::Session};
+use crate::connection::Connection;
 
 #[message]
 pub enum Command {
@@ -9,11 +9,6 @@ pub enum Command {
         connection: WeakAddr<Connection>,
         credentials: Credentials,
     },
-}
-
-#[message]
-pub struct SessionAssociated {
-    pub session: WeakAddr<Session>,
 }
 
 #[message]

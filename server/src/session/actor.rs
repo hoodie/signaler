@@ -17,7 +17,7 @@ impl Actor for Session {
         Ok(())
     }
     async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
-        log::trace!("shutting down Session");
+        log::debug!("shutting down Session");
     }
 }
 
@@ -39,7 +39,6 @@ impl Handler<RoomToSession> for Session {
                 }
             }
             RoomToSession::ChatMessage { room, message } => {
-                log::trace!("forwarding ChatMessage {:#?}", (&room, &message));
                 self.send_to_connection(SessionMessage::Message { message, room }.into());
             }
         }
