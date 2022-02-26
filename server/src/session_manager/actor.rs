@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use tracing::log;
 use hannibal::{Actor, Context, Handler};
+use tracing::log;
 
 use crate::metrics::MetricsService;
 

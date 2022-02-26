@@ -1,7 +1,7 @@
 use futures::SinkExt;
+use hannibal::{Context, StreamHandler};
 use tracing::log;
 use warp::ws::Message;
-use hannibal::{Context, StreamHandler};
 
 use super::Connection;
 

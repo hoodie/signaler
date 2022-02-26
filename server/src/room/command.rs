@@ -8,10 +8,7 @@ use super::{participant::RoomParticipant, Room};
 #[derive(Debug)]
 #[hannibal::message]
 pub enum Command {
-    AddParticipant {
-        participant: RoomParticipant,
-    },
-
+    AddParticipant { participant: RoomParticipant },
     // GetParticipants {
     //     session_id: SessionId,
     // },

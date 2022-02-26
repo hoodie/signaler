@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use hannibal::{Actor, Context, Handler, Service};
 use prometheus::{IntGauge, Registry};
 use tracing::log;
-use hannibal::{Actor, Context, Handler, Service};
 
 use super::{command::*, MetricsService};
 

@@ -1,6 +1,6 @@
+use hannibal::Service;
 use prometheus::{IntGauge, Opts, Registry};
 use tracing::log;
-use hannibal::Service;
 
 mod actor;
 pub mod command {

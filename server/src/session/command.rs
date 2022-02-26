@@ -1,5 +1,5 @@
-use signaler_protocol as protocol;
 use hannibal::message;
+use signaler_protocol as protocol;
 
 /// TODO: this is probably unnecessary
 #[message]

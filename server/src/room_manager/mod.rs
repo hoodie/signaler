@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use hannibal::{Actor, Addr, Context, WeakAddr};
 use prometheus::IntGauge;
 use tracing::log;
-use hannibal::{Actor, Addr, Context, WeakAddr};
 
 use crate::room::{self, participant::RoomParticipant, Room, RoomId};
 

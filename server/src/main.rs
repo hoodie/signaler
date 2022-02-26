@@ -1,6 +1,6 @@
 use dotenv::dotenv;
-use tracing::log;
 use hannibal::Service;
+use tracing::log;
 
 mod config;
 mod connection;
@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
     dotenv().unwrap();
 
-    let config = Config::from_env().unwrap();
+    let config = dbg!(Config::from_env().unwrap());
 
     tracing_subscriber::fmt()
         // .pretty()
