@@ -11,6 +11,8 @@ use super::{command::*, Session};
 
 #[async_trait]
 impl Actor for Session {
+    const NAME: &'static str = "Session";
+
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::info!("starting session on actor {:?}", ctx.actor_id());
         ctx.send_interval(Gc, Duration::from_secs(5));

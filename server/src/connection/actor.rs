@@ -7,6 +7,9 @@ use crate::session::message::FromSession;
 
 #[async_trait::async_trait]
 impl Actor for Connection {
+    const NAME: &'static str = module_path!();
+
+    #[tracing::instrument(level = tracing::Level::INFO, skip_all, name="connection_actor")]
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting on actor {:?}", ctx.actor_id());
 

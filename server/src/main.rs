@@ -14,21 +14,22 @@ mod web_server;
 use crate::config::Config;
 use crate::web_server::WebServer;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
     dotenv().unwrap();
 
     let config = dbg!(Config::from_env().unwrap());
 
-    tracing_subscriber::fmt()
-        // .pretty()
-        // .with_thread_names(true)
-        // enable everything
-        .with_max_level(tracing::Level::TRACE)
-        .with_env_filter(tracing_subscriber::EnvFilter::from_env("LOG_CONFIG"))
-        // sets this to be the default, global collector for this application.
-        .init();
+    console_subscriber::init();
+    // tracing_subscriber::fmt()
+    //     // .pretty()
+    //     // .with_thread_names(true)
+    //     // enable everything
+    //     .with_max_level(tracing::Level::TRACE)
+    //     .with_env_filter(tracing_subscriber::EnvFilter::from_env("LOG_CONFIG"))
+    //     // sets this to be the default, global collector for this application.
+    //     .init();
 
     log::debug!("log config {:?}", config.log_config);
 

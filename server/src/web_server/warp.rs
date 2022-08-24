@@ -22,6 +22,8 @@ pub struct WebServer;
 
 #[async_trait::async_trait]
 impl Actor for WebServer {
+    const NAME: &'static str = module_path!();
+
     async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::info!("started web server");
         Ok(())
@@ -42,6 +44,7 @@ impl Handler<super::Listen> for WebServer {
 }
 
 impl WebServer {
+    #[tracing::instrument(level = tracing::Level::INFO, skip_all, name="warp_server")]
     async fn start(&mut self, addr: SocketAddr) -> hannibal::Result<()> {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let static_dir = || root.join("../static/");

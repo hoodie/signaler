@@ -16,13 +16,19 @@ impl Actor for Room {
         log::info!("starting Room {:?}", ctx.actor_id());
         Ok(())
     }
+    
     async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
         log::trace!("shutting down Room");
+    }
+
+    fn name(&self) -> std::borrow::Cow<'static, str> {
+        format!("{} {:?}", module_path!(), self.id).into()
     }
 }
 
 #[async_trait]
 impl Handler<Command> for Room {
+    #[tracing::instrument(level = tracing::Level::INFO, skip_all)]
     async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, cmd: Command) {
         log::trace!("received command {:?}", cmd);
         match cmd {
@@ -33,6 +39,7 @@ impl Handler<Command> for Room {
 
 #[async_trait]
 impl Handler<ChatRoomCommand> for Room {
+    #[tracing::instrument(level = tracing::Level::INFO, skip_all)]
     async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, cmd: ChatRoomCommand) {
         log::trace!("received command {:?}", cmd);
         match cmd.command {

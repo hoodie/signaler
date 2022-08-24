@@ -10,6 +10,8 @@ use super::{command::*, SessionManager};
 
 #[async_trait]
 impl Actor for SessionManager {
+    const NAME: &'static str = module_path!();
+
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting SessionManager");
         if let Some(gauge) = MetricsService::get_gauge("open_sessions", "open session").await? {

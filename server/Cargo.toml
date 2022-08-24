@@ -27,9 +27,10 @@ thiserror = "1.0"
 
 warp-prometheus = "0.5"
 prometheus = "0.13"
+console-subscriber = "0.1"
 
 [dependencies.async-std]
-version = "1.10.0"
+version = "1"
 features = ["tokio1"]
 
 [dependencies.uuid]
@@ -37,7 +38,8 @@ version = "0.8"
 features = ["v4", "serde"]
 
 [dependencies.tokio]
-version = "1.0"
+version = "1.17"
+features = ["full"]
 
 
 [[bin]]

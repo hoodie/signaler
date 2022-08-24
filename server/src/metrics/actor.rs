@@ -7,6 +7,8 @@ use super::{command::*, MetricsService};
 
 #[async_trait]
 impl Actor for MetricsService {
+    const NAME: &'static str = module_path!();
+
     async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting MetricsService");
 

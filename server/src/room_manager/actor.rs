@@ -10,6 +10,8 @@ use super::{command::*, RoomManager};
 
 #[async_trait]
 impl Actor for RoomManager {
+    const NAME: &'static str = module_path!();
+
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting");
         if let Some(gauge) = MetricsService::get_gauge("open_rooms", "open rooms").await? {
@@ -27,6 +29,7 @@ impl Actor for RoomManager {
 
 #[async_trait::async_trait]
 impl Handler<Command> for RoomManager {
+    #[tracing::instrument(level = tracing::Level::INFO, skip_all)]
     async fn handle(&mut self, _ctx: &mut hannibal::Context<Self>, cmd: Command) {
         log::trace!("received command {:?}", cmd);
         match cmd {
