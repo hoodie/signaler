@@ -266,6 +266,7 @@ mod wasm_wrapper {
             RoomList { rooms } => log::debug!("RoomsList: {:?}", rooms),
             MyRoomList { rooms } => log::debug!("MyRoomList: {:?}", rooms),
             RoomParticipants { room, participants } => log::debug!("RoomParticipants of {:?}: {:?}", room, participants),
+            RoomEvent {room, event } => log::debug!("{room:?} {event:#?}"),
             Message { message, room } => log::debug!( "Message in {room:?} {message:?}", room = room, message = message),
             Any { payload } => log::debug!("Any: {:#?}", payload),
             Error { message } => log::debug!("Error: {}", message),
