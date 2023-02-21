@@ -23,8 +23,7 @@ impl RoomManager {
         let existing_room = self.rooms.get(room).cloned();
         let new_room = if existing_room.is_none() {
             log::trace!("no room found {:?}, creating", existing_room);
-            let room = self.create_room(room).await.upgrade();
-            room
+            self.create_room(room).await.upgrade()
         } else {
             None
         };
