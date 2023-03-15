@@ -2148,7 +2148,7 @@ __metadata:
 
 "fsevents@patch:fsevents@~2.3.2#~builtin<compat/fsevents>":
   version: 2.3.2
-  resolution: "fsevents@patch:fsevents@npm%3A2.3.2#~builtin<compat/fsevents>::version=2.3.2&hash=df0bf1"
+  resolution: "fsevents@patch:fsevents@npm%3A2.3.2#~builtin<compat/fsevents>::version=2.3.2&hash=18f3a7"
   dependencies:
     node-gyp: latest
   conditions: os=darwin
@@ -4282,7 +4282,7 @@ __metadata:
 
 "resolve@patch:resolve@^1.9.0#~builtin<compat/resolve>":
   version: 1.17.0
-  resolution: "resolve@patch:resolve@npm%3A1.17.0#~builtin<compat/resolve>::version=1.17.0&hash=c3c19d"
+  resolution: "resolve@patch:resolve@npm%3A1.17.0#~builtin<compat/resolve>::version=1.17.0&hash=07638b"
   dependencies:
     path-parse: ^1.0.6
   checksum: 6fd799f282ddf078c4bc20ce863e3af01fa8cb218f0658d9162c57161a2dbafe092b13015b9a4c58d0e1e801cf7aa7a4f13115fea9db98c3f9a0c43e429bad6f
@@ -4638,7 +4638,7 @@ __metadata:
     react-dom: 17.0.2
     ts-loader: 9.2.6
     typescript: ^4.5.5
-    webpack: ^5.68.0
+    webpack: ^5.76.0
     webpack-cli: ^4.9.2
   languageName: unknown
   linkType: soft
@@ -4650,7 +4650,7 @@ __metadata:
     awesome-typescript-loader: ^5.2.1
     micro-signals: 2.4.0
     typescript: ^4.5.5
-    webpack: ^5.68.0
+    webpack: ^5.76.0
     webpack-cli: ^4.9.2
   languageName: unknown
   linkType: soft
@@ -4666,7 +4666,7 @@ __metadata:
     style-loader: ^3.3.1
     svelte: ^3.46.4
     svelte-loader: 3.1.2
-    webpack: ^5.68.0
+    webpack: ^5.76.0
     webpack-cli: ^4.9.2
     webpack-dev-server: ^4.7.4
   languageName: unknown
@@ -5218,7 +5218,7 @@ __metadata:
 
 "typescript@patch:typescript@^4.5.5#~builtin<compat/typescript>":
   version: 4.9.5
-  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=d73830"
+  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=a1c5e5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
@@ -5492,9 +5492,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:^5.68.0":
-  version: 5.75.0
-  resolution: "webpack@npm:5.75.0"
+"webpack@npm:^5.76.0":
+  version: 5.76.1
+  resolution: "webpack@npm:5.76.1"
   dependencies:
     "@types/eslint-scope": ^3.7.3
     "@types/estree": ^0.0.51
@@ -5525,7 +5525,7 @@ __metadata:
       optional: true
   bin:
     webpack: bin/webpack.js
-  checksum: 2bcc5f3c195f375944e8af2f00bf2feea39cb9fda5f763b0d1b00077f1c51783db25c94d3fae96a07dead9fa085e6ae7474417e5ab31719c9776ea5969ceb83a
+  checksum: b01fe0bc2dbca0e10d290ddb0bf81e807a031de48028176e2b21afd696b4d3f25ab9accdad888ef4a1f7c7f4d41f13d5bf2395b7653fdf3e5e3dafa54e56dab2
   languageName: node
   linkType: hard
 
