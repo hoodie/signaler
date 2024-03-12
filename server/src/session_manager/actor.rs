@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use async_trait::async_trait;
 use hannibal::{Actor, Context, Handler};
 use tracing::log;
 
@@ -8,7 +7,6 @@ use crate::metrics::MetricsService;
 
 use super::{command::*, SessionManager};
 
-#[async_trait]
 impl Actor for SessionManager {
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting SessionManager");
@@ -25,7 +23,6 @@ impl Actor for SessionManager {
     }
 }
 
-#[async_trait]
 impl Handler<Command> for SessionManager {
     async fn handle(&mut self, _ctx: &mut Context<Self>, cmd: Command) {
         match cmd {
@@ -44,7 +41,6 @@ impl Handler<Command> for SessionManager {
     }
 }
 
-#[async_trait::async_trait]
 impl Handler<Gc> for SessionManager {
     async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, _: Gc) {
         self.gc(ctx);

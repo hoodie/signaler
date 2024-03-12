@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use async_trait::async_trait;
 use hannibal::{Actor, Handler};
 use tracing::log;
 
@@ -8,7 +7,6 @@ use crate::metrics::MetricsService;
 
 use super::{command::*, RoomManager};
 
-#[async_trait]
 impl Actor for RoomManager {
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting");
@@ -25,7 +23,6 @@ impl Actor for RoomManager {
     }
 }
 
-#[async_trait::async_trait]
 impl Handler<Command> for RoomManager {
     async fn handle(&mut self, _ctx: &mut hannibal::Context<Self>, cmd: Command) {
         log::trace!("received command {:?}", cmd);
@@ -35,7 +32,6 @@ impl Handler<Command> for RoomManager {
     }
 }
 
-#[async_trait::async_trait]
 impl Handler<Gc> for RoomManager {
     async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, _: Gc) {
         self.gc(ctx);

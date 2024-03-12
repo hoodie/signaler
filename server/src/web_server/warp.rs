@@ -20,7 +20,6 @@ pub async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
 #[derive(Default)]
 pub struct WebServer;
 
-#[async_trait::async_trait]
 impl Actor for WebServer {
     async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::info!("started web server");
@@ -32,7 +31,6 @@ impl Actor for WebServer {
 }
 impl Service for WebServer {} // TODO: services aren't even supervised
 
-#[async_trait::async_trait]
 impl Handler<super::Listen> for WebServer {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: super::Listen) {
         if let Err(error) = self.start(msg.socket).await {

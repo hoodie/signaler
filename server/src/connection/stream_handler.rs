@@ -7,7 +7,6 @@ use super::Connection;
 
 type WsStreamMessage = std::result::Result<warp::ws::Message, warp::Error>;
 
-#[async_trait::async_trait]
 impl StreamHandler<WsStreamMessage> for Connection {
     async fn handle(&mut self, ctx: &mut Context<Self>, received: WsStreamMessage) {
         match received {

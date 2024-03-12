@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use hannibal::{Actor, Handler};
 use protocol::ChatMessage;
 use signaler_protocol as protocol;
@@ -10,7 +9,6 @@ use super::{
     Room,
 };
 
-#[async_trait]
 impl Actor for Room {
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::info!("starting Room {:?}", ctx.actor_id());
@@ -21,7 +19,6 @@ impl Actor for Room {
     }
 }
 
-#[async_trait]
 impl Handler<Command> for Room {
     async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, cmd: Command) {
         log::trace!("received command {:?}", cmd);
@@ -31,7 +28,6 @@ impl Handler<Command> for Room {
     }
 }
 
-#[async_trait]
 impl Handler<ChatRoomCommand> for Room {
     async fn handle(&mut self, ctx: &mut hannibal::Context<Self>, cmd: ChatRoomCommand) {
         log::trace!("received command {:?}", cmd);

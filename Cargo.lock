@@ -475,6 +475,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -776,26 +782,26 @@ dependencies = [
 
 [[package]]
 name = "hannibal"
-version = "0.8.3"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ef0dd4da150fc499a724c4e0783ee55bb30348df28ee2fb06eb4d49d2484bf7"
+checksum = "18517f2e3e9c18da74e481b9a7745fee05fd8c6177b0f1e853285b055d888324"
 dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
+ "dyn-clone",
  "fnv",
  "futures",
  "hannibal-derive",
  "once_cell",
  "slab",
- "tokio",
 ]
 
 [[package]]
 name = "hannibal-derive"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f90c92081938ffbca281364358451ab1af682f776bd9d45774539f8b5e419313"
+checksum = "fca3115bafabbdbee318b76222e9baea591b05341548ac2feac2f3a67198ec36"
 dependencies = [
  "proc-macro2 1.0.79",
  "quote 1.0.35",
@@ -1875,19 +1881,7 @@ dependencies = [
  "num_cpus",
  "pin-project-lite",
  "socket2 0.5.6",
- "tokio-macros",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
-dependencies = [
- "proc-macro2 1.0.79",
- "quote 1.0.35",
- "syn 2.0.52",
 ]
 
 [[package]]

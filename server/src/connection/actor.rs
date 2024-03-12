@@ -1,11 +1,9 @@
-use async_trait::async_trait;
 use hannibal::{Actor, Context, Handler};
 use tracing::log;
 
 use super::Connection;
 use crate::session::message::FromSession;
 
-#[async_trait::async_trait]
 impl Actor for Connection {
     async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
         log::trace!("starting on actor {:?}", ctx.actor_id());
@@ -24,7 +22,6 @@ impl Actor for Connection {
     }
 }
 
-#[async_trait]
 impl Handler<FromSession> for Connection {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: FromSession) {
         log::debug!("received FromSession {:?}", &msg);
