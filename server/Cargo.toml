@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 warp = "0.3"
-hannibal = "0.9"
+hannibal = "0.10"
 signaler-protocol = { path = "../protocol" }
 chrono = "0.4"
 

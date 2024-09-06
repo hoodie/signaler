@@ -3,7 +3,7 @@ alias r := run
 
 set dotenv-load := false
 
-yarn := "yarn --no-color --emoji false --no-progress"
+yarn := "yarn"
 
 default:
   just --list
@@ -29,7 +29,7 @@ build_svelte: build-client
   {{yarn}} --cwd webapp-svelte build
 
 install:
-  {{yarn}}
+  {{yarn}} --cwd webapp
 
 build: install build-webapp build-server
 run: build-webapp run-server

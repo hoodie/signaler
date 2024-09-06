@@ -1,5 +1,7 @@
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
+const path = require("node:path");
+
 const mode = process.env.NODE_ENV || 'development';
 const prod = mode === 'production';
 
@@ -8,7 +10,11 @@ module.exports = {
 		bundle: ['./src/main.js']
 	},
 	resolve: {
-		extensions: ['.mjs', '.js', '.svelte']
+		alias: {
+			svelte: path.resolve('node_modules', 'svelte/src/runtime') // Svelte 3: path.resolve('node_modules', 'svelte')
+		},
+		extensions: ['.mjs', '.js', '.svelte'],
+		conditionNames: ['svelte', 'browser', 'import']
 	},
 	output: {
 		path: __dirname + '/public',

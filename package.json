@@ -4,6 +4,7 @@
     "packages": [
       "client-lib",
       "webapp",
+      "webapp-vite",
       "webapp-svelte"
     ],
     "nohoist": [

@@ -2,3 +2,4 @@
 static/app.bundle.js
 node_modules
 target
+.yarn

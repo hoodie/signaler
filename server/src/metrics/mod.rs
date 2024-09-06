@@ -6,10 +6,10 @@ mod actor;
 pub mod command {
     use prometheus::{IntGauge, Registry};
 
-    #[hannibal::message(result = "Registry")]
+    #[hannibal::message(result = Registry)]
     pub struct GetRegistry;
 
-    #[hannibal::message(result = "Option<IntGauge>")]
+    #[hannibal::message(result = Option<IntGauge>)]
     pub struct AddGauge {
         pub name: String,
         pub help: String,
