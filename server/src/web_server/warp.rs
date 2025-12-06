@@ -1,10 +1,11 @@
+use futures::StreamExt as _;
 use tracing::log;
 
 use prometheus::{Encoder, TextEncoder};
-use warp::{http::Uri, ws::WebSocket, Filter};
+use warp::{Filter, http::Uri, ws::WebSocket};
 use warp_prometheus::Metrics;
 
-use hannibal::{Actor, Context, Handler, Service};
+use hannibal::prelude::*;
 
 use std::{net::SocketAddr, path::PathBuf};
 
@@ -12,16 +13,18 @@ use crate::metrics::MetricsService;
 
 pub async fn peer_connected(ws: WebSocket /*, broker: Broker*/) {
     log::debug!("user connected{:#?}", ws);
-    let connection = crate::connection::Connection::new(ws);
-    let addr = hannibal::Actor::start(connection).await.unwrap();
-    addr.wait_for_stop().await
+    let (ws_sender, ws_receiver) = ws.split();
+    let addr = hannibal::build(crate::connection::Connection::new(ws_sender))
+        .on_stream(ws_receiver)
+        .spawn();
+    addr.await.unwrap()
 }
 
 #[derive(Default)]
 pub struct WebServer;
 
 impl Actor for WebServer {
-    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
+    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::DynResult<()> {
         log::info!("started web server");
         Ok(())
     }
@@ -40,7 +43,7 @@ impl Handler<super::Listen> for WebServer {
 }
 
 impl WebServer {
-    async fn start(&mut self, addr: SocketAddr) -> hannibal::Result<()> {
+    async fn start(&mut self, addr: SocketAddr) -> hannibal::DynResult<()> {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let static_dir = || root.join("../static/");
 

@@ -10,8 +10,8 @@ use super::{
 };
 
 impl Actor for Room {
-    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
-        log::info!("starting Room {:?}", ctx.actor_id());
+    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::DynResult<()> {
+        // log::info!("starting Room {:?}", ctx.actor_id());
         Ok(())
     }
     async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {

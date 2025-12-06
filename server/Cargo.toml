@@ -2,13 +2,12 @@
 name = "server"
 version = "0.1.0"
 authors = ["Hendrik Sollich <hendrik@hoodie.de>"]
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 warp = "0.3"
-hannibal = "0.10"
 signaler-protocol = { path = "../protocol" }
 chrono = "0.4"
 
@@ -17,27 +16,31 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 dotenv = "0.15"
-config = "0.14"
+config = "0.15"
 
-color-backtrace = "0.6"
+color-backtrace = "0.7"
 futures = "0.3"
 async-trait = "0.1"
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 warp-prometheus = "0.5"
 prometheus = "0.13"
 
+[dependencies.hannibal]
+version = "0.14.1"
+
+
 [dependencies.async-std]
-version = "1.10.0"
+version = "1.13"
 features = ["tokio1"]
 
 [dependencies.uuid]
-version = "1.1"
+version = "1.18"
 features = ["v4", "serde"]
 
 [dependencies.tokio]
-version = "1.0"
+version = "1.48"
 
 
 [[bin]]

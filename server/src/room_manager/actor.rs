@@ -8,13 +8,13 @@ use crate::metrics::MetricsService;
 use super::{command::*, RoomManager};
 
 impl Actor for RoomManager {
-    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
+    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::DynResult<()> {
         log::trace!("starting");
         if let Some(gauge) = MetricsService::get_gauge("open_rooms", "open rooms").await? {
             log::debug!("instantiated room gauge");
             self.open_rooms = Some(gauge);
         }
-        ctx.send_interval(Gc, Duration::from_secs(5));
+        ctx.interval(Gc, Duration::from_secs(5));
 
         Ok(())
     }

@@ -4,7 +4,7 @@ use signaler_protocol::SessionMessage;
 use super::Session;
 
 #[hannibal::message]
-#[derive(Debug)]
+// #[derive(Debug)]
 pub enum FromSession {
     SessionMessage(SessionMessage),
     SessionAssociated { session: WeakAddr<Session> },

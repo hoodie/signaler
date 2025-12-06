@@ -1,7 +1,6 @@
 use futures::{
     sink::SinkExt,
     stream::{SplitSink, SplitStream},
-    StreamExt,
 };
 use hannibal::{Context, Service, WeakAddr};
 use tracing::log;
@@ -30,19 +29,19 @@ pub struct Connection {
     /// receiver on websocket
     /// this is taken out of here after starting by `Actor::started()`
     /// TODO: find a way to pass in the receiver without having to store it like this
-    ws_receiver: Option<WsReceiver>,
+    // ws_receiver: Option<WsReceiver>,
 
     session: Option<WeakAddr<Session>>,
 }
 
 impl Connection {
-    pub fn new(ws: WebSocket) -> Self {
+    pub fn new(ws_sender: WsSender) -> Self {
         let connection_id = Uuid::new_v4();
         log::info!("new connection established {}", connection_id);
-        let (ws_sender, ws_receiver) = ws.split();
+        // let (ws_sender, ws_receiver) = ws.split();
         Connection {
             connection_id,
-            ws_receiver: Some(ws_receiver),
+            // ws_receiver: Some(ws_receiver),
             ws_sender,
             session: None,
         }
@@ -73,7 +72,7 @@ impl Connection {
             session
                 .upgrade()
                 .ok_or(error::Error::SessionGone)?
-                .send(session::command::Command::from(command))?;
+                .try_send(session::command::Command::from(command)).unwrap();
         } else {
             self.handle_connection_message(raw_msg, ctx).await?;
         }
@@ -91,10 +90,10 @@ impl Connection {
 
     async fn associate_session(&mut self, credentials: Credentials, ctx: &mut Context<Self>) {
         log::trace!("trying to get a session");
-        let sm = SessionManager::from_registry().await.unwrap();
-        sm.send(session_manager::command::Command::AssociateConnection {
+        let sm = SessionManager::from_registry().await;
+        sm.try_send(session_manager::command::Command::AssociateConnection {
             credentials,
-            connection: ctx.address().downgrade(),
+            connection: ctx.weak_address()
         })
         .unwrap();
         self.send(signaler_protocol::SessionMessage::Authenticated.into_json())

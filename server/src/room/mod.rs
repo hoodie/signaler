@@ -40,8 +40,7 @@ impl Room {
             if let Some(old) = self.roster.insert(participant.session_id, participant) {
                 log::warn!("replacing existing an participant {:?}", old)
             }
-            if let Err(error) = participant_addr.send(RoomToSession::Joined(self.id.clone(), ctx.address().downgrade()))
-            {
+            if let Err(error) = participant_addr.try_send(RoomToSession::Joined(self.id.clone(), ctx.weak_address())) {
                 log::warn!("failed to send Joined {error}");
             }
         }
@@ -52,7 +51,7 @@ impl Room {
         self.store_message(&message);
         for participant in self.roster.iter().filter_map(|(_, p)| p.addr.upgrade()) {
             participant
-                .send(RoomToSession::ChatMessage {
+                .try_send(RoomToSession::ChatMessage {
                     room: self.id.clone(),
                     message: message.clone(),
                 })

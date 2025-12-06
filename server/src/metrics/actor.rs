@@ -2,10 +2,10 @@ use hannibal::{Actor, Context, Handler, Service};
 use prometheus::{IntGauge, Registry};
 use tracing::log;
 
-use super::{command::*, MetricsService};
+use super::{MetricsService, command::*};
 
 impl Actor for MetricsService {
-    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
+    async fn started(&mut self, _ctx: &mut hannibal::Context<Self>) -> hannibal::DynResult<()> {
         log::trace!("starting MetricsService");
 
         Ok(())

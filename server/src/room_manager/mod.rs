@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-use hannibal::{Actor, Addr, Context, WeakAddr};
+use hannibal::{Addr, Context, WeakAddr};
 use prometheus::IntGauge;
 use tracing::log;
 
-use crate::room::{self, participant::RoomParticipant, Room, RoomId};
+use crate::room::{self, Room, RoomId, participant::RoomParticipant};
 
 mod actor;
 pub mod command;
 
 pub use command::Command;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct RoomManager {
     pub rooms: HashMap<RoomId, Addr<Room>>,
     open_rooms: Option<IntGauge>,
@@ -22,14 +22,14 @@ impl RoomManager {
         log::debug!("join {room} with {participant:?}");
         let existing_room = self.rooms.get(room).cloned();
         let new_room = if existing_room.is_none() {
-            log::trace!("no room found {:?}, creating", existing_room);
+            // log::trace!("no room found {:?}, creating", existing_room);
             self.create_room(room).await.upgrade()
         } else {
             None
         };
 
         if let Some(room) = existing_room.or(new_room) {
-            if let Err(error) = room.send(room::Command::AddParticipant { participant }) {
+            if let Err(error) = room.try_send(room::Command::AddParticipant { participant }) {
                 log::error!("failed to add participant to room {}", error)
             }
         }
@@ -37,7 +37,7 @@ impl RoomManager {
 
     async fn create_room(&mut self, name: &str) -> WeakAddr<Room> {
         log::debug!("create room: {:?}", name);
-        let room = Room::new(name.into()).start().await.unwrap();
+        let room = hannibal::build(Room::new(name.into())).unbounded().spawn();
         let weak_room = room.downgrade();
         self.rooms.insert(name.into(), room);
         if let Some(gauge) = self.open_rooms.as_ref() {

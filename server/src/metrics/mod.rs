@@ -6,10 +6,10 @@ mod actor;
 pub mod command {
     use prometheus::{IntGauge, Registry};
 
-    #[hannibal::message(result = Registry)]
+    #[hannibal::message(response = Registry)]
     pub struct GetRegistry;
 
-    #[hannibal::message(result = Option<IntGauge>)]
+    #[hannibal::message(response = Option<IntGauge>)]
     pub struct AddGauge {
         pub name: String,
         pub help: String,
@@ -22,14 +22,14 @@ pub struct MetricsService {
 }
 
 impl MetricsService {
-    pub async fn get_registry() -> hannibal::Result<Registry> {
-        let registry = Self::from_registry().await?.call(self::command::GetRegistry).await?;
+    pub async fn get_registry() -> hannibal::DynResult<Registry> {
+        let registry = Self::from_registry().await.call(self::command::GetRegistry).await?;
         Ok(registry)
     }
 
-    pub async fn get_gauge(name: &str, help: &str) -> hannibal::Result<Option<IntGauge>> {
+    pub async fn get_gauge(name: &str, help: &str) -> hannibal::DynResult<Option<IntGauge>> {
         let gauge = Self::from_registry()
-            .await?
+            .await
             .call(self::command::AddGauge {
                 name: name.into(),
                 help: help.into(),

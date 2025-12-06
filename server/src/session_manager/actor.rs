@@ -8,13 +8,13 @@ use crate::metrics::MetricsService;
 use super::{command::*, SessionManager};
 
 impl Actor for SessionManager {
-    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
+    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::DynResult<()> {
         log::trace!("starting SessionManager");
         if let Some(gauge) = MetricsService::get_gauge("open_sessions", "open session").await? {
             log::debug!("instantiated session gauge");
             self.open_sessions = Some(gauge);
         }
-        ctx.send_interval(Gc, Duration::from_secs(5));
+        ctx.interval(Gc, Duration::from_secs(5));
 
         Ok(())
     }

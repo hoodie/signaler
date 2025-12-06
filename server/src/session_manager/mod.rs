@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt};
 
-use hannibal::{Actor, Addr, Context, WeakAddr};
+use hannibal::{Addr, Context, WeakAddr};
 use prometheus::IntGauge;
 use signaler_protocol::Credentials;
 use tracing::log;
@@ -37,11 +37,11 @@ impl SessionManager {
         if let Some(connection) = connection.upgrade() {
             let session = Session::with_connection(connection.sender());
             let session_id = session.session_id;
-            let session_addr = session.start().await?;
+            let session_addr = hannibal::build(session).unbounded().spawn();
             let session_weak = session_addr.downgrade();
             self.sessions.insert(session_id, session_addr);
 
-            connection.send(session::message::FromSession::SessionAssociated { session: session_weak })?;
+            connection.send(session::message::FromSession::SessionAssociated { session: session_weak }).await?;
         } else {
             anyhow::bail!("connection is already dead")
         }

@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::room::command::ChatRoomCommand;
 use crate::{
-    room::{participant::RoomParticipant, Room},
+    room::{Room, participant::RoomParticipant},
     room_manager::{self, RoomManager},
 };
 
@@ -79,26 +79,22 @@ impl Session {
             room_id,
             participant: RoomParticipant {
                 session_id: self.session_id,
-                addr: ctx.address().downgrade(),
+                addr: ctx.weak_address(),
                 profile: self.session_id.to_string(), // self.profile.clone(),
             },
             // return_addr: ctx.address().recipient(),
         };
 
-        let rm = RoomManager::from_registry().await.unwrap();
-        if let Err(error) = rm.send(msg) {
+        let rm = RoomManager::from_registry().await;
+        if let Err(error) = rm.send(msg).await {
             log::error!("can't join room {error}")
         }
     }
 
     pub fn send_to_connection(&self, message: FromSession) {
         if let Some(ref connection) = self.connection {
-            if connection.can_upgrade() {
-                if let Err(e) = connection.send(message) {
-                    log::warn!("failed to send to connection {}", e);
-                }
-            } else {
-                log::warn!("connection can't upgrade");
+            if let Err(e) = connection.try_send(message) {
+                log::warn!("failed to send to connection {}", e);
             }
         } else {
             log::warn!("have no connection");
@@ -107,11 +103,11 @@ impl Session {
 
     pub fn send_to_room<C>(&self, room_id: RoomId, command: C)
     where
-        C: hannibal::Message<Result = ()> + Send + 'static,
+        C: hannibal::Message<Response = ()> + Send + 'static,
         crate::room::Room: hannibal::Handler<C>,
     {
         if let Some(room) = self.rooms.get(&room_id).and_then(WeakAddr::upgrade) {
-            room.send(command).unwrap();
+            room.try_send(command).unwrap();
         }
     }
 }
@@ -120,7 +116,7 @@ impl Session {
 impl Session {
     fn gc(&mut self, ctx: &mut Context<Self>) {
         // log::trace!("gc");
-        if let Some(can_upgrade) = self.connection.as_ref().map(|c| c.can_upgrade()) {
+        if let Some(can_upgrade) = self.connection.as_ref().map(|c| !c.stopped()) {
             if !can_upgrade {
                 log::trace!("connection is gone");
                 self.connection = None
@@ -136,7 +132,7 @@ impl Session {
                     "session without connection for more than {}s, stopping session",
                     secs_since_disconnect
                 );
-                ctx.stop(None);
+                ctx.stop();
             }
         }
     }

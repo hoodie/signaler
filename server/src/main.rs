@@ -14,7 +14,7 @@ mod web_server;
 use crate::config::Config;
 use crate::web_server::WebServer;
 
-#[async_std::main]
+#[hannibal::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_backtrace::install();
     dotenv().unwrap();
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::debug!("log config {:?}", config.log_config);
 
     WebServer::from_registry()
-        .await?
+        .await
         .call(web_server::Listen {
             socket: ([0, 0, 0, 0], config.server.port).into(),
         })

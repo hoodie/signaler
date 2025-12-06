@@ -21,7 +21,6 @@ pub struct ChatRoomCommand {
     pub session_id: SessionId,
 }
 
-#[derive(Debug)]
 #[hannibal::message]
 pub enum RoomToSession {
     Joined(RoomId, WeakAddr<Room>),

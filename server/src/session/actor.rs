@@ -9,9 +9,9 @@ use crate::room::command::RoomToSession;
 use super::{command::*, Session};
 
 impl Actor for Session {
-    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::Result<()> {
-        log::info!("starting session on actor {:?}", ctx.actor_id());
-        ctx.send_interval(Gc, Duration::from_secs(5));
+    async fn started(&mut self, ctx: &mut hannibal::Context<Self>) -> hannibal::DynResult<()> {
+        // log::info!("starting session on actor {:?}", ctx.actor_id());
+        ctx.interval(Gc, Duration::from_secs(5));
         Ok(())
     }
     async fn stopped(&mut self, _ctx: &mut hannibal::Context<Self>) {
