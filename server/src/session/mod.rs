@@ -132,7 +132,7 @@ impl Session {
                     "session without connection for more than {}s, stopping session",
                     secs_since_disconnect
                 );
-                ctx.stop();
+                ctx.stop().unwrap();
             }
         }
     }

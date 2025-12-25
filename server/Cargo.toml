@@ -28,7 +28,7 @@ warp-prometheus = "0.5"
 prometheus = "0.13"
 
 [dependencies.hannibal]
-version = "0.14.1"
+version = "0.15.0"
 
 
 [dependencies.async-std]
@@ -36,7 +36,7 @@ version = "1.13"
 features = ["tokio1"]
 
 [dependencies.uuid]
-version = "1.18"
+version = "1.19"
 features = ["v4", "serde"]
 
 [dependencies.tokio]
