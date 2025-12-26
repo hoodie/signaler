@@ -1,0 +1,26 @@
+{
+  "tasks": {
+    "install": "deno install",
+    "dev": "deno run -A npm:vite",
+    "build": "deno run -A npm:vite build"
+  },
+  "imports": {
+    "react": "npm:react@18.2.0",
+    "react-dom": "npm:react-dom@18.2.0",
+    "react/": "npm:/react@18.2.0/",
+    "react-dom/": "npm:/react-dom@18.2.0/"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "es2020"],
+    "jsx": "react",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true
+  }
+}

@@ -4,7 +4,6 @@
     "packages": [
       "client-lib",
       "webapp",
-      "webapp-vite",
       "webapp-svelte"
     ],
     "nohoist": [
@@ -15,6 +14,7 @@
   "scripts": {
     "build:client": "yarn --cwd client-lib build",
     "build:webapp": "yarn --cwd webapp build",
+    "dev:webapp": "yarn --cwd webapp dev",
     "build:svelte": "yarn --cwd webapp-svelte build",
     "watch:client": "yarn build:client --watch",
     "watch:webapp": "yarn build:webapp --watch",

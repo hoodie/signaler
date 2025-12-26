@@ -1,0 +1,12 @@
+{
+  "name": "signaler-protocol",
+  "version": "0.1.0",
+  "type": "module",
+  "author": "Hendrik Sollich",
+  "license": "MIT/Apache-2.0",
+  "private": true,
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "workspace": [
+    "./protocol",
+    "./client-lib",
+    "./webapp",
+    "./webapp-svelte"
+  ],
+  "tasks": {
+    "build:client": "deno task --cwd client-lib build",
+    "build:webapp": "deno task --cwd webapp build",
+    "build:svelte": "deno task --cwd webapp-svelte build",
+    "watch:client": "deno task --cwd client-lib build --watch",
+    "watch:webapp": "deno task --cwd webapp build --watch",
+    "build": "deno task build:client && deno task build:webapp"
+  },
+  "nodeModulesDir": "manual",
+  "lock": true
+}

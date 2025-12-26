@@ -24,3 +24,7 @@ features = ["serde-serialize"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "export_typescript"
+path = "src/bin/export_typescript.rs"

@@ -1,0 +1,14 @@
+{
+  "tasks": {
+    "build": "deno run -A npm:typescript/tsc --build .",
+    "build:watch": "deno run -A npm:typescript/tsc --build . --watch"
+  },
+  "imports": {
+    "micro-signals": "npm:micro-signals@2.4.0",
+    "signaler-protocol": "../protocol/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["es2020"],
+    "strict": true
+  }
+}

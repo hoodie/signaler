@@ -1,0 +1,14 @@
+{
+  "tasks": {
+    "build": "node ../node_modules/.bin/cross-env NODE_ENV=development node ../node_modules/.bin/webpack",
+    "build:release": "node ../node_modules/.bin/cross-env NODE_ENV=production node ../node_modules/.bin/webpack",
+    "dev": "node ../node_modules/.bin/webpack-dev-server --content-base public"
+  },
+  "imports": {
+    "svelte": "npm:svelte@^4.2.12"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "es2020"],
+    "strict": true
+  }
+}

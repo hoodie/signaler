@@ -121,7 +121,7 @@ pub enum ConnectionCommand {
     Authenticate { credentials: Credentials },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TypeScriptify)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionDescription {
     pub session_id: Uuid,

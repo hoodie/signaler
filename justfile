@@ -1,12 +1,32 @@
 alias b := build
-alias r := run 
+alias r := run
+alias g := generate-protocol
 
 set dotenv-load := false
 
-yarn := "yarn"
+deno := "deno"
 
 default:
   just --list
+
+# Generate TypeScript definitions from Rust protocol types
+generate-protocol:
+  cd protocol && cargo build --bin export_typescript --quiet && ../target/debug/export_typescript > generated.ts
+
+# Alias for generate-protocol (same thing)
+build-protocol: generate-protocol
+
+# client lib (requires protocol to be generated first)
+build-client: build-protocol
+  {{deno}} task --cwd client-lib build
+
+# react webapp
+@build-webapp: build-client
+  {{deno}} task --cwd webapp build
+
+# svelte webapp
+build_svelte: build-client
+  {{deno}} task --cwd webapp-svelte build
 
 # server directory
 build-server: build-webapp
@@ -16,20 +36,8 @@ build-server: build-webapp
 run-server:
   cd server && cargo run
 
-# client lib
-build-client:
-  {{yarn}} --cwd client-lib build
-
-# react webapp
-@build-webapp: build-client
-  {{yarn}} --cwd webapp webpack
-
-# svelte webapp
-build_svelte: build-client
-  {{yarn}} --cwd webapp-svelte build
-
 install:
-  {{yarn}} --cwd webapp
+  {{deno}} install
 
-build: install build-webapp build-server
-run: build-webapp run-server
+build: install build-protocol build-client build-webapp build-server
+run: build run-server

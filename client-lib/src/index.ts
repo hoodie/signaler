@@ -1,11 +1,43 @@
 import { Signal, ReadableSignal, Listener } from 'micro-signals';
 
-import { Command, UserProfile, RoomParticipants } from './protocol';
-import { serverEvent, ServerEvent } from './protocol';
-import { ChatRoom, ChatRoomCommand } from './protocol/command';
-import { SessionDescription, isWelcomeEvent, ChatMessage } from './protocol/index'; // weird webpack bug
+import type { 
+    SessionCommand as GeneratedSessionCommand, 
+    UserProfile, 
+    Participant, 
+    SessionMessage as GeneratedSessionMessage, 
+    ChatRoomCommand,
+    SessionDescription as GeneratedSessionDescription,
+    ChatMessage as GeneratedChatMessage
+} from 'signaler-protocol';
 
-export { ChatMessage, SessionDescription };
+export type SessionDescription = GeneratedSessionDescription;
+
+// Client-specific ChatMessage that extends the generated one with parsed date and received timestamp
+export interface ChatMessage {
+    content: string;
+    sender: string;
+    sent: Date;
+    uuid: string;
+    received: Date;
+}
+
+// Client-specific command extensions
+export interface Reconnect { type: 'reconnect', sessionId: string }
+export type Command = GeneratedSessionCommand | Reconnect;
+
+// Client-specific event extensions
+export interface Ok { type: 'ok' }
+export type ServerEvent = GeneratedSessionMessage | Ok;
+
+export type RoomParticipants = { type: 'roomParticipants', room: string, participants: Array<Participant> };
+
+export const isWelcomeEvent = (msg: any): msg is Extract<ServerEvent, { type: 'welcome' }> =>
+    typeof msg === 'object' && msg.type === 'welcome' && isSessionDescription(msg.session);
+
+export const isSessionDescription = (d: any): d is SessionDescription => 
+    typeof d === 'object' && typeof d.sessionId === 'string';
+
+export type { ChatRoomCommand };
 
 
 const timeout = (time: number): Promise<never> => new Promise((_, reject) => setTimeout(reject, time));
@@ -94,9 +126,11 @@ export class Session {
                 console.info('chatmessage received', msg);
                 this.onMessage.dispatch({
                     message: {
-                        ...msg.message,
-                        received: new Date(),
+                        content: msg.message.content,
+                        sender: msg.message.sender,
+                        uuid: msg.message.uuid,
                         sent: new Date(msg.message.sent),
+                        received: new Date(),
                     },
                     room: msg.room,
                 });

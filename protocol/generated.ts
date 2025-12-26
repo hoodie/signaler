@@ -1,5 +1,7 @@
+export type Uuid = string;
+export type Value = any;
 export type RoomId = string;
-export type SessionId = String;
+export type SessionId = string;
 export type Credentials = 
  | { type: "usernamePassword"; username: string; password: string } 
  | { type: "adHoc"; username: string };
@@ -13,7 +15,7 @@ export type Participant = { fullName: string; sessionId: SessionId };
 export type RoomEvent = 
  | { participantJoined: { name: string } } 
  | { participantLeft: { name: string } };
-export type SessionDescription = { sessionId: SessionId };
+export type SessionDescription = { sessionId: Uuid };
 // Command sent to the server
 export type SessionCommand = 
  | { type: "join"; room: RoomId } 

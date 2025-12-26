@@ -5,9 +5,11 @@ use signaler_protocol::{
 use typescript_definitions::TypeScriptifyTrait;
 
 fn main() {
+    println!("export type Uuid = string;");
+    println!("export type Value = any;");
     println!("{}", RoomId::type_script_ify());
     // println!("{}", SessionId::type_script_ify());
-    println!("export type SessionId = String;");
+    println!("export type SessionId = string;");
     println!("{}", Credentials::type_script_ify());
     println!("{}", UserProfile::type_script_ify());
     println!("{}", ChatMessage::type_script_ify());

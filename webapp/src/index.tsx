@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 
 import { Session } from "../../client-lib/";
 import { SignalerContainer } from "./App";
@@ -24,10 +24,8 @@ const config: Config = {
 console.table(config);
 
 function initApp() {
-    ReactDOM.render(
-        <SignalerContainer config={config} />,
-        document.querySelector("#app")
-    );
+    const root = createRoot(document.querySelector("#app")!);
+    root.render(<SignalerContainer config={config} />);
 }
 
 function initCli() {
